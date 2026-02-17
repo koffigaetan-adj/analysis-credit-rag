@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.PhoneInputInput {
+  outline: none;
+  border: none;
+  width: 100%;
+  background: transparent;
+}
+
+/* Animations */
+@keyframes scale-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s infinite ease-in-out;
+}
+
+/* Classes utilitaires Dark Mode / Glassmorphism */
+.bg-glass {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bg-glass-light {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+/* --- CONFIGURATION IMPRESSION PAYSAGE (LANDSCAPE) --- */
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  /* 1. Cacher tout le site par défaut */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 2. Afficher uniquement le rapport et forcer l'affichage du contenu */
+  #section-to-print,
+  #section-to-print * {
+    visibility: visible;
+  }
+
+  /* 3. Positionnement sur la page PDF */
+  #section-to-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 4. Forcer la mise en page en colonnes (Grilles) */
+  .grid {
+    display: grid !important;
+  }
+
+  /* 5. Cacher les éléments inutiles (boutons, chatbot) */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* 6. Forcer l'impression des couleurs de fond et graphiques */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Ajustement des graphiques Plotly */
+  .js-plotly-plot, .plotly {
+    width: 100% !important;
+  }
+}
