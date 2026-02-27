@@ -1,4 +1,4 @@
-import { Bell, Lock, User, Building, ShieldCheck, Mail, Globe, Save, X } from 'lucide-react';
+import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X } from 'lucide-react';
 
 export default function Settings() {
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Upload, FileText, CheckCircle, AlertCircle, Loader2, Trash2,
@@ -125,7 +125,7 @@ export default function NewAnalysis() {
     setLoading(true);
     try {
       const formData = new FormData();
-      Object.entries(files).forEach(([ fileList]) => {
+      Object.entries(files).forEach(([, fileList]) => {
         fileList.forEach(file => formData.append('files', file));
       });
 

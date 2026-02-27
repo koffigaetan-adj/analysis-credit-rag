@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Send, Bot, Download,
-  Briefcase, XCircle, TrendingUp, Activity, FileText, ShieldCheck,
-  AlertOctagon, PieChart, MessageCircle, X, Save, PiggyBank, LineChart, Trash2, Sparkles,
-  BarChart3, Landmark, Scale
+  XCircle, FileText, ShieldCheck,
+  AlertOctagon, MessageCircle, X, Save, PiggyBank, LineChart, Sparkles,
+  BarChart3
 } from 'lucide-react';
 import Plot from 'react-plotly.js';
 
@@ -43,6 +43,7 @@ interface ResultData {
   risks?: string[];
   opportunities?: string[];
   summary?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   charts?: { gauge: any; pie: any; };
 }
 
@@ -69,8 +70,19 @@ export default function AnalysisResult() {
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [showPrompt, setShowPrompt] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (state?.clientInfo?.fullName) {
+      const isComp = state.clientType === 'entreprise';
+      setMessages([{
+        role: 'assistant',
+        content: isComp
+          ? `Analyse financière de l'entité **${state.clientInfo.fullName}** terminée. Je peux vous éclairer sur la solvabilité de la structure.`
+          : `Analyse de **${state.clientInfo.fullName}** terminée. Je suis à votre écoute pour détailler le profil de l'emprunteur.`
+      }]);
+    }
+  }, [state?.clientInfo?.fullName, state?.clientType]);
 
   if (!state || !state.clientInfo || !state.resultData) {
     return (
@@ -94,15 +106,6 @@ export default function AnalysisResult() {
   const decision = resultData.decision || "Vigilance";
   const reliability = resultData.payment_reliability || "Moyen";
   const trend = resultData.account_trend || "Stable";
-
-  useEffect(() => {
-    setMessages([{
-      role: 'assistant',
-      content: isCompany 
-        ? `Analyse financière de l'entité **${clientInfo.fullName}** terminée. Je peux vous éclairer sur la solvabilité de la structure.`
-        : `Analyse de **${clientInfo.fullName}** terminée. Je suis à votre écoute pour détailler le profil de l'emprunteur.`
-    }]);
-  }, [clientInfo.fullName, isCompany]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,12 +167,12 @@ export default function AnalysisResult() {
             <button onClick={() => window.print()} className="px-5 py-2.5 bg-white border border-slate-100 rounded-2xl text-slate-500 hover:bg-slate-50 shadow-sm transition-all">
               <Download className="w-4 h-4" />
             </button>
-            <button 
-                onClick={() => setIsSaved(true)} 
-                className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center
+            <button
+              onClick={() => setIsSaved(true)}
+              className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center
                   ${isSaved ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-slate-900 text-white hover:bg-blue-600'}`}
-              >
-                {isSaved ? <><CheckCircle className="w-4 h-4 mr-2" /> Enregistré</> : <><Save className="w-4 h-4 mr-2" /> Enregistrer</>}
+            >
+              {isSaved ? <><CheckCircle className="w-4 h-4 mr-2" /> Enregistré</> : <><Save className="w-4 h-4 mr-2" /> Enregistrer</>}
             </button>
           </div>
         </div>
@@ -219,26 +222,26 @@ export default function AnalysisResult() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white rounded-[32px] border border-slate-50 shadow-sm p-8">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 not-italic">
-                {isCompany ? "Structure Financière & Solvabilité" : "Structure de la Dette"}
+              {isCompany ? "Structure Financière & Solvabilité" : "Structure de la Dette"}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[250px]">
               {resultData.charts?.gauge && <Plot data={resultData.charts.gauge.data} layout={{ ...resultData.charts.gauge.layout, font: plotlyFont, margin: { l: 20, r: 20, t: 10, b: 20 }, autosize: true }} style={{ width: "100%", height: "100%" }} useResizeHandler config={{ displayModeBar: false, responsive: true }} />}
               <div className="flex flex-col justify-center space-y-4">
-                 {/* Ratios spécifiques Corporate */}
-                 {isCompany ? (
-                   <>
+                {/* Ratios spécifiques Corporate */}
+                {isCompany ? (
+                  <>
                     <div className="bg-slate-50 p-4 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ratio Dette / EBE</p>
-                        <p className="text-2xl font-bold text-slate-800">{fins.debt_to_ebitda}x</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ratio Dette / EBE</p>
+                      <p className="text-2xl font-bold text-slate-800">{fins.debt_to_ebitda}x</p>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fonds Propres</p>
-                        <p className="text-2xl font-bold text-slate-800">{(fins.equity || 0).toLocaleString()} €</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fonds Propres</p>
+                      <p className="text-2xl font-bold text-slate-800">{(fins.equity || 0).toLocaleString()} €</p>
                     </div>
-                   </>
-                 ) : (
-                    resultData.charts?.pie && <Plot data={resultData.charts.pie.data} layout={{ ...resultData.charts.pie.layout, font: plotlyFont, margin: { l: 20, r: 20, t: 10, b: 20 }, autosize: true }} style={{ width: "100%", height: "100%" }} useResizeHandler config={{ displayModeBar: false, responsive: true }} />
-                 )}
+                  </>
+                ) : (
+                  resultData.charts?.pie && <Plot data={resultData.charts.pie.data} layout={{ ...resultData.charts.pie.layout, font: plotlyFont, margin: { l: 20, r: 20, t: 10, b: 20 }, autosize: true }} style={{ width: "100%", height: "100%" }} useResizeHandler config={{ displayModeBar: false, responsive: true }} />
+                )}
               </div>
             </div>
           </div>
@@ -250,31 +253,31 @@ export default function AnalysisResult() {
                 data={[{
                   type: "waterfall", measure: ["relative", "relative", "total"],
                   x: isCompany ? ["C.A.", "Charges", "Résultat Net"] : ["Revenus", "Charges", "Reste à vivre"],
-                  y: isCompany 
-                    ? [fins.turnover, -(fins.turnover! - fins.net_profit!), fins.net_profit] 
-                    : [fins.monthly_income, -fins.monthly_expenses, fins.rest_to_live],
-                  text: isCompany 
+                  y: isCompany
+                    ? [fins.turnover ?? 0, -((fins.turnover ?? 0) - (fins.net_profit ?? 0)), fins.net_profit ?? 0]
+                    : [fins.monthly_income ?? 0, -(fins.monthly_expenses ?? 0), fins.rest_to_live ?? 0],
+                  text: isCompany
                     ? [`+${fins.turnover?.toLocaleString()}€`, `-${(fins.turnover! - fins.net_profit!)?.toLocaleString()}€`, `${fins.net_profit?.toLocaleString()}€`]
-                    : [`+${fins.monthly_income}€`, `-${fins.monthly_expenses}€`, `${fins.rest_to_live}€`],
+                    : [`+${fins.monthly_income ?? 0}€`, `-${fins.monthly_expenses ?? 0}€`, `${fins.rest_to_live ?? 0}€`],
                   textposition: "inside", textfont: { family: 'Arial', color: 'white', size: 12, weight: 'bold' },
                   connector: { line: { color: "#F1F5F9" } },
                   decreasing: { marker: { color: "#EF4444" } }, increasing: { marker: { color: "#10B981" } }, totals: { marker: { color: "#3B82F6" } }
-                }]}
-                layout={{ 
-                  autosize: true, margin: { l: 40, r: 20, t: 10, b: 40 }, paper_bgcolor: 'white', 
-                  font: plotlyFont, xaxis: { showgrid: false }, 
-                  yaxis: { showgrid: true, gridcolor: '#F8FAF9' } 
+                } as any]}
+                layout={{
+                  autosize: true, margin: { l: 40, r: 20, t: 10, b: 40 }, paper_bgcolor: 'white',
+                  font: plotlyFont, xaxis: { showgrid: false },
+                  yaxis: { showgrid: true, gridcolor: '#F8FAF9' }
                 }}
                 style={{ width: "100%", height: "100%" }} useResizeHandler config={{ displayModeBar: false, responsive: true }}
               />
             </div>
             <div className="mt-6 p-4 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
-               <span className="text-xs font-semibold text-slate-500 flex items-center gap-3 not-italic">
-                 {isCompany ? <><BarChart3 className="w-6 h-6 text-indigo-500" /> EBITDA / EBE</> : <><PiggyBank className="w-6 h-6 text-emerald-500" /> Épargne IA</>}
-               </span>
-               <span className="text-lg font-semibold text-slate-700 not-italic">
-                 {isCompany ? fins.ebitda?.toLocaleString() : fins.savings_capacity} € {isCompany && <span className="text-[10px] text-slate-300 font-normal">/ an</span>}
-               </span>
+              <span className="text-xs font-semibold text-slate-500 flex items-center gap-3 not-italic">
+                {isCompany ? <><BarChart3 className="w-6 h-6 text-indigo-500" /> EBITDA / EBE</> : <><PiggyBank className="w-6 h-6 text-emerald-500" /> Épargne IA</>}
+              </span>
+              <span className="text-lg font-semibold text-slate-700 not-italic">
+                {isCompany ? fins.ebitda?.toLocaleString() : fins.savings_capacity} € {isCompany && <span className="text-[10px] text-slate-300 font-normal">/ an</span>}
+              </span>
             </div>
           </div>
         </div>
@@ -288,12 +291,12 @@ export default function AnalysisResult() {
 
           <div className="space-y-6">
             <div className="bg-white rounded-[28px] border border-red-50 p-6 shadow-sm">
-               <h3 className="text-[13px] font-bold text-red-400 uppercase mb-4 flex items-center gap-2 not-italic"><AlertOctagon className="w-4 h-4" /> Risques</h3>
-               <ul className="space-y-2">{resultData.risks?.map((r, i) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-50 leading-snug">• {r}</li>)}</ul>
+              <h3 className="text-[13px] font-bold text-red-400 uppercase mb-4 flex items-center gap-2 not-italic"><AlertOctagon className="w-4 h-4" /> Risques</h3>
+              <ul className="space-y-2">{resultData.risks?.map((r, i) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-50 leading-snug">• {r}</li>)}</ul>
             </div>
             <div className="bg-white rounded-[28px] border border-emerald-50 p-6 shadow-sm">
-               <h3 className="text-[13px] font-bold text-emerald-400 uppercase mb-4 flex items-center gap-2 not-italic"><CheckCircle className="w-4 h-4" /> Atouts</h3>
-               <ul className="space-y-2">{resultData.opportunities?.map((o, i) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-50 leading-snug">✓ {o}</li>)}</ul>
+              <h3 className="text-[13px] font-bold text-emerald-400 uppercase mb-4 flex items-center gap-2 not-italic"><CheckCircle className="w-4 h-4" /> Atouts</h3>
+              <ul className="space-y-2">{resultData.opportunities?.map((o, i) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-50 leading-snug">✓ {o}</li>)}</ul>
             </div>
           </div>
         </div>
@@ -320,6 +323,13 @@ export default function AnalysisResult() {
                   </div>
                 </div>
               ))}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] p-4 rounded-[20px] text-sm leading-relaxed not-italic bg-white border border-slate-100 text-slate-500 rounded-tl-none shadow-sm italic">
+                    L'assistant rédige...
+                  </div>
+                </div>
+              )}
               <div ref={chatEndRef} />
             </div>
             <form onSubmit={handleSendMessage} className="p-5 bg-white border-t flex gap-2">

@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, ArrowUpRight, User, Building2, Eye,
   CheckCircle2, XCircle, Clock, AlertTriangle, Loader2, RefreshCcw,
-  Trash2, Filter
-} from 'lucide-react';
+  Trash2} from 'lucide-react';
 
 export default function Applications() {
   const navigate = useNavigate();

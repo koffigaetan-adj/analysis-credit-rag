@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, 
+  PieChart, Pie, Cell, XAxis, YAxis, 
   CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import { 
-  FileText, ArrowRight, Building2, User, Wallet, 
-  CheckCircle2, Plus, RefreshCcw, Activity, Zap, TrendingUp
-} from 'lucide-react';
+  FileText, ArrowRight, Building2, Wallet, 
+  Plus, RefreshCcw, Activity, Zap} from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();

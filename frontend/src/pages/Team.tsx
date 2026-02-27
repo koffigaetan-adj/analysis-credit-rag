@@ -1,6 +1,6 @@
 import { UserPlus, Mail, Shield, User, Trash2, Edit3, Search } from 'lucide-react';
 import { mockTeamMembers } from '../mockData';
-import { getRoleLabel, getStatusBadgeColor } from '../utils';
+import { getRoleLabel } from '../utils';
 
 export default function Team() {
   return (
