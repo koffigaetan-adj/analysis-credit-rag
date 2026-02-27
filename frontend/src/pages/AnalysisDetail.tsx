@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -8,260 +8,194 @@ import {
   TrendingUp,
   TrendingDown,
   Send,
+  Loader2
 } from 'lucide-react';
-import { mockAIAnalysis, mockApplications } from '../mockData';
-import { formatCurrency } from '../utils';
 
 export default function AnalysisDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'summary' | 'financials' | 'chat'>(
-    'summary'
-  );
-  const [chatMessage, setChatMessage] = useState('');
+  const [activeTab, setActiveTab] = useState<'summary' | 'financials' | 'chat'>('summary');
+  const [application, setApplication] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const application = mockApplications.find((app) => app.id === id);
+  // --- CHARGEMENT DES VRAIES DONNÉES DEPUIS L'API ---
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/history/');
+        const data = await response.json();
+        // On trouve le dossier spécifique par son ID
+        const currentApp = data.find((a: any) => a.id === parseInt(id || '0'));
+        setApplication(currentApp);
+      } catch (error) {
+        console.error("Erreur lors du chargement des détails:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [id]);
 
-  if (!application) {
-    return <div>Dossier non trouvé</div>;
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+      </div>
+    );
   }
 
-  const analysis = mockAIAnalysis;
+  if (!application) {
+    return <div className="p-20 text-center text-gray-500 dark:text-gray-400">Dossier non trouvé dans la base de données.</div>;
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500 text-left">
+      {/* HEADER */}
       <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate('/portfolio')}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => navigate('/portfolio')} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {application.clientName}
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">
+            {application.full_name}
           </h1>
-          <p className="text-gray-600">SIREN: {application.siren}</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Type: {application.project_type} • ID: #{application.id}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* COLONNE GAUCHE : DOCUMENT */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-8">
             <div className="flex items-center gap-3 mb-6">
-              <FileText className="w-6 h-6 text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900">
-                Document Source
-              </h2>
+              <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Analyse Documentaire</h2>
             </div>
-            <div className="aspect-[3/4] bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-              <div className="text-center">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 font-medium">
-                  Aperçu du document PDF
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Bilan_financier_2023.pdf
-                </p>
+
+            {/* RÉSUMÉ IA (IA_SUMMARY) */}
+            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 mb-6">
+              <h3 className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Synthèse Décisionnelle</h3>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium italic">
+                "{application.ia_summary || "Aucune synthèse disponible pour ce dossier."}"
+              </p>
+            </div>
+
+            <div className="aspect-video bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-800 shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:20px_20px]"></div>
+              <div className="text-center z-10">
+                <FileText className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+                <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Visualiseur PDF sécurisé</p>
               </div>
             </div>
           </div>
         </div>
 
+        {/* COLONNE DROITE : SCORES & TABS */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Résultats IA</h2>
-              <div
-                className={`px-4 py-2 rounded-lg font-bold text-lg ${
-                  analysis.score >= 70
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : analysis.score >= 50
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-rose-100 text-rose-700'
-                }`}
-              >
-                Score: {analysis.score}/100
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-6">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Score IA</h2>
+              <div className={`px-4 py-2 rounded-xl font-black text-xl shadow-sm ${application.score >= 70 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                application.score >= 40 ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                }`}>
+                {application.score}/100
               </div>
             </div>
 
-            <div className="flex items-center justify-center mb-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">
-                  {analysis.rating}
-                </div>
-                <p className="text-sm text-gray-600">Évaluation globale</p>
-              </div>
+            {/* TABS MENU */}
+            <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
+              {['summary', 'financials', 'chat'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === tab ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+                >
+                  {tab === 'summary' ? 'Analyse' : tab === 'financials' ? 'Données' : 'Assistant'}
+                </button>
+              ))}
             </div>
 
-            <div className="border-t border-gray-200 pt-6">
-              <div className="flex border-b border-gray-200 mb-6">
-                <button
-                  onClick={() => setActiveTab('summary')}
-                  className={`flex-1 py-3 text-sm font-medium ${
-                    activeTab === 'summary'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Synthèse
-                </button>
-                <button
-                  onClick={() => setActiveTab('financials')}
-                  className={`flex-1 py-3 text-sm font-medium ${
-                    activeTab === 'financials'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Finances
-                </button>
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`flex-1 py-3 text-sm font-medium ${
-                    activeTab === 'chat'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Chat
-                </button>
+            {/* TAB CONTENT: RISQUES ET ATOUTS */}
+            {activeTab === 'summary' && (
+              <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Atouts du dossier</h3>
+                  </div>
+                  <ul className="space-y-3">
+                    {application.opportunities?.length > 0 ? application.opportunities.map((opt: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3 text-sm font-bold text-slate-700 dark:text-slate-300 bg-emerald-50/50 dark:bg-emerald-500/10 p-3 rounded-xl border border-emerald-100/50 dark:border-emerald-500/20">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>{opt}</span>
+                      </li>
+                    )) : <p className="text-xs text-slate-400 dark:text-slate-500 italic">Aucun atout listé.</p>}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingDown className="w-4 h-4 text-rose-500" />
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Points de Vigilance</h3>
+                  </div>
+                  <ul className="space-y-3">
+                    {application.risks?.length > 0 ? application.risks.map((risk: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3 text-sm font-bold text-slate-700 dark:text-slate-300 bg-rose-50/50 dark:bg-rose-500/10 p-3 rounded-xl border border-rose-100/50 dark:border-rose-500/20">
+                        <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                        <span>{risk}</span>
+                      </li>
+                    )) : <p className="text-xs text-slate-400 dark:text-slate-500 italic">Aucun risque listé.</p>}
+                  </ul>
+                </div>
               </div>
+            )}
 
-              {activeTab === 'summary' && (
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <TrendingUp className="w-5 h-5 text-emerald-600" />
-                      <h3 className="font-semibold text-gray-900">Points Forts</h3>
-                    </div>
-                    <ul className="space-y-2">
-                      {analysis.strengths.map((strength, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-sm text-gray-700"
-                        >
-                          <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                          <span>{strength}</span>
-                        </li>
-                      ))}
-                    </ul>
+            {activeTab === 'financials' && (
+              <div className="space-y-3 animate-in slide-in-from-bottom-2">
+                {Object.entries(application.financials || {}).map(([key, val]: any, i) => (
+                  <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tight">{key.replace('_', ' ')}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{typeof val === 'number' ? val.toLocaleString() : val}</span>
                   </div>
+                ))}
+              </div>
+            )}
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <TrendingDown className="w-5 h-5 text-rose-600" />
-                      <h3 className="font-semibold text-gray-900">
-                        Points de Vigilance
-                      </h3>
-                    </div>
-                    <ul className="space-y-2">
-                      {analysis.concerns.map((concern, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-sm text-gray-700"
-                        >
-                          <XCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                          <span>{concern}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+            {activeTab === 'chat' && (
+              <div className="space-y-4 animate-in slide-in-from-bottom-2">
+                <div className="h-64 overflow-y-auto space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
+                  <p className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 p-3 rounded-xl shadow-sm border border-blue-50 dark:border-slate-700">
+                    Posez vos questions sur la solvabilité de {application.full_name}.
+                  </p>
                 </div>
-              )}
-
-              {activeTab === 'financials' && (
-                <div className="space-y-3">
-                  {analysis.financials.map((metric, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700">
-                          {metric.label}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            metric.status === 'good'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : metric.status === 'warning'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-rose-100 text-rose-700'
-                          }`}
-                        >
-                          {metric.status === 'good'
-                            ? 'Bon'
-                            : metric.status === 'warning'
-                            ? 'Attention'
-                            : 'Risque'}
-                        </span>
-                      </div>
-                      <div className="text-2xl font-bold text-gray-900">
-                        {metric.value}
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Question..."
+                    className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <button className="p-3 bg-slate-900 dark:bg-blue-600 text-white rounded-xl hover:bg-blue-600 dark:hover:bg-blue-700 transition-all">
+                    <Send className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
-
-              {activeTab === 'chat' && (
-                <div className="space-y-4">
-                  <div className="h-64 overflow-y-auto space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="bg-blue-100 rounded-lg p-3">
-                      <p className="text-sm text-gray-900">
-                        Bonjour ! Je suis votre assistant IA. Posez-moi des
-                        questions sur ce dossier.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={chatMessage}
-                      onChange={(e) => setChatMessage(e.target.value)}
-                      placeholder="Posez une question sur le document..."
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                      <Send className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Détails du Prêt</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Montant demandé</span>
-                <span className="font-semibold text-gray-900">
-                  {formatCurrency(application.amount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Durée</span>
-                <span className="font-semibold text-gray-900">84 mois</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Taux proposé</span>
-                <span className="font-semibold text-gray-900">3.2%</span>
-              </div>
+          {/* ACTIONS FINALES */}
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-6">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 text-center">Décision Finale</h3>
+            <div className="flex flex-col gap-3">
+              <button className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4" /> Approuver le Crédit
+              </button>
+              <button className="w-full py-4 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-200 hover:bg-rose-600 transition-all flex items-center justify-center gap-2">
+                <XCircle className="w-4 h-4" /> Rejeter le Dossier
+              </button>
             </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5" />
-              Valider le dossier
-            </button>
-            <button className="flex-1 px-6 py-3 bg-rose-600 text-white rounded-lg font-medium hover:bg-rose-700 flex items-center justify-center gap-2">
-              <XCircle className="w-5 h-5" />
-              Refuser
-            </button>
           </div>
         </div>
       </div>

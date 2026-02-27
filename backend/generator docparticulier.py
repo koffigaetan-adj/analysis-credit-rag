@@ -39,7 +39,7 @@ def create_pdf(filepath, title, lines):
 base_dir = "dossiers_test"
 os.makedirs(base_dir, exist_ok=True)
 
-print("🚀 Lancement de l'usine à documents avec données dynamiques...")
+print("Lancement de l'usine à documents avec données dynamiques...")
 
 for client in clients:
     nom = client["nom"]

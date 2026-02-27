@@ -3,12 +3,12 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Send, Bot, Download,
   XCircle, FileText, ShieldCheck,
-  AlertOctagon, MessageCircle, X, Save, PiggyBank, LineChart, Sparkles,
-  BarChart3
+  AlertOctagon, X, Save, LineChart, Sparkles,
+  Trash2
 } from 'lucide-react';
 import Plot from 'react-plotly.js';
 
-// --- TYPES MIS À JOUR POUR LE MODE ENTREPRISE ---
+// --- TYPES ---
 interface ClientInfo {
   fullName: string;
   amount: string | number;
@@ -19,13 +19,11 @@ interface ClientInfo {
 }
 
 interface Financials {
-  // Particulier
   monthly_income?: number;
   monthly_expenses?: number;
   debt_ratio?: number;
   rest_to_live?: number;
   savings_capacity?: number;
-  // Entreprise
   turnover?: number;
   net_profit?: number;
   ebitda?: number;
@@ -43,7 +41,7 @@ interface ResultData {
   risks?: string[];
   opportunities?: string[];
   summary?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ia_summary?: string;
   charts?: { gauge: any; pie: any; };
 }
 
@@ -78,7 +76,7 @@ export default function AnalysisResult() {
       setMessages([{
         role: 'assistant',
         content: isComp
-          ? `Analyse financière de l'entité **${state.clientInfo.fullName}** terminée. Je peux vous éclairer sur la solvabilité de la structure.`
+          ? `Analyse de **${state.clientInfo.fullName}** terminée. Je peux vous éclairer sur la solvabilité de la structure.`
           : `Analyse de **${state.clientInfo.fullName}** terminée. Je suis à votre écoute pour détailler le profil de l'emprunteur.`
       }]);
     }
@@ -87,10 +85,10 @@ export default function AnalysisResult() {
   if (!state || !state.clientInfo || !state.resultData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="bg-white p-8 rounded-[32px] shadow-xl text-center border border-slate-100">
+        <div className="bg-white p-8 rounded-[32px] shadow-xl text-center border border-slate-100 font-sans">
           <AlertOctagon className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-slate-800">Données manquantes</h2>
-          <Link to="/new" className="text-blue-600 font-medium flex items-center justify-center gap-2 hover:underline">
+          <Link to="/new" className="text-blue-600 font-medium flex items-center justify-center gap-2 hover:underline mt-4">
             <ArrowLeft className="w-4 h-4" /> Retour au formulaire
           </Link>
         </div>
@@ -107,6 +105,41 @@ export default function AnalysisResult() {
   const reliability = resultData.payment_reliability || "Moyen";
   const trend = resultData.account_trend || "Stable";
 
+  const plotlyFont = { family: 'Inter, sans-serif', size: 12, color: '#64748b' };
+
+  // --- LOGIQUE DE RECONSTRUCTION DES GRAPHIQUES ---
+  const getGaugeConfig = () => {
+    const val = isCompany ? (fins.debt_to_ebitda || 0) : (fins.debt_ratio || 0);
+    const r_max = isCompany ? 8 : 100;
+    return {
+      data: [{
+        type: "indicator",
+        mode: "gauge+number",
+        value: val,
+        number: { suffix: isCompany ? "x" : "%", font: { size: 24, color: '#1e293b' } },
+        gauge: {
+          axis: { range: [0, r_max], tickwidth: 1 },
+          bar: { color: "#1e293b" },
+          steps: [
+            { range: [0, r_max * 0.33], color: "#10B981" },
+            { range: [r_max * 0.33, r_max * 0.66], color: "#F59E0B" },
+            { range: [r_max * 0.66, r_max], color: "#EF4444" }
+          ]
+        }
+      }],
+      layout: { autosize: true, margin: { l: 30, r: 30, t: 30, b: 30 }, paper_bgcolor: 'rgba(0,0,0,0)' }
+    };
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Supprimer définitivement cette analyse ?")) {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/applications/${resultData.id}`, { method: 'DELETE' });
+        if (response.ok) navigate('/history');
+      } catch (error) { console.error(error); alert("Erreur réseau"); }
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
@@ -118,19 +151,11 @@ export default function AnalysisResult() {
       const response = await fetch('http://127.0.0.1:8000/chat/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMsg.content,
-          client_type: clientType,
-          context: JSON.stringify({ analyse: resultData, client: clientInfo })
-        }),
+        body: JSON.stringify({ message: userMsg.content, client_type: clientType, context: JSON.stringify({ analyse: resultData, client: clientInfo }) }),
       });
       const data = await response.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Service indisponible." }]);
-    } finally {
-      setIsTyping(false);
-    }
+      setMessages(prev => [...prev, { role: 'assistant', content: data.response || "Erreur serveur." }]);
+    } catch { setMessages(prev => [...prev, { role: 'assistant', content: "Erreur réseau." }]); } finally { setIsTyping(false); }
   };
 
   const getDecisionStyle = (dec: string) => {
@@ -140,201 +165,168 @@ export default function AnalysisResult() {
   };
 
   const decisionStyle = getDecisionStyle(decision);
-  const plotlyFont = { family: 'Arial, sans-serif', size: 12, color: '#334155' };
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 animate-fade-in relative font-sans text-left">
+    <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 animate-fade-in text-left font-sans">
       <div id="section-to-print" className="space-y-10">
 
-        {/* TOP BAR */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-1">
-            <button
-              onClick={() => isHistoryMode ? navigate('/history') : navigate('/new')}
-              className="text-slate-400 hover:text-blue-500 flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-4 transition-all print:hidden"
-            >
+            <button onClick={() => navigate(isHistoryMode ? '/history' : '/new')} className="text-slate-400 hover:text-blue-600 flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-4 transition-all">
               <ArrowLeft className="w-3.5 h-3.5" /> {isHistoryMode ? 'Historique' : 'Retour'}
             </button>
-            <h1 className="text-3xl font-light text-slate-800 tracking-tight not-italic">
+            <h1 className="text-3xl font-light text-slate-800 tracking-tight">
               Synthèse <span className="font-semibold text-slate-900">{isCompany ? 'Entreprise' : 'Client'}</span>
             </h1>
-            <p className="text-slate-400 text-sm font-medium mt-2 not-italic">
-              {isCompany ? 'Raison Sociale' : 'Client'} : <span className="text-slate-600 font-semibold">{clientInfo.fullName}</span>
-            </p>
+            <p className="text-slate-500 font-medium">{clientInfo.fullName}</p>
           </div>
-
           <div className="flex items-center gap-3 print:hidden">
-            <button onClick={() => window.print()} className="px-5 py-2.5 bg-white border border-slate-100 rounded-2xl text-slate-500 hover:bg-slate-50 shadow-sm transition-all">
+            <button onClick={() => window.print()} className="p-2.5 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:bg-slate-50 shadow-sm transition-all">
               <Download className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setIsSaved(true)}
-              className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center
-                  ${isSaved ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-slate-900 text-white hover:bg-blue-600'}`}
-            >
-              {isSaved ? <><CheckCircle className="w-4 h-4 mr-2" /> Enregistré</> : <><Save className="w-4 h-4 mr-2" /> Enregistrer</>}
-            </button>
+            {isHistoryMode ? (
+              <button onClick={handleDelete} className="px-6 py-2.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl text-sm font-bold hover:bg-rose-600 hover:text-white transition-all flex items-center gap-2">
+                <Trash2 className="w-4 h-4" /> Supprimer
+              </button>
+            ) : (
+              <button onClick={() => setIsSaved(true)} className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center ${isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-blue-600'}`}>
+                {isSaved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} {isSaved ? 'Enregistré' : 'Enregistrer'}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* KPIs - ADAPTATION DYNAMIQUE */}
+        {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className={`rounded-[28px] p-6 border transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 ${decisionStyle.bg} ${decisionStyle.border}`}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 not-italic">Décision IA</p>
+          <div className={`rounded-[28px] p-6 border shadow-sm ${decisionStyle.bg} ${decisionStyle.border}`}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">Décision IA</p>
+            <div className="flex items-center gap-3">{decisionStyle.icon}<h2 className={`text-2xl font-bold ${decisionStyle.text}`}>{decision}</h2></div>
+          </div>
+          <div className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-sm group">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">Score Solvabilité</p>
             <div className="flex items-center gap-3">
-              {decisionStyle.icon}
-              <h2 className={`text-2xl font-bold not-italic ${decisionStyle.text}`}>{decision}</h2>
+              <div className="p-2 bg-blue-50 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all"><Sparkles className="w-6 h-6 text-blue-600 group-hover:text-white" /></div>
+              <h3 className="text-3xl font-bold text-slate-800">{resultData.score}<span className="text-slate-300 text-sm ml-1">/100</span></h3>
             </div>
           </div>
-
-          <div className="bg-white rounded-[28px] p-6 border border-slate-100 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 group">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 not-italic">Indice de Solvabilité</p>
+          <div className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-sm group">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">Fiabilité</p>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                <Sparkles className="w-6 h-6 text-blue-600 group-hover:text-white" />
-              </div>
-              <h3 className="text-3xl font-bold text-slate-800 tracking-tight not-italic">{resultData.score}<span className="text-slate-300 text-sm ml-1 font-medium">/100</span></h3>
+              <div className="p-2 bg-emerald-50 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all"><ShieldCheck className="w-6 h-6 text-emerald-600 group-hover:text-white" /></div>
+              <h3 className="text-xl font-bold text-slate-700">{reliability}</h3>
             </div>
           </div>
-
-          <div className="bg-white rounded-[28px] p-6 border border-slate-100 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 group">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 not-italic">Fiabilité Paiements</p>
+          <div className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-sm group">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">Tendance</p>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-50 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
-                <ShieldCheck className="w-6 h-6 text-emerald-600 group-hover:text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-700 not-italic">{reliability}</h3>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[28px] p-6 border border-slate-100 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 group">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 not-italic">Tendance Cash-Flow</p>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-50 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                <LineChart className={`w-6 h-6 group-hover:text-white ${trend === 'En hausse' ? 'text-indigo-600' : 'text-slate-400'}`} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-700 not-italic">{trend}</h3>
+              <div className="p-2 bg-indigo-50 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all"><LineChart className="w-6 h-6 text-indigo-600 group-hover:text-white" /></div>
+              <h3 className="text-xl font-bold text-slate-700">{trend}</h3>
             </div>
           </div>
         </div>
 
-        {/* GRAPHIQUES & RATIOS PRO */}
+        {/* GRAPHIQUES RECONSTRUITS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-[32px] border border-slate-50 shadow-sm p-8">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 not-italic">
-              {isCompany ? "Structure Financière & Solvabilité" : "Structure de la Dette"}
-            </h3>
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Structure Financière</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[250px]">
-              {resultData.charts?.gauge && <Plot data={resultData.charts.gauge.data} layout={{ ...resultData.charts.gauge.layout, font: plotlyFont, margin: { l: 20, r: 20, t: 10, b: 20 }, autosize: true }} style={{ width: "100%", height: "100%" }} useResizeHandler config={{ displayModeBar: false, responsive: true }} />}
+              <Plot
+                data={getGaugeConfig().data as any}
+                layout={{ ...getGaugeConfig().layout, font: plotlyFont } as any}
+                style={{ width: "100%", height: "100%" }}
+                useResizeHandler
+                config={{ displayModeBar: false }}
+              />
               <div className="flex flex-col justify-center space-y-4">
-                {/* Ratios spécifiques Corporate */}
-                {isCompany ? (
-                  <>
-                    <div className="bg-slate-50 p-4 rounded-2xl">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ratio Dette / EBE</p>
-                      <p className="text-2xl font-bold text-slate-800">{fins.debt_to_ebitda}x</p>
-                    </div>
-                    <div className="bg-slate-50 p-4 rounded-2xl">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fonds Propres</p>
-                      <p className="text-2xl font-bold text-slate-800">{(fins.equity || 0).toLocaleString()} €</p>
-                    </div>
-                  </>
-                ) : (
-                  resultData.charts?.pie && <Plot data={resultData.charts.pie.data} layout={{ ...resultData.charts.pie.layout, font: plotlyFont, margin: { l: 20, r: 20, t: 10, b: 20 }, autosize: true }} style={{ width: "100%", height: "100%" }} useResizeHandler config={{ displayModeBar: false, responsive: true }} />
-                )}
+                <div className="bg-slate-50 p-4 rounded-2xl">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{isCompany ? "Dette / EBE" : "Ratio Dette"}</p>
+                  <p className="text-2xl font-bold text-slate-800">{isCompany ? `${fins.debt_to_ebitda || 0}x` : `${fins.debt_ratio || 0}%`}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{isCompany ? "Capitaux Propres" : "Épargne estimée"}</p>
+                  <p className="text-2xl font-bold text-slate-800">{((isCompany ? fins.equity : fins.savings_capacity) || 0).toLocaleString()} €</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-[32px] border border-slate-50 shadow-sm p-8 flex flex-col">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 not-italic">Flux & Performance</h3>
-            <div className="flex-1 w-full h-[230px]">
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Analyse des Flux</h3>
+            <div className="h-[250px]">
               <Plot
                 data={[{
-                  type: "waterfall", measure: ["relative", "relative", "total"],
-                  x: isCompany ? ["C.A.", "Charges", "Résultat Net"] : ["Revenus", "Charges", "Reste à vivre"],
+                  type: "waterfall",
+                  measure: ["relative", "relative", "total"],
+                  x: isCompany ? ["C.A.", "Charges", "R. Net"] : ["Revenus", "Charges", "Reste à vivre"],
                   y: isCompany
-                    ? [fins.turnover ?? 0, -((fins.turnover ?? 0) - (fins.net_profit ?? 0)), fins.net_profit ?? 0]
-                    : [fins.monthly_income ?? 0, -(fins.monthly_expenses ?? 0), fins.rest_to_live ?? 0],
-                  text: isCompany
-                    ? [`+${fins.turnover?.toLocaleString()}€`, `-${(fins.turnover! - fins.net_profit!)?.toLocaleString()}€`, `${fins.net_profit?.toLocaleString()}€`]
-                    : [`+${fins.monthly_income ?? 0}€`, `-${fins.monthly_expenses ?? 0}€`, `${fins.rest_to_live ?? 0}€`],
-                  textposition: "inside", textfont: { family: 'Arial', color: 'white', size: 12, weight: 'bold' },
-                  connector: { line: { color: "#F1F5F9" } },
-                  decreasing: { marker: { color: "#EF4444" } }, increasing: { marker: { color: "#10B981" } }, totals: { marker: { color: "#3B82F6" } }
+                    ? [fins.turnover || 0, -((fins.turnover || 0) - (fins.net_profit || 0)), fins.net_profit || 0]
+                    : [fins.monthly_income || 0, -(fins.monthly_expenses || 0), fins.rest_to_live || 0],
+                  connector: { line: { color: "#e2e8f0" } },
+                  decreasing: { marker: { color: "#EF4444" } },
+                  increasing: { marker: { color: "#10B981" } },
+                  totals: { marker: { color: "#3B82F6" } }
                 } as any]}
-                layout={{
-                  autosize: true, margin: { l: 40, r: 20, t: 10, b: 40 }, paper_bgcolor: 'white',
-                  font: plotlyFont, xaxis: { showgrid: false },
-                  yaxis: { showgrid: true, gridcolor: '#F8FAF9' }
-                }}
-                style={{ width: "100%", height: "100%" }} useResizeHandler config={{ displayModeBar: false, responsive: true }}
+                layout={{ autosize: true, margin: { l: 40, r: 20, t: 10, b: 40 }, paper_bgcolor: 'white', font: plotlyFont, xaxis: { showgrid: false }, yaxis: { showgrid: true, gridcolor: '#f1f5f9' } }}
+                style={{ width: "100%", height: "100%" }}
+                useResizeHandler
+                config={{ displayModeBar: false }}
               />
-            </div>
-            <div className="mt-6 p-4 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
-              <span className="text-xs font-semibold text-slate-500 flex items-center gap-3 not-italic">
-                {isCompany ? <><BarChart3 className="w-6 h-6 text-indigo-500" /> EBITDA / EBE</> : <><PiggyBank className="w-6 h-6 text-emerald-500" /> Épargne IA</>}
-              </span>
-              <span className="text-lg font-semibold text-slate-700 not-italic">
-                {isCompany ? fins.ebitda?.toLocaleString() : fins.savings_capacity} € {isCompany && <span className="text-[10px] text-slate-300 font-normal">/ an</span>}
-              </span>
             </div>
           </div>
         </div>
 
-        {/* TEXTE SYNTHESE */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20 text-slate-800">
-          <div className="lg:col-span-2 bg-white rounded-[32px] border border-slate-50 shadow-sm p-10">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2 not-italic"><FileText className="w-5 h-5 text-blue-400" /> Note d'Audit Analyste</h3>
-            <div className="text-sm text-slate-600 leading-relaxed font-normal not-italic whitespace-pre-line">{resultData.summary}</div>
+        {/* SYNTHÈSE ET RISQUES */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 bg-white rounded-[32px] border border-slate-100 shadow-sm p-10">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-500" /> Note d'Audit
+            </h3>
+            <p className="text-slate-600 leading-relaxed whitespace-pre-line text-sm italic">
+              {resultData.ia_summary || resultData.summary || "Aucune note disponible."}
+            </p>
           </div>
-
           <div className="space-y-6">
             <div className="bg-white rounded-[28px] border border-red-50 p-6 shadow-sm">
-              <h3 className="text-[13px] font-bold text-red-400 uppercase mb-4 flex items-center gap-2 not-italic"><AlertOctagon className="w-4 h-4" /> Risques</h3>
-              <ul className="space-y-2">{resultData.risks?.map((r, i) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-50 leading-snug">• {r}</li>)}</ul>
+              <h3 className="text-xs font-bold text-red-500 uppercase mb-4 flex items-center gap-2"><AlertOctagon className="w-4 h-4" /> Risques</h3>
+              <ul className="space-y-2">
+                {(resultData.risks || []).map((r: any, i: number) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">• {r}</li>)}
+              </ul>
             </div>
             <div className="bg-white rounded-[28px] border border-emerald-50 p-6 shadow-sm">
-              <h3 className="text-[13px] font-bold text-emerald-400 uppercase mb-4 flex items-center gap-2 not-italic"><CheckCircle className="w-4 h-4" /> Atouts</h3>
-              <ul className="space-y-2">{resultData.opportunities?.map((o, i) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-50 leading-snug">✓ {o}</li>)}</ul>
+              <h3 className="text-xs font-bold text-emerald-500 uppercase mb-4 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Atouts</h3>
+              <ul className="space-y-2">
+                {(resultData.opportunities || []).map((o: any, i: number) => <li key={i} className="text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">✓ {o}</li>)}
+              </ul>
             </div>
           </div>
         </div>
       </div>
 
       {/* CHATBOT */}
-      <div className="fixed bottom-10 right-10 z-50 print:hidden flex flex-col items-end">
-        {!isChatOpen && (
-          <button onClick={() => setIsChatOpen(true)} className="w-16 h-16 rounded-[24px] bg-slate-900 text-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 group">
-            <MessageCircle className="w-7 h-7 group-hover:rotate-12 transition-transform" />
+      <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end print:hidden">
+        {!isChatOpen ? (
+          <button onClick={() => setIsChatOpen(true)} className="w-16 h-16 rounded-3xl bg-slate-900 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all">
+            <Bot className="w-8 h-8" />
           </button>
-        )}
-        {isChatOpen && (
-          <div className="w-[400px] h-[600px] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden mb-4 animate-scale-in">
-            <div className="px-6 py-5 bg-slate-900 flex items-center justify-between text-white">
-              <div className="flex items-center gap-3"><Bot className="w-5 h-5 text-blue-400" /><h3 className="text-sm font-medium not-italic">Assistant Analyste</h3></div>
-              <button onClick={() => setIsChatOpen(false)}><X className="w-5 h-5" /></button>
+        ) : (
+          <div className="w-[400px] h-[550px] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-scale-in origin-bottom-right">
+            <div className="px-6 py-4 bg-slate-900 flex items-center justify-between text-white">
+              <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest"><Sparkles className="w-4 h-4 text-blue-400" /> Assistant Fluxia</div>
+              <button onClick={() => setIsChatOpen(false)}><X className="w-5 h-5 opacity-50 hover:opacity-100" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/50 text-slate-700">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-[20px] text-sm leading-relaxed not-italic ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none shadow-md' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm'}`}>
-                    {msg.content.split(/(\*\*.*?\*\*)/g).map((part, index) => part.startsWith('**') && part.endsWith('**') ? <strong key={index} className="font-bold">{part.replace(/\*\*/g, '')}</strong> : part)}
-                  </div>
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-xs leading-relaxed ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 shadow-sm border border-slate-100'}`}>{msg.content}</div>
                 </div>
               ))}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] p-4 rounded-[20px] text-sm leading-relaxed not-italic bg-white border border-slate-100 text-slate-500 rounded-tl-none shadow-sm italic">
-                    L'assistant rédige...
-                  </div>
-                </div>
-              )}
+              {isTyping && <div className="text-[10px] text-slate-400 italic">L'IA analyse votre question...</div>}
               <div ref={chatEndRef} />
             </div>
-            <form onSubmit={handleSendMessage} className="p-5 bg-white border-t flex gap-2">
-              <input value={inputMessage} onChange={e => setInputMessage(e.target.value)} placeholder="Posez votre question..." className="flex-1 px-5 py-3 bg-slate-50 border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-100 transition-all not-italic" />
-              <button type="submit" className="p-3 bg-blue-600 rounded-2xl text-white hover:bg-blue-700 shadow-lg"><Send className="w-4 h-4" /></button>
+            <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-100 flex gap-2">
+              <input value={inputMessage} onChange={e => setInputMessage(e.target.value)} placeholder="Posez une question..." className="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20" />
+              <button type="submit" disabled={isTyping} className="p-2 bg-blue-600 rounded-xl text-white hover:bg-blue-700 transition-all"><Send className="w-4 h-4" /></button>
             </form>
           </div>
         )}

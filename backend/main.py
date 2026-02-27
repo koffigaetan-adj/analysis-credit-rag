@@ -29,7 +29,7 @@ current_key_index = 0
 
 def configure_genai():
     global current_key_index
-    key = API_KEYS[current_key_index]
+    key = API_KEYS[current_key_index].strip()
     genai.configure(api_key=key)
     print(f"✅ Gemini configuré avec la clé n°{current_key_index + 1}")
 
@@ -41,8 +41,9 @@ generation_config = {
     "response_mime_type": "application/json",
 }
 
+# Utilisation du modèle 2.0 Flash (la dernière version stable/exp)
 model = genai.GenerativeModel(
-    model_name="gemini-2.5-flash", # Version mise à jour
+    model_name="gemini-2.0-flash", 
     generation_config=generation_config,
 )
 
@@ -57,11 +58,11 @@ class ChatRequest(BaseModel):
 def extract_text_from_pdf(file_content: bytes) -> str:
     try:
         reader = PdfReader(io.BytesIO(file_content))
-        text = ""
+        text_parts = []
         for page in reader.pages:
             extracted = page.extract_text()
-            if extracted: text += extracted + "\n"
-        return text
+            if extracted: text_parts.append(str(extracted))
+        return "\n".join(text_parts) + "\n" if text_parts else ""
     except: return ""
 
 def build_hybrid_prompt(client_info: dict, extracted_text: str) -> str:
@@ -70,64 +71,27 @@ def build_hybrid_prompt(client_info: dict, extracted_text: str) -> str:
     amount = client_info.get('amount')
     name = client_info.get('fullName')
 
-    if is_company:
-        # PROMPT CORPORATE (ENTREPRISE)
-        return f"""
-        RÔLE : Expert en Analyse Financière Corporate & Audit de Risque.
-        DOSSIER PRO : {name}
-        DEMANDE : {amount}€ (Type: {credit_type})
-        
-        DATA : {extracted_text[:30000]}
+    return f"""
+    RÔLE : Expert en Analyse de Risque Financier.
+    DOSSIER : {name} | TYPE : {client_info.get('clientType')} | MONTANT : {amount}€
+    
+    DATA : {extracted_text[0:30000]}
 
-        MISSION : Analyse la liasse fiscale (Bilan/Compte de résultat) et les relevés pro.
-        Extraire les indicateurs de performance et de solvabilité.
+    MISSION : Analyse les documents et génère un rapport JSON complet.
+    REMPLIS BIEN TOUS LES CHAMPS : 'risks', 'opportunities' et 'summary'.
 
-        FORMAT JSON OBLIGATOIRE :
-        {{
-            "score": number, (0-100)
-            "decision": "Favorable" | "Défavorable" | "Vigilance",
-            "payment_reliability": "Excellent" | "Bon" | "Moyen" | "Risqué",
-            "account_trend": "En hausse" | "Stable" | "En baisse",
-            "financials": {{
-                "turnover": number,         // Chiffre d'Affaires
-                "net_profit": number,       // Résultat Net
-                "ebitda": number,           // EBE
-                "equity": number,           // Capitaux Propres
-                "debt_to_ebitda": number    // Ratio d'endettement (ex: 2.5)
-            }},
-            "risks": [string],
-            "opportunities": [string],
-            "summary": "Analyse pro axée sur la rentabilité et la structure financière."
-        }}
-        """
-    else:
-        # PROMPT PARTICULIER
-        return f"""
-        RÔLE : Analyste Crédit Particulier.
-        DOSSIER : {name} - Montant: {amount}€
-        
-        DATA : {extracted_text[:30000]}
-
-        MISSION : Calculer le taux d'endettement et le reste à vivre. Repérer les incidents.
-
-        FORMAT JSON OBLIGATOIRE :
-        {{
-            "score": number,
-            "decision": "Favorable" | "Défavorable" | "Vigilance",
-            "payment_reliability": "Excellent" | "Bon" | "Moyen" | "Risqué",
-            "account_trend": "En hausse" | "Stable" | "En baisse",
-            "financials": {{
-                "monthly_income": number,
-                "monthly_expenses": number,
-                "debt_ratio": number,
-                "rest_to_live": number,
-                "savings_capacity": number
-            }},
-            "risks": [string],
-            "opportunities": [string],
-            "summary": "Analyse de solvabilité basée sur les revenus et charges."
-        }}
-        """
+    FORMAT JSON OBLIGATOIRE :
+    {{
+        "score": number,
+        "decision": "Favorable" | "Défavorable" | "Vigilance",
+        "payment_reliability": "Excellent" | "Bon" | "Moyen" | "Risqué",
+        "account_trend": "En hausse" | "Stable" | "En baisse",
+        "financials": {{ ... }},
+        "risks": ["string"],
+        "opportunities": ["string"],
+        "summary": "Synthèse détaillée de l'analyse ici"
+    }}
+    """
 
 # --- 4. ROUTES API ---
 
@@ -143,16 +107,18 @@ async def analyze_dashboard(
     db: Session = Depends(database.get_db)
 ):
     global current_key_index
-    full_extracted_text = ""
+    full_extracted_text_parts = []
     gemini_vision_files = [] 
     
     for file in files:
         file_bytes = await file.read()
-        mime_type = "application/pdf" if file.filename.lower().endswith('.pdf') else "image/jpeg"
+        mime_type = "application/pdf" if file.filename and file.filename.lower().endswith('.pdf') else "image/jpeg"
         if mime_type == "application/pdf":
             text = extract_text_from_pdf(file_bytes)
-            full_extracted_text += f"\n-- {file.filename} --\n{text}\n"
+            full_extracted_text_parts.append(f"\n-- {file.filename} --\n{text}\n")
         gemini_vision_files.append({"mime_type": mime_type, "data": file_bytes})
+
+    full_extracted_text = "".join(full_extracted_text_parts)
 
     prompt = build_hybrid_prompt({
         "fullName": fullName, 
@@ -165,50 +131,20 @@ async def analyze_dashboard(
     while attempts < len(API_KEYS):
         try:
             response = model.generate_content([prompt] + gemini_vision_files)
-            result_json = json.loads(response.text)
+            json_text = response.text.replace('```json', '').replace('```', '').strip()
+            result_json = json.loads(json_text)
+            
             fin = result_json.get("financials", {})
 
-            # --- GÉNÉRATION GRAPHIQUE DYNAMIQUE ---
-            if clientType == 'entreprise':
-                # Jauge Corporate : Ratio Endettement (Debt/EBITDA)
-                debt_val = fin.get("debt_to_ebitda", 0)
-                fig_gauge = go.Figure(go.Indicator(
-                    mode="gauge+number", value=debt_val,
-                    number={'suffix': "x", 'font': {'size': 40}},
-                    title={'text': "Ratio Dette / EBE", 'font': {'size': 18}},
-                    gauge={
-                        'axis': {'range': [0, 8]},
-                        'steps': [
-                            {'range': [0, 3], 'color': "#10B981"},
-                            {'range': [3, 5], 'color': "#F59E0B"},
-                            {'range': [5, 8], 'color': "#EF4444"}
-                        ],
-                        'bar': {'color': "#1e293b"}
-                    }
-                ))
-            else:
-                # Jauge Particulier : Taux d'endettement (%)
-                fig_gauge = go.Figure(go.Indicator(
-                    mode="gauge+number", value=fin.get("debt_ratio", 0),
-                    number={'suffix': "%"},
-                    title={'text': "Taux d'endettement", 'font': {'size': 18}},
-                    gauge={
-                        'axis': {'range': [0, 100]},
-                        'steps': [
-                            {'range': [0, 33], 'color': "#10B981"},
-                            {'range': [33, 100], 'color': "#EF4444"}
-                        ]
-                    }
-                ))
-            
-            fig_gauge.update_layout(height=300, margin=dict(l=30, r=30, t=50, b=30), paper_bgcolor="white")
-
             # --- SAUVEGARDE DB ---
+            # Nettoyage du montant (on enlève les espaces pour le float)
+            clean_amount = float(str(amount).replace(" ", "").replace(",", "."))
+
             new_app = database.Application(
                 full_name=fullName,
                 client_type=clientType,
                 project_type=projectType,
-                amount=float(amount),
+                amount=clean_amount,
                 email=email,
                 phone=phone,
                 score=result_json.get("score", 0),
@@ -223,11 +159,10 @@ async def analyze_dashboard(
             db.commit()
             db.refresh(new_app)
 
+            # Ajout des données pour le Frontend immédiat
             result_json["id"] = new_app.id
-            result_json["charts"] = {
-                "gauge": json.loads(fig_gauge.to_json()),
-                "pie": None 
-            }
+            result_json["ia_summary"] = result_json.get("summary")
+            
             return result_json
 
         except Exception as e:
@@ -236,14 +171,24 @@ async def analyze_dashboard(
                 configure_genai()
                 attempts += 1
             else:
-                return {"score": 0, "summary": f"Erreur Analyse : {str(e)}", "decision": "Défavorable"}
+                return {"score": 0, "summary": f"Erreur : {str(e)}", "decision": "Erreur"}
 
 @app.get("/history/")
 def get_history(db: Session = Depends(database.get_db)):
     apps = db.query(database.Application).order_by(database.Application.created_at.desc()).all()
     results = []
     for a in apps:
-        fin = a.financial_data if isinstance(a.financial_data, dict) else json.loads(a.financial_data or "{}")
+        # On force la conversion du JSON stocké en String vers un objet Python
+        def safe_json(data):
+            if isinstance(data, (list, dict)): return data
+            try: return json.loads(data or "{}")
+            except: return {}
+
+        def safe_list(data):
+            if isinstance(data, list): return data
+            try: return json.loads(data or "[]")
+            except: return []
+
         results.append({
             "id": a.id,
             "full_name": a.full_name,
@@ -252,10 +197,24 @@ def get_history(db: Session = Depends(database.get_db)):
             "amount": a.amount,
             "score": a.score,
             "decision": a.decision,
-            "financials": fin,
+            "ia_summary": a.ia_summary,   # Pour le backend/db
+            "summary": a.ia_summary,      # Pour le composant React (important !)
+            "risks": safe_list(a.risks),
+            "opportunities": safe_list(a.opportunities),
+            "financials": safe_json(a.financial_data),
             "created_at": a.created_at
         })
     return results
+
+@app.post("/chat/")
+async def chat_endpoint(request: ChatRequest):
+    try:
+        prompt = f"Contexte : {request.context}\nQuestion : {request.message}\nRéponds de manière pro et courte."
+        chat_model = genai.GenerativeModel("gemini-2.0-flash")
+        response = chat_model.generate_content(prompt)
+        return {"response": response.text}
+    except Exception as e:
+        return {"response": f"Erreur Chat: {str(e)}"}
 
 @app.delete("/applications/{app_id}")
 def delete_application(app_id: int, db: Session = Depends(database.get_db)):

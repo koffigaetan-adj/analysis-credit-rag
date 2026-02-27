@@ -41,7 +41,7 @@ def create_pdf(filepath, title, lines):
 base_dir = "Dossiers_Prets_Pro"
 os.makedirs(base_dir, exist_ok=True)
 
-print("🚀 Generation des documents PRO selon l'interface...")
+print("Generation des documents PRO selon l'interface...")
 
 for ent in entreprises:
     nom_ent = ent["nom"]
@@ -117,4 +117,4 @@ for ent in entreprises:
         f"BIC : BNPAFR"
     ])
 
-print("✅ Termine ! Les 10 dossiers sont dans 'Dossiers_Prets_Pro'.")
+print("Termine ! Les 10 dossiers sont dans 'Dossiers_Prets_Pro'.")
