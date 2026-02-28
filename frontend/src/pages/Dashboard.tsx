@@ -6,14 +6,17 @@ import {
 } from 'recharts';
 import { 
   FileText, ArrowRight, Building2, Wallet, 
-  Plus, RefreshCcw, Activity, Zap} from 'lucide-react';
+  Plus, RefreshCcw, Activity, Zap
+} from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- RÉCUPÉRATION DES DONNÉES RÉELLES ---
+  // Détection du mode sombre pour les graphiques
+  const isDark = document.documentElement.classList.contains('dark');
+
   const fetchStats = async () => {
     setIsLoading(true);
     try {
@@ -31,7 +34,7 @@ export default function Dashboard() {
     fetchStats();
   }, []);
 
-  // --- CALCULS DES INDICATEURS ---
+  // --- CALCULS ---
   const totalDossiers = data.length;
   const totalAmount = data.reduce((sum, app) => sum + Number(app.amount), 0);
   const prosCount = data.filter(app => app.client_type === 'entreprise').length;
@@ -40,8 +43,8 @@ export default function Dashboard() {
   const acceptanceRate = totalDossiers > 0 ? (favorableCount / totalDossiers) * 100 : 0;
 
   const pieData = [
-    { name: 'Particuliers', value: partCount, color: '#60A5FA' },
-    { name: 'Entreprises', value: prosCount, color: '#818CF8' },
+    { name: 'Particuliers', value: partCount, color: isDark ? '#3b82f6' : '#60A5FA' },
+    { name: 'Entreprises', value: prosCount, color: isDark ? '#6366f1' : '#818CF8' },
   ];
 
   const barData = [
@@ -54,15 +57,15 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-20 px-6 mt-10 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-10 pb-20 px-6 mt-10 animate-fade-in text-left">
       
       {/* HEADER ACTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-light text-slate-800 tracking-tight">
-            Vue <span className="font-semibold text-slate-900">d'ensemble</span>
+          <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight">
+            Vue <span className="font-semibold text-slate-900 dark:text-white">d'ensemble</span>
           </h1>
-          <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
             <Activity className="w-4 h-4 text-blue-500" /> 
             Analyse en temps réel du portefeuille crédit
           </p>
@@ -70,13 +73,13 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           <button 
             onClick={fetchStats}
-            className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all shadow-sm active:scale-95"
+            className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
           >
             <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <Link 
             to="/new" 
-            className="flex items-center gap-2 bg-slate-900 hover:bg-blue-600 text-white px-6 py-3 rounded-2xl font-medium shadow-lg shadow-slate-200 transition-all hover:-translate-y-1 active:translate-y-0"
+            className="flex items-center gap-2 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-medium shadow-lg transition-all"
           >
             <Plus className="w-5 h-5" />
             Nouveau Dossier
@@ -84,77 +87,43 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* --- BLOC KPI AVEC EFFET D'OMBRE ET HOVER --- */}
+      {/* --- BLOCS KPI --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        {/* KPI: Total Dossiers */}
-        <div className="bg-white rounded-[24px] p-6 border border-slate-50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
-              <FileText className="w-6 h-6" />
+        {[
+          { label: 'Audits', val: totalDossiers, sub: 'Dossiers analysés', icon: FileText, color: 'blue' },
+          { label: 'Volume', val: `${(totalAmount / 1000000).toFixed(2)} M€`, sub: 'Volume total', icon: Wallet, color: 'emerald' },
+          { label: 'Acceptation', val: `${acceptanceRate.toFixed(0)}%`, sub: "Taux d'acceptation", icon: Zap, color: 'amber' },
+          { label: 'Mix Pro', val: `${((prosCount / totalDossiers) * 100 || 0).toFixed(0)}%`, sub: 'Part entreprises', icon: Building2, color: 'indigo' }
+        ].map((kpi, i) => (
+          <div key={i} className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-50 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300 group">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors bg-${kpi.color}-50 dark:bg-${kpi.color}-900/20 text-${kpi.color}-500 group-hover:bg-${kpi.color}-500 group-hover:text-white`}>
+                <kpi.icon className="w-6 h-6" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{kpi.label}</span>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Audits</span>
+            <h3 className="text-3xl font-semibold text-slate-800 dark:text-white tracking-tight">{kpi.val}</h3>
+            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 font-medium">{kpi.sub}</p>
           </div>
-          <h3 className="text-3xl font-semibold text-slate-800 tracking-tight">{totalDossiers}</h3>
-          <p className="text-slate-400 text-xs mt-1 font-medium">Dossiers analysés</p>
-        </div>
-
-        {/* KPI: Volume Financier */}
-        <div className="bg-white rounded-[24px] p-6 border border-slate-50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
-              <Wallet className="w-6 h-6" />
-            </div>
-            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">+4%</span>
-          </div>
-          <h3 className="text-3xl font-semibold text-slate-800 tracking-tight">{(totalAmount / 1000000).toFixed(2)} M€</h3>
-          <p className="text-slate-400 text-xs mt-1 font-medium">Volume financier total</p>
-        </div>
-
-        {/* KPI: Mix Client */}
-        <div className="bg-white rounded-[24px] p-6 border border-slate-50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
-          <div className="flex items-center justify-between mb-6">
-            <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
-              <Building2 className="w-6 h-6" />
-            </div>
-            <div className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secteur</div>
-          </div>
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-sm font-semibold text-slate-700">{prosCount} Entreprises</span>
-            <span className="text-xs text-slate-400">{partCount} Part.</span>
-          </div>
-          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-indigo-400 transition-all duration-1000" style={{ width: `${(prosCount / totalDossiers) * 100}%` }} />
-          </div>
-        </div>
-
-        {/* KPI: Acceptation */}
-        <div className="bg-white rounded-[24px] p-6 border border-slate-50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
-              <Zap className="w-6 h-6" />
-            </div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Score IA</span>
-          </div>
-          <h3 className="text-3xl font-semibold text-slate-800 tracking-tight">{acceptanceRate.toFixed(0)}%</h3>
-          <p className="text-slate-400 text-xs mt-1 font-medium">Taux d'acceptation</p>
-        </div>
+        ))}
       </div>
 
       {/* --- GRAPHIQUES --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Graphique 1: Pie Chart */}
-        <div className="bg-white rounded-[32px] p-8 border border-slate-50 shadow-sm lg:col-span-1">
-          <h3 className="text-lg font-medium text-slate-800 mb-2">Typologie Clients</h3>
-          <p className="text-sm text-slate-400 mb-8">Répartition du portefeuille</p>
+        {/* Pie Chart */}
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-white mb-2">Typologie Clients</h3>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mb-8">Répartition du portefeuille</p>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={pieData} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value">
                   {pieData.map((entry, index) => <Cell key={index} fill={entry.color} strokeWidth={0} />)}
                 </Pie>
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '16px', border: 'none', color: isDark ? '#fff' : '#000' }} 
+                  itemStyle={{ color: isDark ? '#cbd5e1' : '#475569' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -162,52 +131,50 @@ export default function Dashboard() {
              {pieData.map(item => (
                <div key={item.name} className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-xs font-medium text-slate-500">{item.name}</span>
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{item.name}</span>
                </div>
              ))}
           </div>
         </div>
 
-        {/* Graphique 2: Area Chart */}
-        <div className="bg-white rounded-[32px] p-8 border border-slate-50 shadow-sm lg:col-span-2">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-lg font-medium text-slate-800">Activité Commerciale</h3>
-              <p className="text-sm text-slate-400">Volume mensuel des analyses</p>
-            </div>
-          </div>
+        {/* Area Chart */}
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm lg:col-span-2">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-white mb-2">Activité Commerciale</h3>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mb-8">Volume mensuel des analyses</p>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={barData}>
                 <defs>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.1}/>
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} dy={10} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#24334bff" : "#f8fafc"} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#99a3b0ff' : '#99a3b0ff', fontSize: 12 }} dy={10} />
                 <YAxis hide />
-                <Tooltip cursor={{ stroke: '#f63ba2ff', strokeWidth: 1 }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.05)' }} />
-                <Area type="monotone" dataKey="volume" stroke="#3b4ef6ff" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }}
+                />
+                <Area type="monotone" dataKey="volume" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* --- TABLEAU DERNIERS DOSSIERS --- */}
-      <div className="bg-white rounded-[32px] border border-slate-50 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-          <h3 className="text-lg font-medium text-slate-800">Analyses Récentes</h3>
-          <Link to="/List" className="text-blue-500 text-sm font-medium hover:underline flex items-center gap-1 group">
-            Portfolio complet <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+      {/* --- TABLEAU --- */}
+      <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-white">Analyses Récentes</h3>
+          <Link to="/history" className="text-blue-500 text-sm font-medium hover:underline flex items-center gap-1">
+            Portfolio complet <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                 <th className="px-8 py-4 text-left">Client</th>
                 <th className="px-8 py-4 text-left">Projet</th>
                 <th className="px-8 py-4 text-right">Montant</th>
@@ -215,29 +182,39 @@ export default function Dashboard() {
                 <th className="px-8 py-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
               {data.slice(0, 5).map((app) => (
-                <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
+                <tr key={app.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-bold ${app.client_type === 'entreprise' ? 'bg-indigo-50 text-indigo-500' : 'bg-blue-50 text-blue-500'}`}>
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${app.client_type === 'entreprise' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-500'}`}>
                         {app.full_name.substring(0, 2).toUpperCase()}
                       </div>
-                      <span className="text-sm font-medium text-slate-700">{app.full_name}</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{app.full_name}</span>
                     </div>
                   </td>
-                  <td className="px-8 py-5 text-xs text-slate-400 font-medium uppercase tracking-tight">{app.project_type}</td>
-                  <td className="px-8 py-5 text-right text-sm font-semibold text-slate-700">{Number(app.amount).toLocaleString()} €</td>
+                  <td className="px-8 py-5 text-xs text-slate-400 dark:text-slate-500 font-medium uppercase">{app.project_type}</td>
+                  <td className="px-8 py-5 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">{Number(app.amount).toLocaleString()} €</td>
                   <td className="px-8 py-5 text-center">
                     <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${
-                      app.score >= 80 ? 'bg-emerald-50 text-emerald-600' : 
-                      app.score >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
+                      app.score >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 
+                      app.score >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'
                     }`}>
                       {app.score}/100
                     </span>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <button onClick={() => navigate('/analysis/new', { state: { resultData: app, clientInfo: { fullName: app.full_name, amount: app.amount }, clientType: app.client_type, isFromPortfolio: true }})} className="p-2 text-slate-300 hover:text-blue-500 transition-colors">
+                    <button 
+                      onClick={() => navigate('/analysis/result', { 
+                        state: { 
+                          resultData: app, 
+                          clientInfo: { fullName: app.full_name, amount: app.amount }, 
+                          clientType: app.client_type, 
+                          isFromPortfolio: true 
+                        }
+                      })} 
+                      className="p-2 text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors"
+                    >
                       <ArrowRight className="w-5 h-5" />
                     </button>
                   </td>

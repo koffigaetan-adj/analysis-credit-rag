@@ -1,30 +1,36 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { Outlet } from 'react-router-dom';
 
 export default function Layout() {
-  // L'état est maintenant ici !
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* On passe l'état à la Sidebar */}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-500 relative">
+
+      {/* --- FOND GÉNÉRAL DYNAMIQUE --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+
+        {/* 1. La Grille (Pattern) */}
+        <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.2] [background-image:linear-gradient(#cbd5e1_1px,transparent_1px),linear-gradient(90deg,#cbd5e1_1px,transparent_1px)] dark:[background-image:linear-gradient(#1e293b_1px,transparent_1px),linear-gradient(90deg,#1e293b_1px,transparent_1px)] [background-size:40px_40px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+
+        {/* 2. Le Halo Central (Lueur IA) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 dark:bg-blue-600/10 rounded-full blur-[120px] animate-pulse-slow" />
+
+        {/* 3. Ligne de balayage (Scanning line - très subtil) */}
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent animate-scan" />
+      </div>
+
+      {/* --- STRUCTURE --- */}
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 
-      {/* LA ZONE DE CONTENU :
-        - transition-all duration-300 : pour que le décalage soit fluide
-        - ml-64 ou ml-20 : pour coller à la largeur de la sidebar
-      */}
-      <div 
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'ml-20' : 'ml-64'
-        }`}
-      >
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 z-10 ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
         <Header />
-        
-        <main className="p-8 flex-1">
-          <Outlet /> 
+        <main className="p-8 flex-1 relative">
+          <div className="relative z-20">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

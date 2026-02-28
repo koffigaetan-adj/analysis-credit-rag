@@ -23,7 +23,7 @@ function App() {
           <Route path="/list" element={<List />} />
           <Route path="/history" element={<List />} />
           <Route path="/new" element={<NewAnalysis />} />
-          <Route path="/analysis/new" element={<AnalysisResult />} />
+          <Route path="/analysis/result" element={<AnalysisResult />} />
           <Route path="/analysis/:id" element={<AnalysisDetail />} />
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<Settings />} />

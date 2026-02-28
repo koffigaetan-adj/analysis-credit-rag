@@ -10,7 +10,6 @@ import PhoneInput from 'react-phone-number-input';
 
 // --- CONFIGURATION MÉTIER ---
 const DOC_TYPES = {
-  // Particuliers
   id: { id: 'id_client', label: "Pièce d'identité" },
   domicile: { id: 'domicile', label: "Justificatif de domicile" },
   paie: { id: 'paie', label: "3 derniers bulletins de salaire" },
@@ -18,8 +17,6 @@ const DOC_TYPES = {
   rib: { id: 'rib', label: "RIB" },
   releves: { id: 'releves', label: "3 derniers relevés bancaires" },
   amortissement: { id: 'amortissement', label: "Tableaux d'amortissement" },
-
-  // Entreprises (Nouveau)
   kbis: { id: 'kbis', label: "Extrait KBIS (-3 mois)" },
   statuts: { id: 'statuts', label: "Statuts mis à jour" },
   bilan1: { id: 'bilan_n', label: "Bilan Complet (Année N)" },
@@ -54,14 +51,13 @@ export default function NewAnalysis() {
     amount: '',
     creditType: 'personnel',
     hasCredits: false,
-    companyName: '' // Nouveau pour entreprise
+    companyName: ''
   });
 
   const [files, setFiles] = useState<Record<string, File[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- LOGIQUE DYNAMIQUE DES DOCUMENTS ---
   const getCurrentDocs = () => {
     let docs = [];
     if (activeCategory === 'particulier') {
@@ -75,7 +71,6 @@ export default function NewAnalysis() {
 
   const currentDocs = getCurrentDocs();
 
-  // Reset le type de crédit quand on change de catégorie
   const handleCategoryChange = (cat: CategoryType) => {
     setActiveCategory(cat);
     setClientInfo({ ...clientInfo, creditType: cat === 'particulier' ? 'personnel' : 'tresorerie' });
@@ -139,10 +134,9 @@ export default function NewAnalysis() {
 
       const response = await fetch('http://127.0.0.1:8000/analyze_dashboard/', { method: 'POST', body: formData });
       const result = await response.json();
-
       const config = activeCategory === 'particulier' ? CREDIT_TYPES_PARTICULIER : CREDIT_TYPES_ENTREPRISE;
 
-      navigate('/analysis/new', {
+      navigate('/analysis/result', {
         state: {
           resultData: result,
           clientType: activeCategory,
@@ -158,99 +152,99 @@ export default function NewAnalysis() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 px-6 mt-10 animate-fade-in">
+    <div className="max-w-5xl mx-auto pb-20 px-6 mt-10 animate-fade-in text-left">
 
       {/* HEADER SECTION */}
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-light text-slate-800 tracking-tight">
-          Nouveau <span className="font-semibold text-slate-900">Dossier {activeCategory === 'entreprise' ? 'PRO' : 'Client'}</span>
+        <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
+          Nouveau <span className="font-semibold text-slate-900 dark:text-white">Dossier {activeCategory === 'entreprise' ? 'PRO' : 'Client'}</span>
         </h1>
         <div className="mt-6 flex justify-center items-center gap-6">
-          <div className={`flex items-center gap-3 transition-colors ${step >= 1 ? 'text-blue-600' : 'text-slate-300'}`}>
-            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold ${step >= 1 ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-slate-200'}`}>1</span>
+          <div className={`flex items-center gap-3 transition-colors ${step >= 1 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-700'}`}>
+            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 1 ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-800'}`}>1</span>
             <span className="text-sm font-medium">Anamnèse</span>
           </div>
-          <div className="w-12 h-px bg-slate-200"></div>
-          <div className={`flex items-center gap-3 transition-colors ${step >= 2 ? 'text-blue-600' : 'text-slate-300'}`}>
-            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold ${step >= 2 ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-slate-200'}`}>2</span>
-            <span className="text-sm font-medium">Documents ({currentDocs.length})</span>
+          <div className="w-12 h-px bg-slate-200 dark:bg-slate-800"></div>
+          <div className={`flex items-center gap-3 transition-colors ${step >= 2 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-700'}`}>
+            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 2 ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-800'}`}>2</span>
+            <span className="text-sm font-medium">Documents</span>
           </div>
         </div>
       </div>
 
       {step === 1 ? (
-        <div className="bg-white rounded-[32px] shadow-[0_20px_60px_rgb(0,0,0,0.03)] border border-slate-50 p-10 animate-fade-in">
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 p-10 animate-fade-in transition-colors">
 
           {/* CATEGORY SWITCHER */}
           <div className="flex justify-center mb-10">
-            <div className="bg-slate-50 p-1.5 rounded-2xl inline-flex border border-slate-100 shadow-inner">
-              <button onClick={() => handleCategoryChange('particulier')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'particulier' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+            <div className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl inline-flex border border-slate-100 dark:border-slate-800 shadow-inner">
+              <button onClick={() => handleCategoryChange('particulier')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'particulier' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <User className="w-4 h-4 inline mr-2" /> Particulier
               </button>
-              <button onClick={() => handleCategoryChange('entreprise')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'entreprise' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+              <button onClick={() => handleCategoryChange('entreprise')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'entreprise' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <Building2 className="w-4 h-4 inline mr-2" /> Entreprise
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* GAUCHE : IDENTITÉ */}
             <div className="space-y-6">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-blue-500" /> Profil Demandeur
               </h3>
               <div className="space-y-4">
                 {activeCategory === 'entreprise' && (
                   <div className="group animate-in slide-in-from-top-2">
-                    <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 uppercase">Dénomination Sociale<span className="text-red-300">*</span></label>
-                    <input type="text" name="companyName" value={clientInfo.companyName} onChange={handleInfoChange} placeholder="ex: SARL Techpro" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none text-sm font-semibold" />
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Dénomination Sociale<span className="text-red-400">*</span></label>
+                    <input type="text" name="companyName" value={clientInfo.companyName} onChange={handleInfoChange} placeholder="ex: SARL Techpro" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm font-semibold dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
                   </div>
                 )}
                 <div className="group">
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 uppercase">{activeCategory === 'entreprise' ? 'Représentant Légal' : 'Nom Complet'}<span className="text-red-300">*</span></label>
-                  <input type="text" name="fullName" value={clientInfo.fullName} onChange={handleInfoChange} placeholder="Jean Dupont" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none text-sm" />
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">{activeCategory === 'entreprise' ? 'Représentant Légal' : 'Nom Complet'}<span className="text-red-400">*</span></label>
+                  <input type="text" name="fullName" value={clientInfo.fullName} onChange={handleInfoChange} placeholder="Jean Dupont" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
                 </div>
                 <div className="group">
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 uppercase">Email<span className="text-red-300">*</span></label>
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Email<span className="text-red-400">*</span></label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-300" />
-                    <input type="email" name="email" value={clientInfo.email} onChange={handleInfoChange} placeholder="contact@email.com" className="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all outline-none text-sm" />
+                    <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-300 dark:text-slate-600" />
+                    <input type="email" name="email" value={clientInfo.email} onChange={handleInfoChange} placeholder="contact@email.com" className="w-full pl-11 pr-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
                   </div>
                 </div>
                 <div className="group">
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 uppercase">Téléphone</label>
-                  <PhoneInput international defaultCountry="FR" value={clientInfo.phone} onChange={(v: any) => setClientInfo({ ...clientInfo, phone: v || '' })} className="flex px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-2xl focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50 transition-all" />
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Téléphone</label>
+                  <div className="dark:text-white">
+                    <PhoneInput international defaultCountry="FR" value={clientInfo.phone} onChange={(v: any) => setClientInfo({ ...clientInfo, phone: v || '' })} className="flex px-4 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus-within:bg-white dark:focus-within:bg-slate-900 transition-all" />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* DROITE : CRÉDIT */}
             <div className="space-y-6">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-blue-500" /> Engagement
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 uppercase">Objet du financement<span className="text-red-300">*</span></label>
-                  <select name="creditType" value={clientInfo.creditType} onChange={handleInfoChange} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all outline-none text-sm font-semibold text-slate-700">
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Objet du financement<span className="text-red-400">*</span></label>
+                  <select name="creditType" value={clientInfo.creditType} onChange={handleInfoChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 transition-all outline-none text-sm font-semibold text-slate-700 dark:text-slate-300">
                     {Object.entries(activeCategory === 'particulier' ? CREDIT_TYPES_PARTICULIER : CREDIT_TYPES_ENTREPRISE).map(([k, v]) => (
                       <option key={k} value={k}>{v.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 uppercase">Montant Requis (€)<span className="text-red-300">*</span></label>
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Montant Requis (€)<span className="text-red-400">*</span></label>
                   <div className="relative">
-                    <Euro className="absolute right-5 top-4 text-slate-300 w-5 h-5" />
-                    <input type="number" name="amount" value={clientInfo.amount} onChange={handleInfoChange} placeholder="50000" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all outline-none text-sm font-bold text-slate-800" />
+                    <Euro className="absolute right-5 top-4 text-slate-300 dark:text-slate-600 w-5 h-5" />
+                    <input type="number" name="amount" value={clientInfo.amount} onChange={handleInfoChange} placeholder="50000" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 transition-all outline-none text-sm font-bold text-slate-800 dark:text-slate-100" />
                   </div>
                 </div>
                 {activeCategory === 'particulier' && (
-                  <label className="flex items-center gap-4 p-4 bg-blue-50/30 border border-blue-100/50 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors">
-                    <input type="checkbox" name="hasCredits" checked={clientInfo.hasCredits} onChange={handleInfoChange} className="w-5 h-5 text-blue-600 rounded-lg border-slate-200" />
+                  <label className="flex items-center gap-4 p-4 bg-blue-50/30 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/30 rounded-2xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                    <input type="checkbox" name="hasCredits" checked={clientInfo.hasCredits} onChange={handleInfoChange} className="w-5 h-5 text-blue-600 dark:text-blue-400 rounded-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
                     <div>
-                      <p className="text-sm font-bold text-slate-700 tracking-tight text-[10px]">Passif existant ?</p>
-                      <p className="text-[10px] text-slate-400">Inclure les tableaux d'amortissement en cours.</p>
+                      <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-tight uppercase">Passif existant ?</p>
+                      <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Inclure les tableaux d'amortissement en cours.</p>
                     </div>
                   </label>
                 )}
@@ -258,54 +252,54 @@ export default function NewAnalysis() {
             </div>
           </div>
 
-          {error && <div className="mt-8 text-red-500 text-xs font-bold bg-red-50 p-4 rounded-2xl flex items-center gap-3 border border-red-100 animate-shake uppercase tracking-wider"><AlertCircle className="w-4 h-4" />{error}</div>}
+          {error && <div className="mt-8 text-red-500 dark:text-red-400 text-[10px] font-black bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl flex items-center gap-3 border border-red-100 dark:border-red-900/30 animate-shake uppercase tracking-widest"><AlertCircle className="w-4 h-4" />{error}</div>}
 
           <div className="mt-12 flex justify-end">
-            <button onClick={validateStep1} className="bg-slate-900 text-white px-10 py-4 rounded-2xl text-sm font-bold hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-100 transition-all duration-300 flex items-center gap-3 group shadow-lg">
+            <button onClick={validateStep1} className="bg-slate-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
               Suivant <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
       ) : (
         /* STEP 2 : DOCUMENTS */
-        <div className="bg-white rounded-[32px] shadow-[0_20px_60px_rgb(0,0,0,0.03)] border border-slate-50 overflow-hidden animate-fade-in">
-          <div className="px-10 py-8 bg-slate-50/50 border-b border-slate-50 flex justify-between items-center">
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden animate-fade-in transition-colors">
+          <div className="px-10 py-8 bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center transition-colors">
             <div>
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 uppercase tracking-tight">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3 uppercase tracking-tight">
                 <FileText className="w-5 h-5 text-blue-500" /> Justificatifs Requis
               </h3>
-              <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase font-black tracking-widest">
                 Profil : {activeCategory === 'entreprise' ? 'PRO' : 'PART'} — {currentDocs.length} pièces
               </p>
             </div>
-            <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[11px] font-black uppercase tracking-widest border border-blue-100 shadow-sm">
+            <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors">
               {Object.keys(files).length} / {currentDocs.length} Fournis
             </div>
           </div>
 
-          <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white">
+          <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-slate-900 transition-colors">
             {currentDocs.map((doc) => {
               const docFiles = files[doc.id] || [];
               const isProvided = docFiles.length > 0;
               return (
-                <div key={doc.id} className={`p-5 border-2 rounded-[24px] transition-all duration-300 ${isProvided ? 'bg-emerald-50/20 border-emerald-100' : 'bg-slate-50/30 border-slate-100 hover:border-blue-100 hover:bg-white shadow-sm'}`}>
+                <div key={doc.id} className={`p-5 border-2 rounded-[24px] transition-all duration-300 ${isProvided ? 'bg-emerald-50/10 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/30' : 'bg-slate-50/30 dark:bg-slate-950/30 border-slate-100 dark:border-slate-800 hover:border-blue-100 dark:hover:border-blue-900/50 hover:bg-white dark:hover:bg-slate-900'}`}>
                   <div className="flex items-center gap-4 mb-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${isProvided ? 'bg-emerald-500 text-white' : 'bg-white text-slate-300 border border-slate-100'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all ${isProvided ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-950 text-slate-300 dark:text-slate-700 border border-slate-100 dark:border-slate-800'}`}>
                       {isProvided ? <CheckCircle className="w-5 h-5" /> : <Upload className="w-5 h-5" />}
                     </div>
-                    <p className={`text-xs font-bold uppercase tracking-tight leading-tight ${isProvided ? 'text-emerald-700' : 'text-slate-600'}`}>{doc.label}</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-tight leading-tight transition-colors ${isProvided ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{doc.label}</p>
                   </div>
 
                   <div className="space-y-2">
                     {docFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-white p-2.5 px-4 rounded-xl border border-slate-100 shadow-sm animate-scale-in">
-                        <span className="text-[10px] text-slate-700 font-bold truncate max-w-[80%]">{file.name}</span>
-                        <button onClick={() => removeFile(doc.id, idx)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <div key={idx} className="flex items-center justify-between bg-white dark:bg-slate-950 p-2.5 px-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm animate-scale-in">
+                        <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold truncate max-w-[80%]">{file.name}</span>
+                        <button onClick={() => removeFile(doc.id, idx)} className="text-slate-300 dark:text-slate-700 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     ))}
                     <div className="relative group">
                       <input type="file" multiple accept="application/pdf,image/*" onChange={(e) => handleFileSelect(doc.id, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                      <button className={`w-full py-2.5 border-2 border-dashed rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isProvided ? 'border-emerald-200 text-emerald-600 bg-white' : 'border-slate-200 text-slate-400 bg-white group-hover:border-blue-300 group-hover:text-blue-500'}`}>
+                      <button className={`w-full py-2.5 border-2 border-dashed rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isProvided ? 'border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-950' : 'border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-white dark:bg-slate-950 group-hover:border-blue-300 dark:group-hover:border-blue-500 group-hover:text-blue-500'}`}>
                         {isProvided ? "+ Ajouter" : "Importer"}
                       </button>
                     </div>
@@ -315,11 +309,11 @@ export default function NewAnalysis() {
             })}
           </div>
 
-          <div className="px-10 py-8 bg-slate-50/50 border-t border-slate-50 flex justify-between items-center">
-            <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-colors">
+          <div className="px-10 py-8 bg-slate-50/50 dark:bg-slate-950/50 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center transition-colors">
+            <button onClick={() => setStep(1)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Retour
             </button>
-            <button onClick={handleAnalyze} disabled={loading} className={`px-10 py-4 rounded-2xl text-sm font-bold text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300' : 'bg-blue-600 hover:bg-emerald-500 hover:shadow-emerald-100'}`}>
+            <button onClick={handleAnalyze} disabled={loading} className={`px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'bg-blue-600 dark:bg-blue-600 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Analyser avec l'IA</>}
             </button>
           </div>
