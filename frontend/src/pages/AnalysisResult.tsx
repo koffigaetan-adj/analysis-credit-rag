@@ -4,9 +4,10 @@ import {
   ArrowLeft, CheckCircle, AlertTriangle, Send, Bot, Download,
   XCircle, FileText, ShieldCheck,
   AlertOctagon, X, Save, LineChart, Sparkles,
-  Trash2
+  Trash2, User, Building2
 } from 'lucide-react';
 import Plot from 'react-plotly.js';
+import AnimatedModal from '../components/AnimatedModal';
 
 // --- TYPES ---
 interface ClientInfo {
@@ -69,16 +70,40 @@ export default function AnalysisResult() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Détection dynamique du mode sombre pour les graphiques
   const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
+    // Forcer le thème clair pour l'impression du rapport documentaire
+    const handleBeforePrint = () => {
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.dataset.wasDark = 'true';
+      }
+    };
+    const handleAfterPrint = () => {
+      if (document.documentElement.dataset.wasDark === 'true') {
+        document.documentElement.classList.add('dark');
+        delete document.documentElement.dataset.wasDark;
+      }
+    };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+
     const observer = new MutationObserver(() => {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
   }, []);
 
   useEffect(() => {
@@ -117,10 +142,10 @@ export default function AnalysisResult() {
   const trend = resultData.account_trend || "Stable";
 
   // Configuration visuelle des graphiques adaptée au mode
-  const plotlyFont = { 
-    family: 'Inter, sans-serif', 
-    size: 11, 
-    color: isDarkMode ? '#94a3b8' : '#64748b' 
+  const plotlyFont = {
+    family: 'Inter, sans-serif',
+    size: 11,
+    color: isDarkMode ? '#94a3b8' : '#64748b'
   };
 
   const getGaugeConfig = () => {
@@ -143,21 +168,75 @@ export default function AnalysisResult() {
           bgcolor: isDarkMode ? "#1e293b" : "#f1f5f9"
         }
       }],
-      layout: { 
-        autosize: true, 
-        margin: { l: 30, r: 30, t: 30, b: 30 }, 
+      layout: {
+        autosize: true,
+        margin: { l: 30, r: 30, t: 30, b: 30 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
       }
     };
   };
 
-  const handleDelete = async () => {
-    if (window.confirm("Supprimer définitivement cette analyse ?")) {
-      try {
-        const response = await fetch(`http://127.0.0.1:8000/applications/${resultData.id}`, { method: 'DELETE' });
-        if (response.ok) navigate('/history');
-      } catch (error) { console.error(error); alert("Erreur réseau"); }
+  const handleDelete = () => {
+    setDeleteModalOpen(true);
+  };
+
+  const executeDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/applications/${resultData.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        setDeleteModalOpen(false);
+        navigate('/history');
+      } else {
+        alert("Erreur serveur lors de la suppression.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erreur réseau");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSaveAnalysis = async () => {
+    if (isSaved) return;
+    try {
+      const payload = {
+        fullName: clientInfo.fullName,
+        clientType: clientType,
+        projectType: state.specificProfile || clientInfo.projectType || "Standard",
+        amount: parseFloat(clientInfo.amount.toString().replace(/ /g, "").replace(",", ".")),
+        email: (clientInfo as any).email || null,
+        phone: (clientInfo as any).phone || null,
+        score: resultData.score,
+        decision: decision,
+        summary: resultData.ia_summary || resultData.summary || "",
+        financials: fins,
+        risks: resultData.risks || [],
+        opportunities: resultData.opportunities || []
+      };
+
+      const res = await fetch('http://127.0.0.1:8000/applications/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        setIsSaved(true);
+      } else {
+        alert("Erreur du serveur lors de l'enregistrement.");
+      }
+    } catch (err) {
+      alert("Erreur réseau lors de l'enregistrement.");
     }
   };
 
@@ -188,11 +267,41 @@ export default function AnalysisResult() {
   const decisionStyle = getDecisionStyle(decision);
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 animate-fade-in text-left font-sans">
-      <div id="section-to-print" className="space-y-10">
+    <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 animate-fade-in text-left font-sans print:p-0 print:m-0 print:max-w-none">
+      <div id="section-to-print" className="space-y-10 print:space-y-8 print:w-full">
 
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        {/* --- EN-TÊTE D'IMPRESSION (VISIBLE ONLY ON PRINT) --- */}
+        <div className="hidden print:block border-b-2 border-slate-200 pb-6 mb-8 pt-4">
+          <div className="flex justify-between items-end">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-8 h-8 text-blue-600" />
+                <h2 className="text-2xl font-black tracking-widest text-slate-900 uppercase">Fluxia</h2>
+              </div>
+              <h1 className="text-4xl font-light text-slate-800 tracking-tight">Rapport d'Analyse <span className="font-semibold text-slate-900">Financière</span></h1>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Date de génération</p>
+              <p className="text-lg font-medium text-slate-800 flex items-center gap-2 justify-end">
+                {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2"><User className="w-4 h-4" /> Dossier / Entité</p>
+              <p className="text-xl font-bold text-slate-800">{clientInfo.fullName}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2"><Building2 className="w-4 h-4" /> Type de Profil</p>
+              <p className="text-xl font-bold text-slate-800 capitalize">{isCompany ? 'Entreprise' : 'Particulier'} - {state.specificProfile || clientInfo.projectType || "Standard"}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* HEADER STANDARD */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 print:hidden">
           <div className="space-y-1">
             <button onClick={() => navigate(isHistoryMode ? '/history' : '/new')} className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-4 transition-all">
               <ArrowLeft className="w-3.5 h-3.5" /> {isHistoryMode ? 'Historique' : 'Retour'}
@@ -211,7 +320,7 @@ export default function AnalysisResult() {
                 <Trash2 className="w-4 h-4" /> Supprimer
               </button>
             ) : (
-              <button onClick={() => setIsSaved(true)} className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center ${isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-500'}`}>
+              <button onClick={handleSaveAnalysis} className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center ${isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-500'}`}>
                 {isSaved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} {isSaved ? 'Enregistré' : 'Enregistrer'}
               </button>
             )}
@@ -219,8 +328,8 @@ export default function AnalysisResult() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className={`rounded-[28px] p-6 border shadow-sm transition-colors ${decisionStyle.bg} ${decisionStyle.border}`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-2 print:gap-6">
+          <div className={`rounded-[28px] print:rounded-2xl p-6 print:p-6 border shadow-sm print:border-slate-200 transition-colors ${decisionStyle.bg} ${decisionStyle.border}`}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Décision IA</p>
             <div className="flex items-center gap-3">{decisionStyle.icon}<h2 className={`text-2xl font-bold ${decisionStyle.text}`}>{decision}</h2></div>
           </div>
@@ -248,9 +357,9 @@ export default function AnalysisResult() {
         </div>
 
         {/* GRAPHIQUES RECONSTRUITS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm p-8 transition-colors">
-            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8">Structure Financière</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-1 print:gap-8 print:break-inside-avoid">
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors">
+            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8 print:mb-6">Structure Financière</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[250px]">
               <Plot
                 data={getGaugeConfig().data as any}
@@ -272,9 +381,9 @@ export default function AnalysisResult() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm p-8 transition-colors">
-            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8">Analyse des Flux</h3>
-            <div className="h-[250px]">
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors print:break-inside-avoid">
+            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8 print:mb-6">Analyse des Flux</h3>
+            <div className="h-[250px] print:h-[280px]">
               <Plot
                 data={[{
                   type: "waterfall",
@@ -288,14 +397,14 @@ export default function AnalysisResult() {
                   increasing: { marker: { color: "#10B981" } },
                   totals: { marker: { color: "#3B82F6" } }
                 } as any]}
-                layout={{ 
-                  autosize: true, 
-                  margin: { l: 40, r: 20, t: 10, b: 40 }, 
-                  paper_bgcolor: 'rgba(0,0,0,0)', 
-                  font: plotlyFont, 
+                layout={{
+                  autosize: true,
+                  margin: { l: 40, r: 20, t: 10, b: 40 },
+                  paper_bgcolor: 'rgba(0,0,0,0)',
+                  font: plotlyFont,
                   plot_bgcolor: 'rgba(0,0,0,0)',
-                  xaxis: { showgrid: false, tickfont: { color: isDarkMode ? '#64748b' : '#94a3b8' } }, 
-                  yaxis: { showgrid: true, gridcolor: isDarkMode ? '#1e293b' : '#f1f5f9', tickfont: { color: isDarkMode ? '#64748b' : '#94a3b8' } } 
+                  xaxis: { showgrid: false, tickfont: { color: isDarkMode ? '#64748b' : '#94a3b8' } },
+                  yaxis: { showgrid: true, gridcolor: isDarkMode ? '#1e293b' : '#f1f5f9', tickfont: { color: isDarkMode ? '#64748b' : '#94a3b8' } }
                 }}
                 style={{ width: "100%", height: "100%" }}
                 useResizeHandler
@@ -306,23 +415,23 @@ export default function AnalysisResult() {
         </div>
 
         {/* SYNTHÈSE ET RISQUES */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm p-10 transition-colors">
-            <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:grid-cols-1 print:gap-8">
+          <div className="lg:col-span-2 print:col-span-1 bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-10 print:p-8 transition-colors print:break-inside-avoid">
+            <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 print:mb-6 flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-500" /> Note d'Audit
             </h3>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line text-sm italic">
               {resultData.ia_summary || resultData.summary || "Aucune note disponible."}
             </p>
           </div>
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-red-50 dark:border-red-900/30 p-6 shadow-sm transition-colors">
+          <div className="space-y-6 print:space-y-6 print:grid print:grid-cols-2 print:gap-6 print:space-y-0 print:break-inside-avoid">
+            <div className="bg-white dark:bg-slate-900 rounded-[28px] print:rounded-3xl border border-red-50 dark:border-red-500/30 p-6 print:p-6 shadow-sm transition-colors print:h-full">
               <h3 className="text-xs font-bold text-red-500 dark:text-red-400 uppercase mb-4 flex items-center gap-2"><AlertOctagon className="w-4 h-4" /> Risques</h3>
               <ul className="space-y-2">
                 {(resultData.risks || []).map((r: any, i: number) => <li key={i} className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">• {r}</li>)}
               </ul>
             </div>
-            <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-emerald-50 dark:border-emerald-900/30 p-6 shadow-sm transition-colors">
+            <div className="bg-white dark:bg-slate-900 rounded-[28px] print:rounded-3xl border border-emerald-50 dark:border-emerald-500/30 p-6 print:p-6 shadow-sm transition-colors print:h-full">
               <h3 className="text-xs font-bold text-emerald-500 dark:text-emerald-400 uppercase mb-4 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Atouts</h3>
               <ul className="space-y-2">
                 {(resultData.opportunities || []).map((o: any, i: number) => <li key={i} className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">✓ {o}</li>)}
@@ -360,6 +469,18 @@ export default function AnalysisResult() {
           </div>
         )}
       </div>
+
+      {/* DELETE MODAL */}
+      <AnimatedModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Supprimer l'analyse"
+        message={`Êtes-vous sûr de vouloir supprimer définitivement l'analyse de ${clientInfo.fullName || 'ce dossier'} ? Cette action est irréversible et supprimera tout l'historique lié.`}
+        type="danger"
+        confirmText={isDeleting ? "Suppression..." : "Oui, supprimer"}
+        onConfirm={executeDelete}
+        cancelText="Annuler"
+      />
     </div>
   );
 }

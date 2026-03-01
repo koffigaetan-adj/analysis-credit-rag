@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Upload, FileText, CheckCircle, AlertCircle, Loader2, Trash2,
+  Upload, FileText, CheckCircle, Loader2, Trash2,
   ArrowRight, ArrowLeft, Euro, Mail, User, CreditCard, Sparkles, Building2, Briefcase
 } from 'lucide-react';
+import AnimatedModal from '../components/AnimatedModal';
 
 import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
@@ -57,6 +58,7 @@ export default function NewAnalysis() {
   const [files, setFiles] = useState<Record<string, File[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
 
   const getCurrentDocs = () => {
     let docs = [];
@@ -84,11 +86,13 @@ export default function NewAnalysis() {
 
   const validateStep1 = () => {
     if (activeCategory === 'entreprise' && !clientInfo.companyName) {
-      setError("Le nom de l'entreprise est obligatoire.");
+      setError("Le nom de l'entreprise est obligatoire pour un dossier PRO.");
+      setErrorModalOpen(true);
       return;
     }
     if (!clientInfo.fullName || !clientInfo.amount || !clientInfo.email) {
-      setError("Veuillez remplir les champs obligatoires.");
+      setError("Veuillez remplir correctement tous les champs obligatoires (Nom, Email, Montant).");
+      setErrorModalOpen(true);
       return;
     }
     setError(null);
@@ -114,7 +118,8 @@ export default function NewAnalysis() {
   const handleAnalyze = async () => {
     const missingDocs = currentDocs.filter(d => !files[d.id]);
     if (missingDocs.length > 0) {
-      setError(`Pièces manquantes : ${missingDocs.map(d => d.label).join(', ')}`);
+      setError(`Pièces manquantes :\n${missingDocs.map(d => d.label).join(' \n- ')}`);
+      setErrorModalOpen(true);
       return;
     }
     setLoading(true);
@@ -147,8 +152,11 @@ export default function NewAnalysis() {
           }
         }
       });
-    } catch { setError("Erreur de connexion avec l'IA de scoring."); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Une erreur inattendue est survenue avec le serveur d'Intelligence Artificielle. Le scoring n'a pas pu aboutir.");
+      setErrorModalOpen(true);
+      setLoading(false);
+    }
   };
 
   return (
@@ -251,9 +259,6 @@ export default function NewAnalysis() {
               </div>
             </div>
           </div>
-
-          {error && <div className="mt-8 text-red-500 dark:text-red-400 text-[10px] font-black bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl flex items-center gap-3 border border-red-100 dark:border-red-900/30 animate-shake uppercase tracking-widest"><AlertCircle className="w-4 h-4" />{error}</div>}
-
           <div className="mt-12 flex justify-end">
             <button onClick={validateStep1} className="bg-slate-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
               Suivant <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -318,7 +323,50 @@ export default function NewAnalysis() {
             </button>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+
+      {/* MODAL DE CHARGEMENT IA */}
+      <AnimatedModal
+        isOpen={loading}
+        onClose={() => { }} // Ne peut pas être fermé manuellement
+        title="Analyse IA en cours"
+        message={
+          <div className="flex flex-col items-center gap-3">
+            <p>Notre IA analyse actuellement les documents financiers et structure le dossier de crédit de <span className="font-bold text-slate-700 dark:text-slate-200">{clientInfo.fullName || 'ce client'}</span>.</p>
+            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+              <div className="h-full bg-blue-500 w-1/2 animate-[pulse_2s_ease-in-out_infinite] blur-[1px]" />
+            </div>
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-2">Extraction OCR & Calcul des Ratios...</p>
+          </div>
+        }
+        type="loading"
+      />
+
+      {/* MODAL D'ERREUR */}
+      <AnimatedModal
+        isOpen={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        title="Attention"
+        message={
+          <div className="text-slate-600 dark:text-slate-300">
+            {error?.includes('\n') ? (
+              <ul className="text-left list-disc list-inside mt-2 text-sm">
+                <span className="font-semibold block mb-2">{error.split('\n')[0]}</span>
+                {error.substring(error.indexOf('\n') + 1).split(' \n- ').map((err, i) => (
+                  <li key={i} className="text-slate-500 dark:text-slate-400">{err}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>{error}</p>
+            )}
+          </div>
+        }
+        type="danger"
+        confirmText="Compris"
+        onConfirm={() => setErrorModalOpen(false)}
+        cancelText="Fermer"
+      />
+    </div >
   );
 }

@@ -1,8 +1,33 @@
+import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+
 import { Bell, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
 
 export default function Header() {
   const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Gérer le clic en dehors pour fermer le menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
+
+  // Helper pour les initiales
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800 px-8 py-3 transition-all duration-300">
@@ -22,18 +47,28 @@ export default function Header() {
           </button>
 
           {/* PROFIL UTILISATEUR */}
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center gap-3 p-1.5 pl-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-[20px] border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all duration-300"
             >
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight transition-colors">Sophie Dubois</p>
-                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter transition-colors">Administrateur</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight transition-colors">
+                  {user?.full_name || 'Utilisateur'}
+                </p>
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter transition-colors">
+                  {user?.role === 'SUPER_ADMIN' ? 'Super Administrateur' : user?.role === 'ADMIN' ? 'Administrateur' : 'Analyste'}
+                </p>
               </div>
 
               <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden transition-all">
-                <span className="text-slate-600 dark:text-slate-300 font-bold text-xs uppercase">SD</span>
+                {user?.avatar_url ? (
+                  <img src={`http://localhost:8000${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-slate-600 dark:text-slate-300 font-bold text-xs uppercase">
+                    {getInitials(user?.full_name)}
+                  </span>
+                )}
               </div>
 
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${showDropdown ? 'rotate-180' : ''}`} />
@@ -46,21 +81,21 @@ export default function Header() {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compte</p>
                 </div>
 
-                <a href="#" className="flex items-center px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 transition-colors">
-                  Mon profil
-                </a>
-                <a href="#" className="flex items-center px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 transition-colors">
-                  Paramètres
-                </a>
+                <Link to="/settings" className="flex items-center px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 transition-colors">
+                  Paramètres du compte
+                </Link>
 
                 <div className="my-2 border-t border-slate-50 dark:border-slate-800"></div>
 
-                <a
-                  href="/login"
-                  className="flex items-center px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate('/login');
+                  }}
+                  className="w-full text-left flex items-center px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
                 >
                   Déconnexion
-                </a>
+                </button>
               </div>
             )}
           </div>

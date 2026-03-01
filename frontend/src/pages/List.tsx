@@ -5,6 +5,7 @@ import {
   CheckCircle2, XCircle, Clock, AlertTriangle, Loader2, RefreshCcw,
   Trash2
 } from 'lucide-react';
+import AnimatedModal from '../components/AnimatedModal';
 
 export default function Applications() {
   const navigate = useNavigate();
@@ -13,10 +14,19 @@ export default function Applications() {
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // État Modale de Suppression
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [appToDelete, setAppToDelete] = useState<{ id: number, name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchApplications = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/history/');
+      const response = await fetch('http://127.0.0.1:8000/history/', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       const data = await response.json();
       setApplications(data);
     } catch (error) {
@@ -30,19 +40,32 @@ export default function Applications() {
     fetchApplications();
   }, []);
 
-  const handleDelete = async (e: React.MouseEvent, id: number, name: string) => {
+  const confirmDelete = (e: React.MouseEvent, id: number, name: string) => {
     e.stopPropagation();
-    if (window.confirm(`Supprimer définitivement le dossier de ${name} ?`)) {
-      try {
-        const response = await fetch(`http://127.0.0.1:8000/applications/${id}`, {
-          method: 'DELETE',
-        });
-        if (response.ok) {
-          setApplications(applications.filter(app => app.id !== id));
+    setAppToDelete({ id, name });
+    setDeleteModalOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (!appToDelete) return;
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/applications/${appToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
-      } catch (error) {
-        alert("Erreur lors de la suppression");
+      });
+      if (response.ok) {
+        setApplications(applications.filter(app => app.id !== appToDelete.id));
+        setDeleteModalOpen(false);
+        setAppToDelete(null);
       }
+    } catch (error) {
+      console.error("Erreur lors de la suppression");
+      alert("Erreur réseau lors de la suppression.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -173,7 +196,7 @@ export default function Applications() {
                           <Eye className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={(e) => handleDelete(e, app.id, app.full_name)}
+                          onClick={(e) => confirmDelete(e, app.id, app.full_name)}
                           className="p-2.5 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -193,6 +216,17 @@ export default function Applications() {
           </table>
         </div>
       </div>
+
+      <AnimatedModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={executeDelete}
+        title="Supprimer ce dossier ?"
+        message={`Vous êtes sur le point de supprimer définitivement le dossier d'analyse de ${appToDelete?.name}. Cette action est irréversible.`}
+        type="danger"
+        confirmText="Oui, Supprimer"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

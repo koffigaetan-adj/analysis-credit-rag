@@ -23,12 +23,16 @@ export default function Layout() {
       </div>
 
       {/* --- STRUCTURE --- */}
-      <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <div className="print:hidden">
+        <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      </div>
 
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 z-10 ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
-        <Header />
-        <main className="p-8 flex-1 relative">
-          <div className="relative z-20">
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 z-10 print:ml-0 print:bg-white ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
+        <div className="print:hidden">
+          <Header />
+        </div>
+        <main className="p-8 print:p-0 flex-1 relative">
+          <div className="relative z-20 print:w-full print:max-w-none print:m-0 print:p-0">
             <Outlet />
           </div>
         </main>

@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
   FileText,
@@ -9,7 +10,6 @@ import {
   ListTodo,
   ChevronLeft,
   ChevronRight,
-  HelpCircle,
   LogOut,
   Sun,
   Moon
@@ -30,6 +30,7 @@ const menuItems = [
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   // Initialisation du thème
   const [isDark, setIsDark] = useState(() => {
@@ -76,6 +77,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       {/* NAVIGATION PRINCIPALE */}
       <nav className="flex-1 px-4 space-y-1">
         {menuItems.map((item) => {
+          if (item.path === '/team' && user?.role === 'ANALYST') return null;
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 
@@ -84,8 +86,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
               key={item.path}
               to={item.path}
               className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20 font-semibold'
-                  : 'text-slate-400 hover:bg-slate-900 hover:text-white font-medium'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20 font-semibold'
+                : 'text-slate-400 hover:bg-slate-900 hover:text-white font-medium'
                 } ${isCollapsed ? 'justify-center' : ''}`}
             >
               <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'group-hover:text-blue-400'}`} />
@@ -130,7 +132,10 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         {!isCollapsed && (
           <div className="mt-6 p-4 bg-slate-900/50 rounded-[24px] border border-slate-900 animate-in zoom-in-95">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
               className="flex items-center gap-2 text-rose-500 text-xs font-bold hover:text-rose-400 transition-colors w-full"
             >
               <LogOut className="w-4 h-4" /> Déconnexion

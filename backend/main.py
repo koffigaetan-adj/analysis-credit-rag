@@ -5,16 +5,21 @@ import io
 import database 
 from fastapi import FastAPI, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pypdf import PdfReader
 import google.generativeai as genai
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-import plotly.graph_objects as go 
+import plotly.graph_objects as go
+from fastapi import HTTPException
+from auth import router as auth_router, get_current_user
 
 # --- 1. CONFIGURATION & ROTATION ---
 load_dotenv()
 app = FastAPI()
+
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +29,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+os.makedirs("uploads/avatars", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 API_KEYS = os.getenv("GOOGLE_API_KEYS", os.getenv("GOOGLE_API_KEY", "")).split(",")
 current_key_index = 0
 
@@ -31,7 +39,7 @@ def configure_genai():
     global current_key_index
     key = API_KEYS[current_key_index].strip()
     genai.configure(api_key=key)
-    print(f"✅ Gemini configuré avec la clé n°{current_key_index + 1}")
+    print(f"Gemini configuré avec la clé n°{current_key_index + 1}")
 
 configure_genai()
 
@@ -136,31 +144,7 @@ async def analyze_dashboard(
             
             fin = result_json.get("financials", {})
 
-            # --- SAUVEGARDE DB ---
-            # Nettoyage du montant (on enlève les espaces pour le float)
-            clean_amount = float(str(amount).replace(" ", "").replace(",", "."))
-
-            new_app = database.Application(
-                full_name=fullName,
-                client_type=clientType,
-                project_type=projectType,
-                amount=clean_amount,
-                email=email,
-                phone=phone,
-                score=result_json.get("score", 0),
-                decision=result_json.get("decision", "Vigilance"),
-                ia_summary=result_json.get("summary", ""),
-                financial_data=json.dumps(fin),
-                risks=result_json.get("risks", []),
-                opportunities=result_json.get("opportunities", []),
-                chat_history=[]
-            )
-            db.add(new_app)
-            db.commit()
-            db.refresh(new_app)
-
-            # Ajout des données pour le Frontend immédiat
-            result_json["id"] = new_app.id
+            # Ajout des données pour le Frontend immédiat (sans sauvegarde automatique)
             result_json["ia_summary"] = result_json.get("summary")
             
             return result_json
@@ -174,8 +158,10 @@ async def analyze_dashboard(
                 return {"score": 0, "summary": f"Erreur : {str(e)}", "decision": "Erreur"}
 
 @app.get("/history/")
-def get_history(db: Session = Depends(database.get_db)):
-    apps = db.query(database.Application).order_by(database.Application.created_at.desc()).all()
+def get_history(db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
+    # Tout le monde ne voit que ses propres dossiers, même les super admins
+    apps = db.query(database.Application).filter(database.Application.user_id == current_user.id).order_by(database.Application.created_at.desc()).all()
+
     results = []
     for a in apps:
         # On force la conversion du JSON stocké en String vers un objet Python
@@ -217,12 +203,57 @@ async def chat_endpoint(request: ChatRequest):
         return {"response": f"Erreur Chat: {str(e)}"}
 
 @app.delete("/applications/{app_id}")
-def delete_application(app_id: int, db: Session = Depends(database.get_db)):
+def delete_application(app_id: int, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
     app_record = db.query(database.Application).filter(database.Application.id == app_id).first()
-    if not app_record: return {"error": "Non trouvé"}
+    if not app_record: raise HTTPException(status_code=404, detail="Non trouvé")
+    
+    if current_user.role != "SUPER_ADMIN" and app_record.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Non autorisé")
+        
     db.delete(app_record)
     db.commit()
     return {"message": "Supprimé"}
+
+class SaveAppRequest(BaseModel):
+    fullName: str
+    clientType: str
+    projectType: str
+    amount: float
+    email: typing.Optional[str] = None
+    phone: typing.Optional[str] = None
+    score: int
+    decision: str
+    summary: str
+    financials: dict
+    risks: list
+    opportunities: list
+
+@app.post("/applications/")
+def save_application(req: SaveAppRequest, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
+    try:
+        new_app = database.Application(
+            user_id=current_user.id,
+            full_name=req.fullName,
+            client_type=req.clientType,
+            project_type=req.projectType,
+            amount=req.amount,
+            email=req.email,
+            phone=req.phone,
+            score=req.score,
+            decision=req.decision,
+            ia_summary=req.summary,
+            financial_data=json.dumps(req.financials),
+            risks=req.risks,
+            opportunities=req.opportunities,
+            chat_history=[]
+        )
+        db.add(new_app)
+        db.commit()
+        db.refresh(new_app)
+        return {"id": new_app.id, "message": "Enregistré avec succès"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Lock, Mail, ShieldCheck, Zap, BarChart3, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 // --- TYPES ---
 interface Particle {
@@ -38,7 +39,7 @@ const InteractiveBackground = () => {
     const initParticles = () => {
       particles = [];
       // Densité élevée pour permettre les connexions réseau
-      const particleCount = Math.floor((canvas.width * canvas.height) / 5000); 
+      const particleCount = Math.floor((canvas.width * canvas.height) / 5000);
       for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * canvas.width,
@@ -138,25 +139,51 @@ const InteractiveBackground = () => {
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+    setError(null);
+
+    try {
+      const response = await fetch('http://localhost:8000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur lors de la connexion');
+      }
+
+      const data = await response.json();
+      login(data.access_token, data.user_info, data.is_first_login);
+
+      if (data.is_first_login) {
+        navigate('/update-password');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen w-full relative flex items-center justify-center font-sans overflow-hidden bg-slate-950">
-      
+
       <InteractiveBackground />
 
       <div className="relative z-10 w-full h-full flex flex-col lg:flex-row">
-        
+
         {/* SECTION GAUCHE */}
         <div className="hidden lg:flex flex-1 items-center justify-center p-12">
           <div className="max-w-md text-left">
@@ -168,11 +195,11 @@ export default function Login() {
                 Credir<span className="text-blue-500">o</span>
               </h1>
             </div>
-            
+
             <h2 className="text-5xl font-bold text-white mb-6 leading-tight tracking-tight italic">
               L'audit financier <span className="text-blue-400">réinventé.</span>
             </h2>
-            
+
             <p className="text-slate-400 text-lg mb-12 leading-relaxed">
               Analysez les dossiers de crédit pro avec une précision chirurgicale grâce à Crediro.
             </p>
@@ -206,6 +233,12 @@ export default function Login() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm font-medium">
+                  {error}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email</label>
                 <div className="relative">

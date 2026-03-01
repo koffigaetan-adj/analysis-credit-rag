@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  PieChart, Pie, Cell, XAxis, YAxis, 
+  PieChart, Pie, Cell, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { 
-  FileText, ArrowRight, Building2, Wallet, 
+import {
+  FileText, ArrowRight, Building2, Wallet,
   Plus, RefreshCcw, Activity, Zap
 } from 'lucide-react';
 
@@ -20,7 +20,11 @@ export default function Dashboard() {
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/history/');
+      const response = await fetch('http://127.0.0.1:8000/history/', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       const result = await response.json();
       setData(result);
     } catch (error) {
@@ -58,7 +62,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-20 px-6 mt-10 animate-fade-in text-left">
-      
+
       {/* HEADER ACTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -66,19 +70,19 @@ export default function Dashboard() {
             Vue <span className="font-semibold text-slate-900 dark:text-white">d'ensemble</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-blue-500" /> 
+            <Activity className="w-4 h-4 text-blue-500" />
             Analyse en temps réel du portefeuille crédit
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={fetchStats}
             className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
           >
             <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-          <Link 
-            to="/new" 
+          <Link
+            to="/new"
             className="flex items-center gap-2 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-medium shadow-lg transition-all"
           >
             <Plus className="w-5 h-5" />
@@ -120,20 +124,20 @@ export default function Dashboard() {
                 <Pie data={pieData} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value">
                   {pieData.map((entry, index) => <Cell key={index} fill={entry.color} strokeWidth={0} />)}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '16px', border: 'none', color: isDark ? '#fff' : '#000' }} 
+                <Tooltip
+                  contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '16px', border: 'none', color: isDark ? '#fff' : '#000' }}
                   itemStyle={{ color: isDark ? '#cbd5e1' : '#475569' }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="flex justify-center gap-6 mt-6">
-             {pieData.map(item => (
-               <div key={item.name} className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{item.name}</span>
-               </div>
-             ))}
+            {pieData.map(item => (
+              <div key={item.name} className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{item.name}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -146,14 +150,14 @@ export default function Dashboard() {
               <AreaChart data={barData}>
                 <defs>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.1}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.1} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#24334bff" : "#f8fafc"} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#99a3b0ff' : '#99a3b0ff', fontSize: 12 }} dy={10} />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }}
                 />
                 <Area type="monotone" dataKey="volume" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
@@ -196,23 +200,22 @@ export default function Dashboard() {
                   <td className="px-8 py-5 text-xs text-slate-400 dark:text-slate-500 font-medium uppercase">{app.project_type}</td>
                   <td className="px-8 py-5 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">{Number(app.amount).toLocaleString()} €</td>
                   <td className="px-8 py-5 text-center">
-                    <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${
-                      app.score >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 
-                      app.score >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${app.score >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                        app.score >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'
+                      }`}>
                       {app.score}/100
                     </span>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <button 
-                      onClick={() => navigate('/analysis/result', { 
-                        state: { 
-                          resultData: app, 
-                          clientInfo: { fullName: app.full_name, amount: app.amount }, 
-                          clientType: app.client_type, 
-                          isFromPortfolio: true 
+                    <button
+                      onClick={() => navigate('/analysis/result', {
+                        state: {
+                          resultData: app,
+                          clientInfo: { fullName: app.full_name, amount: app.amount },
+                          clientType: app.client_type,
+                          isFromPortfolio: true
                         }
-                      })} 
+                      })}
                       className="p-2 text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors"
                     >
                       <ArrowRight className="w-5 h-5" />
