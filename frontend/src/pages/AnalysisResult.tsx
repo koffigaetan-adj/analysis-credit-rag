@@ -20,6 +20,18 @@ interface ClientInfo {
 }
 
 interface Financials {
+  // Nouveaux champs déterministes
+  revenue?: number;
+  net_income?: number;
+  equity?: number;
+  total_debt?: number;
+  cash_flow?: number;
+  working_capital?: number;
+  net_margin_percent?: number;
+  debt_to_equity_percent?: number;
+  debt_to_revenue_percent?: number;
+
+  // Anciens champs
   monthly_income?: number;
   monthly_expenses?: number;
   debt_ratio?: number;
@@ -28,7 +40,6 @@ interface Financials {
   turnover?: number;
   net_profit?: number;
   ebitda?: number;
-  equity?: number;
   debt_to_ebitda?: number;
 }
 
@@ -149,14 +160,32 @@ export default function AnalysisResult() {
   };
 
   const getGaugeConfig = () => {
-    const val = isCompany ? (fins.debt_to_ebitda || 0) : (fins.debt_ratio || 0);
-    const r_max = isCompany ? 8 : 100;
+    let val = 0;
+    let r_max = 100;
+    let suffix = "%";
+
+    if (isCompany) {
+      if (fins.debt_to_equity_percent !== undefined) {
+        val = fins.debt_to_equity_percent;
+        r_max = 200; // max 200% pour l'endettement sur capitaux propres
+        suffix = "%";
+      } else {
+        val = fins.debt_to_ebitda || 0;
+        r_max = 8;
+        suffix = "x";
+      }
+    } else {
+      val = fins.debt_to_revenue_percent ?? fins.debt_ratio ?? 0;
+      r_max = 100;
+      suffix = "%";
+    }
+
     return {
       data: [{
         type: "indicator",
         mode: "gauge+number",
         value: val,
-        number: { suffix: isCompany ? "x" : "%", font: { size: 24, color: isDarkMode ? '#f1f5f9' : '#1e293b' } },
+        number: { suffix, font: { size: 24, color: isDarkMode ? '#f1f5f9' : '#1e293b' } },
         gauge: {
           axis: { range: [0, r_max], tickwidth: 1, tickcolor: isDarkMode ? '#475569' : '#cbd5e1' },
           bar: { color: isDarkMode ? '#3b82f6' : '#1e293b' },
@@ -370,8 +399,12 @@ export default function AnalysisResult() {
               />
               <div className="flex flex-col justify-center space-y-4">
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800 transition-colors">
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{isCompany ? "Dette / EBE" : "Ratio Dette"}</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{isCompany ? `${fins.debt_to_ebitda || 0}x` : `${fins.debt_ratio || 0}%`}</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? "Dette / Fonds Propres" : "Dette / EBE") : "Ratio Dette"}
+                  </p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? `${fins.debt_to_equity_percent}%` : `${fins.debt_to_ebitda || 0}x`) : `${fins.debt_to_revenue_percent ?? fins.debt_ratio ?? 0}%`}
+                  </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800 transition-colors">
                   <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{isCompany ? "Capitaux Propres" : "Épargne estimée"}</p>
@@ -390,8 +423,12 @@ export default function AnalysisResult() {
                   measure: ["relative", "relative", "total"],
                   x: isCompany ? ["C.A.", "Charges", "R. Net"] : ["Revenus", "Charges", "Reste à vivre"],
                   y: isCompany
-                    ? [fins.turnover || 0, -((fins.turnover || 0) - (fins.net_profit || 0)), fins.net_profit || 0]
-                    : [fins.monthly_income || 0, -(fins.monthly_expenses || 0), fins.rest_to_live || 0],
+                    ? [fins.revenue ?? fins.turnover ?? 0, -(((fins.revenue ?? fins.turnover) || 0) - ((fins.net_income ?? fins.net_profit) || 0)), fins.net_income ?? fins.net_profit ?? 0]
+                    : [
+                      fins.revenue ? (fins.revenue / 12) : (fins.monthly_income ?? 0),
+                      -(fins.revenue ? ((fins.revenue - (fins.net_income || 0)) / 12) : (fins.monthly_expenses ?? 0)),
+                      fins.net_income ? (fins.net_income / 12) : (fins.rest_to_live ?? 0)
+                    ],
                   connector: { line: { color: isDarkMode ? "#334155" : "#e2e8f0" } },
                   decreasing: { marker: { color: "#EF4444" } },
                   increasing: { marker: { color: "#10B981" } },

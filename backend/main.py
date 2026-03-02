@@ -8,14 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pypdf import PdfReader
-import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 import plotly.graph_objects as go
+import scoring_engine
 from fastapi import HTTPException
 from auth import router as auth_router, get_current_user
 
-# --- 1. CONFIGURATION & ROTATION ---
+# --- 1. CONFIGURATION ---
 load_dotenv()
 app = FastAPI()
 
@@ -32,28 +33,11 @@ app.add_middleware(
 os.makedirs("uploads/avatars", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-API_KEYS = os.getenv("GOOGLE_API_KEYS", os.getenv("GOOGLE_API_KEY", "")).split(",")
-current_key_index = 0
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+client = Groq(api_key=GROQ_API_KEY)
 
-def configure_genai():
-    global current_key_index
-    key = API_KEYS[current_key_index].strip()
-    genai.configure(api_key=key)
-    print(f"Gemini configuré avec la clé n°{current_key_index + 1}")
-
-configure_genai()
-
-generation_config = {
-    "temperature": 0.1,
-    "max_output_tokens": 8192,
-    "response_mime_type": "application/json",
-}
-
-# Utilisation du modèle 2.0 Flash (la dernière version stable/exp)
-model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash", 
-    generation_config=generation_config,
-)
+# Utilisation du modèle Llama 3 puissant et rapide pour l'extraction et l'analyse
+MODEL_NAME = "llama-3.3-70b-versatile"
 
 # --- 2. MODÈLES DE DONNÉES ---
 class ChatRequest(BaseModel):
@@ -73,31 +57,46 @@ def extract_text_from_pdf(file_content: bytes) -> str:
         return "\n".join(text_parts) + "\n" if text_parts else ""
     except: return ""
 
-def build_hybrid_prompt(client_info: dict, extracted_text: str) -> str:
-    is_company = client_info.get('clientType') == 'entreprise'
-    credit_type = client_info.get('projectType', '')
-    amount = client_info.get('amount')
-    name = client_info.get('fullName')
-
+def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
     return f"""
-    RÔLE : Expert en Analyse de Risque Financier.
-    DOSSIER : {name} | TYPE : {client_info.get('clientType')} | MONTANT : {amount}€
+    EXTRACTION DE DONNEES NUMERIQUES UNIQUEMENT.
+    Document de : {client_info.get('fullName')} | TYPE : {client_info.get('clientType')}
+    TEXTE BRUT : {extracted_text[0:40000]}
     
-    DATA : {extracted_text[0:30000]}
-
-    MISSION : Analyse les documents et génère un rapport JSON complet.
-    REMPLIS BIEN TOUS LES CHAMPS : 'risks', 'opportunities' et 'summary'.
-
+    Trouve ou estime les montants suivants en euros (uniquement des nombres ou 0 si introuvable).
     FORMAT JSON OBLIGATOIRE :
     {{
-        "score": number,
-        "decision": "Favorable" | "Défavorable" | "Vigilance",
-        "payment_reliability": "Excellent" | "Bon" | "Moyen" | "Risqué",
-        "account_trend": "En hausse" | "Stable" | "En baisse",
-        "financials": {{ ... }},
-        "risks": ["string"],
-        "opportunities": ["string"],
-        "summary": "Synthèse détaillée de l'analyse ici"
+        "revenue": 150000,
+        "net_income": 20000,
+        "equity": 50000,
+        "total_debt": 10000,
+        "cash_flow": 5000,
+        "working_capital": 2000
+    }}
+    """
+
+def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict) -> str:
+    return f"""
+    RÔLE : Analyste Crédit Senior.
+    DOSSIER : {client_info.get('fullName')} | MONTANT : {client_info.get('amount')}€
+    
+    Voici les résultats EXACTS calculés par notre moteur de risque (ne les modifie pas) :
+    - Score : {score_data['score']}/100
+    - Décision technique : {score_data['decision']}
+    - Chiffre d'affaires : {fin_data.get('revenue', 0)}
+    - Résultat Net : {fin_data.get('net_income', 0)}
+    - Dettes : {fin_data.get('total_debt', 0)}
+    - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
+    - Facteurs positifs identifiés : {score_data.get('technical_opportunities', [])}
+    
+    CONTEXTE TEXTUEL BRUT : {extracted_text[0:20000]}
+    
+    MISSION : Rédige l'avis motivé (Risques, Opportunités, Synthèse narrative détaillée) qui justifie ce score et cette décision. Ne réinvente pas de chiffres.
+    FORMAT JSON OBLIGATOIRE EN SORTIE :
+    {{
+        "risks": ["risque 1", "risque 2", ...],
+        "opportunities": ["opportunité 1", ...],
+        "summary": "Synthèse très détaillée et professionnelle des finances et du projet."
     }}
     """
 
@@ -114,9 +113,7 @@ async def analyze_dashboard(
     files: typing.List[UploadFile] = File(...),
     db: Session = Depends(database.get_db)
 ):
-    global current_key_index
     full_extracted_text_parts = []
-    gemini_vision_files = [] 
     
     for file in files:
         file_bytes = await file.read()
@@ -124,38 +121,73 @@ async def analyze_dashboard(
         if mime_type == "application/pdf":
             text = extract_text_from_pdf(file_bytes)
             full_extracted_text_parts.append(f"\n-- {file.filename} --\n{text}\n")
-        gemini_vision_files.append({"mime_type": mime_type, "data": file_bytes})
+        # Groq doesn't natively support image vision for Llama 3 like Gemini 1.5,
+        # so we focus purely on textual extraction from PDFs.
 
     full_extracted_text = "".join(full_extracted_text_parts)
 
-    prompt = build_hybrid_prompt({
+    prompt = build_extraction_prompt({
         "fullName": fullName, 
         "amount": amount, 
         "clientType": clientType, 
         "projectType": projectType
     }, full_extracted_text)
     
-    attempts = 0
-    while attempts < len(API_KEYS):
-        try:
-            response = model.generate_content([prompt] + gemini_vision_files)
-            json_text = response.text.replace('```json', '').replace('```', '').strip()
-            result_json = json.loads(json_text)
+    try:
+        # PHASE 1: Extraction with Groq
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model=MODEL_NAME,
+            temperature=0.1,
+            response_format={"type": "json_object"}
+        )
+        json_text = response.choices[0].message.content
+        extracted_data = json.loads(json_text)
+        
+        # PHASE 2: Deterministic Scoring
+        scoring_result = scoring_engine.analyze_financials(extracted_data, {
+            "clientType": clientType,
+            "amount": amount
+        })
+        
+        fin_data = scoring_result["raw_numbers"]
+        score_data = scoring_result["scoring"]
+        ratios_data = scoring_result["ratios"]
             
-            fin = result_json.get("financials", {})
+        # PHASE 3: Interpretation with Groq
+        interpretation_prompt = build_interpretation_prompt({
+            "fullName": fullName, 
+            "amount": amount, 
+            "clientType": clientType, 
+            "projectType": projectType
+        }, full_extracted_text, score_data, fin_data)
+        
+        interpretation_response = client.chat.completions.create(
+            messages=[{"role": "user", "content": interpretation_prompt}],
+            model=MODEL_NAME,
+            temperature=0.1,
+            response_format={"type": "json_object"}
+        )
+        final_json_text = interpretation_response.choices[0].message.content
+        final_ia_data = json.loads(final_json_text)
+        
+        # Assemblage Final pour le Frontend
+        final_response = {
+            "score": score_data["score"],
+            "decision": score_data["decision"],
+            "payment_reliability": score_data.get("payment_reliability", "Moyen"),
+            "account_trend": score_data.get("account_trend", "Stable"),
+            "financials": {**fin_data, **ratios_data},
+            "risks": list(set(score_data.get("technical_risks", []) + final_ia_data.get("risks", []))),
+            "opportunities": list(set(score_data.get("technical_opportunities", []) + final_ia_data.get("opportunities", []))),
+            "summary": final_ia_data.get("summary", ""),
+            "ia_summary": final_ia_data.get("summary", "")
+        }
+        
+        return final_response
 
-            # Ajout des données pour le Frontend immédiat (sans sauvegarde automatique)
-            result_json["ia_summary"] = result_json.get("summary")
-            
-            return result_json
-
-        except Exception as e:
-            if "429" in str(e) and attempts < len(API_KEYS) - 1:
-                current_key_index = (current_key_index + 1) % len(API_KEYS)
-                configure_genai()
-                attempts += 1
-            else:
-                return {"score": 0, "summary": f"Erreur : {str(e)}", "decision": "Erreur"}
+    except Exception as e:
+        return {"score": 0, "summary": f"Erreur avec Groq: {str(e)}", "decision": "Erreur"}
 
 @app.get("/history/")
 def get_history(db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
@@ -196,9 +228,12 @@ def get_history(db: Session = Depends(database.get_db), current_user: database.U
 async def chat_endpoint(request: ChatRequest):
     try:
         prompt = f"Contexte : {request.context}\nQuestion : {request.message}\nRéponds de manière pro et courte."
-        chat_model = genai.GenerativeModel("gemini-2.0-flash")
-        response = chat_model.generate_content(prompt)
-        return {"response": response.text}
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model=MODEL_NAME,
+            temperature=0.3
+        )
+        return {"response": response.choices[0].message.content}
     except Exception as e:
         return {"response": f"Erreur Chat: {str(e)}"}
 

@@ -2,7 +2,7 @@ import os
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from dotenv import load_dotenv
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PERSIST_DIRECTORY = "./db/chroma_db"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 # 1. Embedding Local (HuggingFace)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -41,12 +42,10 @@ def ask_bank_knowledge(query):
     """
     vectordb = Chroma(persist_directory=PERSIST_DIRECTORY, embedding_function=embeddings)
     
-    # Correction : "gemini-2.5-flash" n'existe pas encore dans le SDK standard, 
-    # utilise "gemini-1.5-flash" ou "gemini-2.0-flash-exp"
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash", 
-        temperature=0.1,
-        convert_system_message_to_human=True
+    llm = ChatGroq(
+        groq_api_key=GROQ_API_KEY,
+        model_name="llama-3.3-70b-versatile", 
+        temperature=0.1
     )
 
     qa_chain = RetrievalQA.from_chain_type(
