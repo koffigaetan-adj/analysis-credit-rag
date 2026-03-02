@@ -126,7 +126,9 @@ export default function Settings() {
 
       {/* HEADER PRINCIPAL */}
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Paramètres</h1>
+        <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
+          Paramètre <span className="font-semibold text-slate-900 dark:text-white">du compte</span>
+        </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">
           Gérez votre compte, votre sécurité et vos préférences d'application.
         </p>
