@@ -219,7 +219,7 @@ export default function Team() {
           <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
             Liste de <span className="font-semibold text-slate-900 dark:text-white">l'équipe</span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Gérez les accès et les collaborateurs de votre instance Fluxia</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Gérez les accès et les collaborateurs de votre instance Kaïs</p>
         </div>
 
         <button

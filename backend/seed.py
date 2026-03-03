@@ -16,7 +16,7 @@ def seed_super_admin():
         id=str(uuid.uuid4()),
         first_name="Gaetan",
         last_name="Koffi",
-        establishment="Fluxia HQ",
+        establishment="Kof Company",
         email="gaetan.eyes@gmail.com",
         password_hash=get_password_hash("azerty"),
         role="SUPER_ADMIN",

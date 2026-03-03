@@ -6,7 +6,6 @@ import {
   FileText,
   Users,
   Settings,
-  TrendingUp,
   ListTodo,
   ChevronLeft,
   ChevronRight,
@@ -14,8 +13,10 @@ import {
   Sun,
   Moon,
   LifeBuoy,
+  ShieldCheck,
   X,
-  MessageSquare
+  MessageSquare,
+  Activity
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ const menuItems = [
   { path: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { path: '/new', label: 'Nouvelle Analyse', icon: FileText },
   { path: '/history', label: 'Historique', icon: ListTodo },
+  { path: '/prediction', label: 'Prédiction', icon: Activity },
   { path: '/chat', label: 'Assistant Chat', icon: MessageSquare },
   { path: '/team', label: 'Équipe', icon: Users },
 ];
@@ -38,9 +40,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // Initialisation du thème
+  // Initialisation du thème (Force Clair = False par défaut)
   const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
+    return localStorage.getItem('theme') === 'dark' || false;
   });
 
   // Effet pour appliquer le thème au document
@@ -87,14 +89,14 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
         </button>
 
         {/* LOGO SECTION */}
-        <div className={`p-6 mb-4 flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/20">
-            <TrendingUp className="w-6 h-6 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div className="animate-in fade-in duration-500">
-              <h1 className="text-white font-bold text-lg tracking-tight leading-none italic">Flux<span className="text-blue-400">ia</span></h1>
-              <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">Analytics</p>
+        <div className={`p-6 mb-4 flex items-center justify-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+          {isCollapsed ? (
+            <div className="w-10 h-10 flex items-center justify-center shrink-0">
+              <img src="/src/images/logo_kais.svg" alt="Kaïs Logo" className="w-8 h-8 object-contain" />
+            </div>
+          ) : (
+            <div className="animate-in fade-in duration-500 flex justify-left w-full pl-4">
+              <img src="/src/images/Logocomplet.svg" alt="Kaïs Analytics" className="h-12 object-contain" />
             </div>
           )}
         </div>
@@ -137,7 +139,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
               }`}
           >
             {isDark ? (
-              <Sun className="w-5 h-5 shrink-0 text-amber-400" />
+              <Sun className="w-5 h-5 shrink-0" />
             ) : (
               <Moon className="w-5 h-5 shrink-0" />
             )}
@@ -160,6 +162,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
           >
             <LifeBuoy className="w-5 h-5 shrink-0" />
             {!isCollapsed && <span className="text-sm">Centre d'aide</span>}
+          </Link>
+
+          <Link
+            to="/privacy"
+            className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all text-slate-400 hover:bg-slate-900 hover:text-white font-medium ${isCollapsed ? 'justify-center' : ''
+              } ${location.pathname === '/privacy' ? 'bg-slate-900 text-white' : ''}`}
+          >
+            <ShieldCheck className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span className="text-sm">Confidentialité & RGPD</span>}
           </Link>
 
           {/* DÉCONNEXION */}

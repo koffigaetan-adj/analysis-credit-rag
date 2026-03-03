@@ -1,4 +1,4 @@
-import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle } from 'lucide-react';
+import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -7,12 +7,13 @@ import UpdatePasswordModal from '../components/UpdatePasswordModal';
 export default function Settings() {
   const { user, token, login } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [establishment, setEstablishment] = useState('Fluxia HQ');
+  const [establishment, setEstablishment] = useState('Kof Company');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -29,7 +30,7 @@ export default function Settings() {
       setFirstName(user.first_name || '');
       setLastName(user.last_name || '');
       setEmail(user.email || '');
-      setEstablishment(user.establishment || 'Fluxia HQ');
+      setEstablishment(user.establishment || 'Kof Company');
       if (user.avatar_url) {
         setAvatarPreview(`http://localhost:8000${user.avatar_url}`);
       }
@@ -302,7 +303,7 @@ export default function Settings() {
               setFirstName(user.first_name || '');
               setLastName(user.last_name || '');
               setEmail(user.email || '');
-              setEstablishment(user.establishment || 'Fluxia HQ');
+              setEstablishment(user.establishment || 'Kof Company');
             }
             setMessage(null);
           }}

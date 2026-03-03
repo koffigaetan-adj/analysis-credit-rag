@@ -28,7 +28,7 @@ export default function Chat() {
                setMessages([
                     {
                          role: 'assistant',
-                         content: `Bonjour **${firstName}** 👋 ! Je suis l'assistant autonome Fluxia.\n\nJe suis spécialisé en banque, finance et analyse de crédit. Comment puis-je vous accompagner aujourd'hui ?`
+                         content: `Bonjour **${firstName}** 👋 ! Je suis l'assistant autonome Kaïs.\n\nJe suis spécialisé en banque, finance et analyse de crédit. Comment puis-je vous accompagner aujourd'hui ?`
                     }
                ]);
           }
@@ -185,7 +185,7 @@ export default function Chat() {
                               </button>
                          </form>
                          <div className="text-center mt-3 text-[10px] text-slate-400">
-                              L'IA de Fluxia est spécialisée en finance et peut parfois commettre des erreurs. Vérifiez les informations complexes.
+                              L'IA de Kaïs est spécialisée en finance et peut parfois commettre des erreurs. Vérifiez les informations complexes.
                          </div>
                     </div>
                </div>

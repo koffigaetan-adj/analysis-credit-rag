@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AlertTriangle, LogOut } from 'lucide-react';
 
-// 5 minutes of inactivity total
 const INACTIVITY_LIMIT_MS = 1 * 60 * 1000;
-// Show warning 30 seconds before logout
 const WARNING_BEFORE_LOGOUT_MS = 30 * 1000;
 
 export default function SessionTimeout() {
@@ -12,30 +10,32 @@ export default function SessionTimeout() {
      const [showWarning, setShowWarning] = useState(false);
      const [timeLeft, setTimeLeft] = useState(WARNING_BEFORE_LOGOUT_MS / 1000);
 
-     // Use refs securely across closures
-     const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-     const countdownRef = React.useRef<NodeJS.Timeout | null>(null);
+     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+     const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
-     const performLogout = useCallback(() => {
-          logout();
-          setShowWarning(false);
-     }, [logout]);
+     const isWarningActive = useRef(false);
+     const logoutFn = useRef(logout);
 
-     const startWarningCountdown = useCallback(() => {
+     useEffect(() => { logoutFn.current = logout; }, [logout]);
+     useEffect(() => { isWarningActive.current = showWarning; }, [showWarning]);
+
+     const startWarning = useCallback(() => {
           setShowWarning(true);
           setTimeLeft(WARNING_BEFORE_LOGOUT_MS / 1000);
 
+          if (countdownRef.current) clearInterval(countdownRef.current);
           countdownRef.current = setInterval(() => {
                setTimeLeft((prev) => {
                     if (prev <= 1) {
                          if (countdownRef.current) clearInterval(countdownRef.current);
-                         performLogout();
+                         logoutFn.current();
+                         setShowWarning(false);
                          return 0;
                     }
                     return prev - 1;
                });
           }, 1000);
-     }, [performLogout]);
+     }, []);
 
      const resetTimer = useCallback(() => {
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -44,12 +44,11 @@ export default function SessionTimeout() {
           setShowWarning(false);
 
           if (isAuthenticated) {
-               // Set timer to trigger warning
                timeoutRef.current = setTimeout(() => {
-                    startWarningCountdown();
+                    startWarning();
                }, INACTIVITY_LIMIT_MS - WARNING_BEFORE_LOGOUT_MS);
           }
-     }, [isAuthenticated, startWarningCountdown]);
+     }, [isAuthenticated, startWarning]);
 
      useEffect(() => {
           if (!isAuthenticated) return;
@@ -57,32 +56,27 @@ export default function SessionTimeout() {
           resetTimer();
 
           const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+          let throttleTimer: NodeJS.Timeout | null = null;
 
-          // Throttle the resets slightly so it's not killing performance
-          let throttleTimer = false;
           const handleActivity = () => {
                if (throttleTimer) return;
-               if (showWarning) return; // Si l'alerte est affichée, seul le bouton compte
+               if (isWarningActive.current) return;
 
-               throttleTimer = true;
-               setTimeout(() => {
+               throttleTimer = setTimeout(() => {
                     resetTimer();
-                    throttleTimer = false;
-               }, 1000); // 1s throttle
+                    throttleTimer = null;
+               }, 1000);
           };
 
-          events.forEach(event => {
-               window.addEventListener(event, handleActivity);
-          });
+          events.forEach(event => window.addEventListener(event, handleActivity));
 
           return () => {
-               events.forEach(event => {
-                    window.removeEventListener(event, handleActivity);
-               });
+               events.forEach(event => window.removeEventListener(event, handleActivity));
+               if (throttleTimer) clearTimeout(throttleTimer);
                if (timeoutRef.current) clearTimeout(timeoutRef.current);
                if (countdownRef.current) clearInterval(countdownRef.current);
           };
-     }, [isAuthenticated, resetTimer, showWarning]);
+     }, [isAuthenticated, resetTimer]);
 
      if (!showWarning) return null;
 
@@ -103,7 +97,10 @@ export default function SessionTimeout() {
 
                     <div className="p-6 pt-0 flex gap-3">
                          <button
-                              onClick={() => performLogout()}
+                              onClick={() => {
+                                   logoutFn.current();
+                                   setShowWarning(false);
+                              }}
                               className="flex-1 py-3 px-4 flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                          >
                               <LogOut className="w-4 h-4" /> Quitter

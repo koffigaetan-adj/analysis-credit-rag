@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Lock, Mail, ShieldCheck, Zap, BarChart3, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, Zap, BarChart3, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // --- TYPES ---
@@ -27,7 +27,7 @@ const InteractiveBackground = () => {
     if (!ctx) return;
 
     let particles: Particle[] = [];
-    const colors = ['#475569', '#64748b', '#94a3b8', '#cbd5e1', '#1e293b'];
+    const colors = ['#e63919', '#cb2b11', '#a9210c', '#404040', '#262626'];
     let animationId: number;
 
     const resize = () => {
@@ -59,8 +59,8 @@ const InteractiveBackground = () => {
     };
 
     const animate = () => {
-      // Fond Slate 950 profond
-      ctx.fillStyle = '#020617';
+      // Fond neutre très sombre (gris Kaïs)
+      ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const mouseX = mouseRef.current.x;
@@ -100,7 +100,7 @@ const InteractiveBackground = () => {
 
           if (distance < 100) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(148, 163, 184, ${0.2 * (1 - distance / 100)})`;
+            ctx.strokeStyle = `rgba(230, 57, 25, ${0.2 * (1 - distance / 100)})`;
             ctx.lineWidth = 0.5;
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
@@ -145,6 +145,21 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Animation 3D au survol
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    // Rotation max de +/- 30 degrés
+    setTilt({ x: -(y / rect.height) * 40, y: (x / rect.width) * 40 });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -183,21 +198,25 @@ export default function Login() {
         {/* SECTION GAUCHE */}
         <div className="hidden lg:flex flex-1 items-center justify-center p-12">
           <div className="max-w-md text-left">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="w-14 h-14 bg-blue-600 rounded-[22px] flex items-center justify-center shadow-2xl shadow-blue-500/20 transition-transform hover:scale-105">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-4xl font-black text-white tracking-tighter italic uppercase">
-                Credir<span className="text-blue-500">o</span>
-              </h1>
+            <div
+              className="mb-14 w-fit inline-block cursor-crosshair"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              style={{ perspective: '1000px' }}
+            >
+
+              <img
+                src="/src/images/Logocomplet.svg"
+                alt="Kaïs Logo"
+                className="h-56 object-contain drop-shadow-[0_2000x_200px_rgba(230,57,25,0.2)] pointer-events-none"
+              />
+
             </div>
 
-            <h2 className="text-5xl font-bold text-white mb-6 leading-tight tracking-tight italic">
-              L'audit financier <span className="text-blue-400">réinventé.</span>
-            </h2>
+
 
             <p className="text-slate-400 text-lg mb-12 leading-relaxed">
-              Analysez les dossiers de crédit pro avec une précision chirurgicale grâce à Crediro.
+              Analysez les dossiers de crédit pro avec une précision chirurgicale grâce à Kaïs.
             </p>
 
             <div className="space-y-8 text-left animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
@@ -243,7 +262,7 @@ export default function Login() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="analyste@crediro.com"
+                    placeholder="analyste@kais.com"
                     className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
                     required
                   />

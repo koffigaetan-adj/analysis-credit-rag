@@ -3,7 +3,7 @@ import json
 import typing
 import io
 import database 
-from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -24,11 +24,20 @@ app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 os.makedirs("uploads/avatars", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -66,7 +75,8 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
         Document de : {client_info.get('fullName')} | TYPE : {client_info.get('clientType')}
         TEXTE BRUT : {extracted_text[0:40000]}
         
-        Trouve ou estime les montants ANNUELS suivants en euros (uniquement des nombres ou 0 si introuvable).
+        Trouve ou estime les montants ANNUELS suivants en euros.
+        IMPORTANT: Renvoyer UNIQUEMENT des nombres entiers ou décimaux (floats) sans aucun texte ni symbole monétaire ni calcul (ex: 7766.2, 0). Les calculs arithmétiques comme "2500 * 3" sont INTERDITS, tu dois faire les mathématiques toi-même et envoyer le résultat final sous forme de type de donnée `Number` valide en JSON.
         - revenus_annuels : Ensemble des salaires nets, primes ou pensions sur un an. (Si c'est mensuel, multiplie par 12).
         - charges_annuelles : Loyer annuel, charges locatives, pensions versées (hors crédits).
         - mensualites_credits : Le total mensuel des crédits en cours identifiés. 
@@ -87,7 +97,8 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
         Document de : {client_info.get('fullName')} | TYPE : {client_info.get('clientType')}
         TEXTE BRUT : {extracted_text[0:40000]}
         
-        Trouve ou estime les montants suivants en euros pour le dernier exercice (N) et l'exercice précédent (N-1) (uniquement des nombres ou 0 si introuvable).
+        Trouve ou estime les montants suivants en euros pour le dernier exercice (N) et l'exercice précédent (N-1).
+        IMPORTANT: Renvoyer UNIQUEMENT des nombres entiers ou décimaux (floats) sans aucun texte ni symbole monétaire ni calcul (ex: 150000.5, 0). Les formules ou opérations arithmétiques sont INTERDITES, calcule la valeur toi-même si besoin et envoie le résultat final brut.
         Trouve également le nom exact (Personne ou Entreprise) figurant sur le document.
         FORMAT JSON OBLIGATOIRE :
         {{

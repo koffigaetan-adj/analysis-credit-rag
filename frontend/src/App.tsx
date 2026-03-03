@@ -10,6 +10,8 @@ import Team from './pages/Team';
 import Settings from './pages/Settings';
 import HelpCenter from './pages/HelpCenter';
 import Chat from './pages/Chat';
+import Prediction from './pages/Prediction';
+import Privacy from './pages/Privacy';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SessionTimeout from './components/SessionTimeout';
@@ -30,6 +32,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/list" element={<List />} />
               <Route path="/history" element={<List />} />
+              <Route path="/prediction" element={<Prediction />} />
               <Route path="/new" element={<NewAnalysis />} />
               <Route path="/analysis/result" element={<AnalysisResult />} />
               <Route path="/analysis/:id" element={<AnalysisDetail />} />
@@ -37,6 +40,7 @@ function App() {
               <Route path="/team" element={<Team />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<HelpCenter />} />
+              <Route path="/privacy" element={<Privacy />} />
             </Route>
           </Route>
 

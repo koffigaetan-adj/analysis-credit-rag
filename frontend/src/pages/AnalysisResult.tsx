@@ -30,6 +30,8 @@ interface Financials {
   net_margin_percent?: number;
   debt_to_equity_percent?: number;
   debt_to_revenue_percent?: number;
+  taux_endettement_personnel_percent?: number;
+  reste_a_vivre_annuel?: number;
 
   // Anciens champs
   monthly_income?: number;
@@ -41,6 +43,12 @@ interface Financials {
   net_profit?: number;
   ebitda?: number;
   debt_to_ebitda?: number;
+
+  // Groq Extract fallback fields Particulier
+  revenus_annuels?: number;
+  charges_annuelles?: number;
+  mensualites_credits?: number;
+  epargne_estimee?: number;
 }
 
 interface ResultData {
@@ -175,7 +183,7 @@ export default function AnalysisResult() {
         suffix = "x";
       }
     } else {
-      val = fins.debt_to_revenue_percent ?? fins.debt_ratio ?? 0;
+      val = fins.taux_endettement_personnel_percent ?? fins.debt_to_revenue_percent ?? fins.debt_ratio ?? 0;
       r_max = 100;
       suffix = "%";
     }
@@ -216,7 +224,7 @@ export default function AnalysisResult() {
       const response = await fetch(`http://127.0.0.1:8000/applications/${resultData.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
       if (response.ok) {
@@ -240,7 +248,7 @@ export default function AnalysisResult() {
         fullName: clientInfo.fullName,
         clientType: clientType,
         projectType: state.specificProfile || clientInfo.projectType || "Standard",
-        amount: parseFloat(clientInfo.amount.toString().replace(/ /g, "").replace(",", ".")),
+        amount: parseFloat((clientInfo.amount || "0").toString().replace(/ /g, "").replace(",", ".")) || 0,
         email: (clientInfo as any).email || null,
         phone: (clientInfo as any).phone || null,
         score: resultData.score,
@@ -255,7 +263,7 @@ export default function AnalysisResult() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         },
         body: JSON.stringify(payload)
       });
@@ -303,9 +311,8 @@ export default function AnalysisResult() {
         <div className="hidden print:block border-b-2 border-slate-200 pb-6 mb-8 pt-4">
           <div className="flex justify-between items-end">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-8 h-8 text-blue-600" />
-                <h2 className="text-2xl font-black tracking-widest text-slate-900 uppercase">Fluxia</h2>
+              <div className="flex justify-start mb-4">
+                <img src="/src/images/Logocompletv2.svg" alt="Kaïs" className="h-12 object-contain" />
               </div>
               <h1 className="text-4xl font-light text-slate-800 tracking-tight">Rapport d'Analyse <span className="font-semibold text-slate-900">Financière</span></h1>
             </div>
@@ -358,25 +365,25 @@ export default function AnalysisResult() {
 
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-2 print:gap-6">
-          <div className={`rounded-[28px] print:rounded-2xl p-6 print:p-6 border shadow-sm print:border-slate-200 transition-colors ${decisionStyle.bg} ${decisionStyle.border}`}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Décision IA</p>
+          <div className={`rounded-[28px] print:rounded-2xl p-6 print:p-6 border shadow-sm print:border-slate-200 hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300 group ${decisionStyle.bg} ${decisionStyle.border}`}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-300">Décision IA</p>
             <div className="flex items-center gap-3">{decisionStyle.icon}<h2 className={`text-2xl font-bold ${decisionStyle.text}`}>{decision}</h2></div>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group transition-colors">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Score Solvabilité</p>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all"><Sparkles className="w-6 h-6 text-blue-600 group-hover:text-white" /></div>
               <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{resultData.score}<span className="text-slate-300 dark:text-slate-600 text-sm ml-1">/100</span></h3>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group transition-colors">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Fiabilité</p>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all"><ShieldCheck className="w-6 h-6 text-emerald-600 group-hover:text-white" /></div>
               <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">{reliability}</h3>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group transition-colors">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Tendance</p>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all"><LineChart className="w-6 h-6 text-indigo-600 group-hover:text-white" /></div>
@@ -408,7 +415,7 @@ export default function AnalysisResult() {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800 transition-colors">
                   <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{isCompany ? "Capitaux Propres" : "Épargne estimée"}</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{((isCompany ? fins.equity : fins.savings_capacity) || 0).toLocaleString()} €</p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{((isCompany ? fins.equity : (fins.epargne_estimee ?? fins.savings_capacity)) || 0).toLocaleString()} €</p>
                 </div>
               </div>
             </div>
@@ -425,9 +432,9 @@ export default function AnalysisResult() {
                   y: isCompany
                     ? [fins.revenue ?? fins.turnover ?? 0, -(((fins.revenue ?? fins.turnover) || 0) - ((fins.net_income ?? fins.net_profit) || 0)), fins.net_income ?? fins.net_profit ?? 0]
                     : [
-                      fins.revenue ? (fins.revenue / 12) : (fins.monthly_income ?? 0),
-                      -(fins.revenue ? ((fins.revenue - (fins.net_income || 0)) / 12) : (fins.monthly_expenses ?? 0)),
-                      fins.net_income ? (fins.net_income / 12) : (fins.rest_to_live ?? 0)
+                      (fins.revenus_annuels !== undefined) ? (fins.revenus_annuels / 12) : (fins.revenue ? (fins.revenue / 12) : (fins.monthly_income ?? 0)),
+                      -((fins.charges_annuelles !== undefined) ? (fins.charges_annuelles / 12 + (fins.mensualites_credits ?? 0)) : (fins.revenue ? ((fins.revenue - (fins.net_income || 0)) / 12) : (fins.monthly_expenses ?? 0))),
+                      (fins.reste_a_vivre_annuel !== undefined) ? (fins.reste_a_vivre_annuel / 12) : ((fins.net_income ? (fins.net_income / 12) : (fins.rest_to_live ?? 0)))
                     ],
                   connector: { line: { color: isDarkMode ? "#334155" : "#e2e8f0" } },
                   decreasing: { marker: { color: "#EF4444" } },
@@ -482,21 +489,32 @@ export default function AnalysisResult() {
       <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end print:hidden">
         {!isChatOpen ? (
           <button onClick={() => setIsChatOpen(true)} className="w-16 h-16 rounded-3xl bg-slate-900 dark:bg-blue-600 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all">
-            <Bot className="w-8 h-8" />
+            <img src="/src/images/logo_kais.svg" alt="Chat Kaïs" className="w-8 h-8 object-contain filter brightness-0 invert" />
           </button>
         ) : (
           <div className="w-[400px] h-[550px] bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden animate-scale-in origin-bottom-right">
             <div className="px-6 py-4 bg-slate-900 dark:bg-slate-950 flex items-center justify-between text-white">
-              <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest"><Sparkles className="w-4 h-4 text-blue-400" /> Assistant Fluxia</div>
+              <div className="flex items-center gap-2 text-sm font-bold tracking-widest"><img src="/src/images/logo_kais.svg" alt="Kaïs" className="w-5 h-5 object-contain" />Kaïs</div>
               <button onClick={() => setIsChatOpen(false)}><X className="w-5 h-5 opacity-50 hover:opacity-100" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 dark:bg-slate-950">
               {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-xs leading-relaxed ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm border border-slate-100 dark:border-slate-700'}`}>{msg.content}</div>
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                  <div
+                    className={`max-w-[85%] p-4 rounded-2xl text-xs leading-relaxed ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm border border-slate-100 dark:border-slate-700'}`}
+                    dangerouslySetInnerHTML={{ __html: msg.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                  />
                 </div>
               ))}
-              {isTyping && <div className="text-[10px] text-slate-400 italic">L'IA analyse votre question...</div>}
+              {isTyping && (
+                <div className="flex justify-start animate-fade-in">
+                  <div className="bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-1.5 h-10">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </div>
+                </div>
+              )}
               <div ref={chatEndRef} />
             </div>
             <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex gap-2">
