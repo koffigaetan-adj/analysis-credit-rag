@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface User {
      id: string;
-     full_name: string;
+     first_name: string;
+     last_name: string;
+     establishment?: string;
      email: string;
      role: string;
      avatar_url?: string;
@@ -25,10 +27,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
      const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
 
      useEffect(() => {
-          // Restaurer la session à partir du localStorage
-          const storedToken = localStorage.getItem('token');
-          const storedUser = localStorage.getItem('user');
-          const storedFirstLogin = localStorage.getItem('isFirstLogin');
+          // Restaurer la session à partir du sessionStorage
+          const storedToken = sessionStorage.getItem('token');
+          const storedUser = sessionStorage.getItem('user');
+          const storedFirstLogin = sessionStorage.getItem('isFirstLogin');
 
           if (storedToken && storedUser) {
                setToken(storedToken);
@@ -42,9 +44,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(newUser);
           setIsFirstLogin(firstLogin);
 
-          localStorage.setItem('token', newToken);
-          localStorage.setItem('user', JSON.stringify(newUser));
-          localStorage.setItem('isFirstLogin', firstLogin.toString());
+          sessionStorage.setItem('token', newToken);
+          sessionStorage.setItem('user', JSON.stringify(newUser));
+          sessionStorage.setItem('isFirstLogin', firstLogin.toString());
      };
 
      const logout = () => {
@@ -52,9 +54,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setIsFirstLogin(false);
 
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          localStorage.removeItem('isFirstLogin');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('isFirstLogin');
      };
 
      return (

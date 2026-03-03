@@ -181,11 +181,11 @@ export default function NewAnalysis() {
       </div>
 
       {step === 1 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 p-10 animate-fade-in transition-colors">
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 p-6 md:p-10 animate-fade-in transition-colors">
 
           {/* CATEGORY SWITCHER */}
           <div className="flex justify-center mb-10">
-            <div className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl inline-flex border border-slate-100 dark:border-slate-800 shadow-inner">
+            <div className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl flex flex-col sm:flex-row border border-slate-100 dark:border-slate-800 shadow-inner w-full sm:w-auto">
               <button onClick={() => handleCategoryChange('particulier')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'particulier' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <User className="w-4 h-4 inline mr-2" /> Particulier
               </button>
@@ -260,7 +260,7 @@ export default function NewAnalysis() {
             </div>
           </div>
           <div className="mt-12 flex justify-end">
-            <button onClick={validateStep1} className="bg-slate-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
+            <button onClick={validateStep1} className="w-full sm:w-auto justify-center bg-slate-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
               Suivant <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -268,7 +268,7 @@ export default function NewAnalysis() {
       ) : (
         /* STEP 2 : DOCUMENTS */
         <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden animate-fade-in transition-colors">
-          <div className="px-10 py-8 bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center transition-colors">
+          <div className="p-6 md:px-10 md:py-8 bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
             <div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3 uppercase tracking-tight">
                 <FileText className="w-5 h-5 text-blue-500" /> Justificatifs Requis
@@ -282,7 +282,7 @@ export default function NewAnalysis() {
             </div>
           </div>
 
-          <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-slate-900 transition-colors">
+          <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-slate-900 transition-colors">
             {currentDocs.map((doc) => {
               const docFiles = files[doc.id] || [];
               const isProvided = docFiles.length > 0;
@@ -314,11 +314,11 @@ export default function NewAnalysis() {
             })}
           </div>
 
-          <div className="px-10 py-8 bg-slate-50/50 dark:bg-slate-950/50 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center transition-colors">
-            <button onClick={() => setStep(1)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors">
+          <div className="p-6 md:px-10 md:py-8 bg-slate-50/50 dark:bg-slate-950/50 border-t border-slate-50 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-4 transition-colors">
+            <button onClick={() => setStep(1)} className="justify-center sm:justify-start py-3 sm:py-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Retour
             </button>
-            <button onClick={handleAnalyze} disabled={loading} className={`px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'bg-blue-600 dark:bg-blue-600 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
+            <button onClick={handleAnalyze} disabled={loading} className={`justify-center px-10 py-4 w-full sm:w-auto rounded-2xl text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'bg-blue-600 dark:bg-blue-600 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Analyser avec l'IA</>}
             </button>
           </div>

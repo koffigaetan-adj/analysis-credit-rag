@@ -2,13 +2,15 @@ import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, U
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import UpdatePasswordModal from '../components/UpdatePasswordModal';
 
 export default function Settings() {
   const { user, token, login } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [establishment, setEstablishment] = useState('Fluxia HQ');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -20,11 +22,14 @@ export default function Settings() {
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setFullName(user.full_name || '');
+      setFirstName(user.first_name || '');
+      setLastName(user.last_name || '');
       setEmail(user.email || '');
+      setEstablishment(user.establishment || 'Fluxia HQ');
       if (user.avatar_url) {
         setAvatarPreview(`http://localhost:8000${user.avatar_url}`);
       }
@@ -61,7 +66,8 @@ export default function Settings() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          full_name: fullName,
+          first_name: firstName,
+          last_name: lastName,
           email: email,
           establishment: establishment,
           password: passwordConfirm // passwordConfirm will be set by the modal
@@ -148,9 +154,9 @@ export default function Settings() {
             <h2 className="text-sm font-bold uppercase tracking-widest text-slate-900 dark:text-slate-100">Profil</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 pr-4 leading-relaxed">
               Vos informations publiques et l'adresse email utilisée pour les communications officielles.
-              {user?.role !== 'SUPER_ADMIN' && (
+              {user?.role === 'ANALYST' && (
                 <span className="block mt-2 text-rose-500/80 font-bold">
-                  En tant que membre, veuillez contacter un Super Administrateur pour modifier votre adresse email.
+                  En tant qu'analyste, veuillez contacter un Administrateur pour modifier votre nom ou adresse email.
                 </span>
               )}
             </p>
@@ -185,22 +191,32 @@ export default function Settings() {
 
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Nom complet</label>
+                  <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Prénom</label>
                   <input
                     type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     disabled={user?.role === 'ANALYST'}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Nom</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={user?.role === 'ANALYST'}
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Email</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={user?.role !== 'SUPER_ADMIN'}
+                    disabled={user?.role === 'ANALYST'}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -254,7 +270,7 @@ export default function Settings() {
                 type="text"
                 value={establishment}
                 onChange={(e) => setEstablishment(e.target.value)}
-                disabled={user?.role === 'ANALYST'}
+                disabled={user?.role !== 'SUPER_ADMIN'}
                 className="w-full mb-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
               />
               <div className="flex items-center gap-1.5 text-emerald-500 text-[10px] font-bold uppercase mt-1">
@@ -266,7 +282,7 @@ export default function Settings() {
               <h3 className="text-[11px] font-bold text-slate-400 uppercase mb-2 tracking-tighter">Mot de passe</h3>
               <p className="text-xs text-slate-500 mb-4">La sécurité de votre compte est primordiale.</p>
               <button
-                onClick={() => navigate('/update-password')}
+                onClick={() => setShowUpdatePasswordModal(true)}
                 className="flex items-center justify-between w-full text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
                 title="Sera redirigé vers l'écran de modification."
               >
@@ -283,8 +299,10 @@ export default function Settings() {
         <button
           onClick={() => {
             if (user) {
-              setFullName(user.full_name || '');
+              setFirstName(user.first_name || '');
+              setLastName(user.last_name || '');
               setEmail(user.email || '');
+              setEstablishment(user.establishment || 'Fluxia HQ');
             }
             setMessage(null);
           }}
@@ -379,6 +397,12 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* MODAL : UPDATE PASSWORD MANUALLY */}
+      <UpdatePasswordModal
+        isOpen={showUpdatePasswordModal}
+        onClose={() => setShowUpdatePasswordModal(false)}
+      />
     </div>
   );
 }

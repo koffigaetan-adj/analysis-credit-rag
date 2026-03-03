@@ -3,7 +3,7 @@ import json
 import typing
 import io
 import database 
-from fastapi import FastAPI, UploadFile, File, Form, Depends
+from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -58,47 +58,108 @@ def extract_text_from_pdf(file_content: bytes) -> str:
     except: return ""
 
 def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
-    return f"""
-    EXTRACTION DE DONNEES NUMERIQUES UNIQUEMENT.
-    Document de : {client_info.get('fullName')} | TYPE : {client_info.get('clientType')}
-    TEXTE BRUT : {extracted_text[0:40000]}
+    is_particulier = (client_info.get('clientType', '').lower() == 'particulier')
     
-    Trouve ou estime les montants suivants en euros (uniquement des nombres ou 0 si introuvable).
-    FORMAT JSON OBLIGATOIRE :
-    {{
-        "revenue": 150000,
-        "net_income": 20000,
-        "equity": 50000,
-        "total_debt": 10000,
-        "cash_flow": 5000,
-        "working_capital": 2000
-    }}
-    """
+    if is_particulier:
+        return f"""
+        EXTRACTION DE DONNEES NUMERIQUES UNIQUEMENT POUR UN PARTICULIER.
+        Document de : {client_info.get('fullName')} | TYPE : {client_info.get('clientType')}
+        TEXTE BRUT : {extracted_text[0:40000]}
+        
+        Trouve ou estime les montants ANNUELS suivants en euros (uniquement des nombres ou 0 si introuvable).
+        - revenus_annuels : Ensemble des salaires nets, primes ou pensions sur un an. (Si c'est mensuel, multiplie par 12).
+        - charges_annuelles : Loyer annuel, charges locatives, pensions versées (hors crédits).
+        - mensualites_credits : Le total mensuel des crédits en cours identifiés. 
+        - epargne_estimee : Le total de l'épargne ou placements disponibles (livrets, assurance vie...).
+        Trouve également le nom exact figurant sur le document.
+        FORMAT JSON OBLIGATOIRE :
+        {{
+            "extracted_name": "Nom Exact Trouvé",
+            "revenus_annuels": 36000,
+            "charges_annuelles": 8400,
+            "mensualites_credits": 500,
+            "epargne_estimee": 15000
+        }}
+        """
+    else:
+        return f"""
+        EXTRACTION DE DONNEES NUMERIQUES UNIQUEMENT.
+        Document de : {client_info.get('fullName')} | TYPE : {client_info.get('clientType')}
+        TEXTE BRUT : {extracted_text[0:40000]}
+        
+        Trouve ou estime les montants suivants en euros pour le dernier exercice (N) et l'exercice précédent (N-1) (uniquement des nombres ou 0 si introuvable).
+        Trouve également le nom exact (Personne ou Entreprise) figurant sur le document.
+        FORMAT JSON OBLIGATOIRE :
+        {{
+            "extracted_name": "Nom Exact Trouvé",
+            "revenue": 150000,
+            "revenue_n_minus_1": 140000,
+            "ebitda": 25000,
+            "ebitda_n_minus_1": 20000,
+            "net_income": 20000,
+            "net_income_n_minus_1": 15000,
+            "equity": 50000,
+            "total_debt": 10000,
+            "cash_flow": 5000,
+            "working_capital": 2000
+        }}
+        """
 
-def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict) -> str:
-    return f"""
-    RÔLE : Analyste Crédit Senior.
-    DOSSIER : {client_info.get('fullName')} | MONTANT : {client_info.get('amount')}€
+def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict, ratios_data: dict) -> str:
+    is_particulier = (client_info.get('clientType', '').lower() == 'particulier')
     
-    Voici les résultats EXACTS calculés par notre moteur de risque (ne les modifie pas) :
-    - Score : {score_data['score']}/100
-    - Décision technique : {score_data['decision']}
-    - Chiffre d'affaires : {fin_data.get('revenue', 0)}
-    - Résultat Net : {fin_data.get('net_income', 0)}
-    - Dettes : {fin_data.get('total_debt', 0)}
-    - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
-    - Facteurs positifs identifiés : {score_data.get('technical_opportunities', [])}
-    
-    CONTEXTE TEXTUEL BRUT : {extracted_text[0:20000]}
-    
-    MISSION : Rédige l'avis motivé (Risques, Opportunités, Synthèse narrative détaillée) qui justifie ce score et cette décision. Ne réinvente pas de chiffres.
-    FORMAT JSON OBLIGATOIRE EN SORTIE :
-    {{
-        "risks": ["risque 1", "risque 2", ...],
-        "opportunities": ["opportunité 1", ...],
-        "summary": "Synthèse très détaillée et professionnelle des finances et du projet."
-    }}
-    """
+    if is_particulier:
+        return f"""
+        RÔLE : Analyste Crédit Senior (Spécialiste Particuliers).
+        DOSSIER : {client_info.get('fullName')} | MONTANT DEMANDÉ : {client_info.get('amount')}€
+        
+        Voici les métriques de solvabilité EXACTES calculées par notre moteur :
+        - Score : {score_data['score']}/100
+        - Décision technique : {score_data['decision']}
+        - Revenus Annuels Estimés : {fin_data.get('revenus_annuels', 0)} €
+        - Charges Annuelles (hors crédit) : {fin_data.get('charges_annuelles', 0)} €
+        - Mensualités Crédits en cours : {fin_data.get('mensualites_credits', 0)} € / mois
+        - Taux d'endettement calculé : {ratios_data.get('taux_endettement_personnel_percent', 0)} %
+        - Reste à vivre annuel : {ratios_data.get('reste_a_vivre_annuel', 0)} €
+        
+        - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
+        - Points forts identifiés : {score_data.get('technical_opportunities', [])}
+        
+        CONTEXTE TEXTUEL BRUT EXTRAIT : {extracted_text[0:20000]}
+        
+        MISSION : Rédige l'avis motivé (Risques, Opportunités, Synthèse narrative détaillée) pour justifier ce score. 
+        Tu DOIS utiliser les termes pertinents : Reste à vivre, Taux d'endettement, Salaires, etc. Ne parle JAMAIS de chiffre d'affaires, d'EBITDA, ou d'entreprise. 
+        FORMAT JSON OBLIGATOIRE EN SORTIE :
+        {{
+            "risks": ["risque 1", "risque 2", ...],
+            "opportunities": ["opportunité 1", ...],
+            "summary": "Synthèse très détaillée et professionnelle."
+        }}
+        """
+    else:
+        return f"""
+        RÔLE : Analyste Crédit Senior (Spécialiste Entreprises).
+        DOSSIER : {client_info.get('fullName')} | MONTANT : {client_info.get('amount')}€
+        
+        Voici les résultats EXACTS calculés par notre moteur de risque (ne les modifie pas) :
+        - Score : {score_data['score']}/100
+        - Décision technique : {score_data['decision']}
+        - Chiffre d'affaires : {fin_data.get('revenue', 0)}
+        - Résultat Net : {fin_data.get('net_income', 0)}
+        - Dettes Totales : {fin_data.get('total_debt', 0)}
+        - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
+        - Facteurs positifs identifiés : {score_data.get('technical_opportunities', [])}
+        
+        CONTEXTE TEXTUEL BRUT EXTRAIT : {extracted_text[0:20000]}
+        
+        MISSION : Rédige l'avis motivé (Risques, Opportunités, Synthèse narrative détaillée) qui justifie ce score et cette décision. Ne réinvente pas de chiffres.
+        FORMAT JSON OBLIGATOIRE EN SORTIE :
+        {{
+            "risks": ["risque 1", "risque 2", ...],
+            "opportunities": ["opportunité 1", ...],
+            "summary": "Synthèse très détaillée et professionnelle des finances et du projet."
+        }}
+        """
 
 # --- 4. ROUTES API ---
 
@@ -160,7 +221,7 @@ async def analyze_dashboard(
             "amount": amount, 
             "clientType": clientType, 
             "projectType": projectType
-        }, full_extracted_text, score_data, fin_data)
+        }, full_extracted_text, score_data, fin_data, ratios_data)
         
         interpretation_response = client.chat.completions.create(
             messages=[{"role": "user", "content": interpretation_prompt}],
@@ -175,6 +236,7 @@ async def analyze_dashboard(
         final_response = {
             "score": score_data["score"],
             "decision": score_data["decision"],
+            "extracted_name": extracted_data.get("extracted_name", fullName),
             "payment_reliability": score_data.get("payment_reliability", "Moyen"),
             "account_trend": score_data.get("account_trend", "Stable"),
             "financials": {**fin_data, **ratios_data},
@@ -224,6 +286,10 @@ def get_history(db: Session = Depends(database.get_db), current_user: database.U
         })
     return results
 
+class GlobalChatRequest(BaseModel):
+    message: str
+    userName: str
+
 @app.post("/chat/")
 async def chat_endpoint(request: ChatRequest):
     try:
@@ -237,6 +303,35 @@ async def chat_endpoint(request: ChatRequest):
     except Exception as e:
         return {"response": f"Erreur Chat: {str(e)}"}
 
+@app.post("/chat/finance/")
+async def finance_chat_endpoint(request: GlobalChatRequest):
+    try:
+        system_prompt = (
+            f"Tu es l'assistant IA de la plateforme Fluxia. Tu t'adresses à {request.userName}.\n"
+            "RÈGLE STRICTE : Tu dois UNIQUEMENT répondre aux questions liées à la banque, "
+            "à la finance, au crédit, ou à l'analyse de risque financier. \n"
+            "RÈGLE 2 : Si la question est une salutation basique, réponds poliment en saluant la personne par son prénom et en lui demandant comment tu peux l'aider avec ses finances.\n"
+            "RÈGLE 3 : Si la question n'a rien à voir avec les domaines autorisés (banque, finance, crédit, analyse), "
+            "tu DOIS REFUSER de répondre avec ce message exact ou une variante très proche : "
+            "'Désolé, je suis paramétré pour répondre uniquement aux questions relevant du domaine financier, bancaire ou du crédit. "
+            "Comment puis-je vous aider sur ces sujets ?'\n"
+            "RÈGLE 4 : Sois professionnel, concis, et précis."
+        )
+        
+        prompt = f"Utilisateur ({request.userName}): {request.message}"
+        
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            model=MODEL_NAME,
+            temperature=0.3
+        )
+        return {"response": response.choices[0].message.content}
+    except Exception as e:
+        return {"response": f"Erreur Chat Finance: {str(e)}"}
+
 @app.delete("/applications/{app_id}")
 def delete_application(app_id: int, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
     app_record = db.query(database.Application).filter(database.Application.id == app_id).first()
@@ -248,6 +343,40 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
     db.delete(app_record)
     db.commit()
     return {"message": "Supprimé"}
+
+def send_contact_email(email: str, subject: str, message: str, attachment_name: typing.Optional[str] = None):
+    """
+    Simulation of sending an email to gaetan.eyes@gmail.com.
+    In production, use smtplib or a service like SendGrid, AWS SES, etc.
+    """
+    # Here we would normally implement the SMTP logic.
+    # For now, we simulate success and log it.
+    print(f"[EMAIL SENDING SIMULATION]")
+    print(f"To: gaetan.eyes@gmail.com")
+    print(f"From: {email}")
+    print(f"Subject: {subject}")
+    print(f"Message: {message}")
+    if attachment_name:
+        print(f"Attachment: {attachment_name}")
+    print(f"[END SIMULATION]")
+
+@app.post("/contact/")
+async def handle_contact(
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    subject: str = Form(...),
+    message: str = Form(...),
+    file: typing.Optional[UploadFile] = File(None),
+    current_user: database.User = Depends(get_current_user)
+):
+    attachment_name = None
+    if file:
+        attachment_name = file.filename
+        # In a real app, save the file to disk/S3 or attach its bytes directly to the email
+        # file_bytes = await file.read()
+    
+    background_tasks.add_task(send_contact_email, email, subject, message, attachment_name)
+    return {"message": "Demande envoyée avec succès."}
 
 class SaveAppRequest(BaseModel):
     fullName: str

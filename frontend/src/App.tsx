@@ -8,18 +8,20 @@ import AnalysisDetail from './pages/AnalysisDetail';
 import AnalysisResult from './pages/AnalysisResult';
 import Team from './pages/Team';
 import Settings from './pages/Settings';
-import UpdatePassword from './pages/UpdatePassword';
+import HelpCenter from './pages/HelpCenter';
+import Chat from './pages/Chat';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import SessionTimeout from './components/SessionTimeout';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SessionTimeout />
         <Routes>
           {/* Route SANS barre latérale */}
           <Route path="/login" element={<Login />} />
-          <Route path="/update-password" element={<UpdatePassword />} />
 
           {/* Routes AVEC barre latérale (via Layout) & PROTEGEES */}
           <Route element={<ProtectedRoute />}>
@@ -31,8 +33,10 @@ function App() {
               <Route path="/new" element={<NewAnalysis />} />
               <Route path="/analysis/result" element={<AnalysisResult />} />
               <Route path="/analysis/:id" element={<AnalysisDetail />} />
+              <Route path="/chat" element={<Chat />} />
               <Route path="/team" element={<Team />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/help" element={<HelpCenter />} />
             </Route>
           </Route>
 

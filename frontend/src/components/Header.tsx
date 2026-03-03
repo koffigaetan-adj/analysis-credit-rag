@@ -2,9 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
-import { Bell, ChevronDown } from 'lucide-react';
+import { Bell, ChevronDown, Menu } from 'lucide-react';
 
-export default function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
@@ -24,17 +28,24 @@ export default function Header() {
   }, [dropdownRef]);
 
   // Helper pour les initiales
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const getInitials = (firstName?: string, lastName?: string) => {
+    if (!firstName) return 'U';
+    return ((firstName[0] || '') + (lastName?.[0] || '')).toUpperCase();
   };
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800 px-8 py-3 transition-all duration-300">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
 
-        {/* ESPACE GAUCHE (Vide pour le moment) */}
+        {/* ESPACE GAUCHE */}
         <div className="flex items-center gap-2">
+          {/* Menu Hamburger pour Mobile */}
+          <button
+            onClick={onMenuClick}
+            className="p-2 lg:hidden text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
         </div>
 
         {/* ACTIONS DROITE */}
@@ -54,7 +65,7 @@ export default function Header() {
             >
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight transition-colors">
-                  {user?.full_name || 'Utilisateur'}
+                  {user ? `${user.first_name} ${user.last_name}` : 'Utilisateur'}
                 </p>
                 <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter transition-colors">
                   {user?.role === 'SUPER_ADMIN' ? 'Super Administrateur' : user?.role === 'ADMIN' ? 'Administrateur' : 'Analyste'}
@@ -66,7 +77,7 @@ export default function Header() {
                   <img src={`http://localhost:8000${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-slate-600 dark:text-slate-300 font-bold text-xs uppercase">
-                    {getInitials(user?.full_name)}
+                    {getInitials(user?.first_name, user?.last_name)}
                   </span>
                 )}
               </div>

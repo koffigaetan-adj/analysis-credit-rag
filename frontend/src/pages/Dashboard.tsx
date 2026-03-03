@@ -6,7 +6,9 @@ import {
 } from 'recharts';
 import {
   FileText, ArrowRight, Building2, Wallet,
-  Plus, RefreshCcw, Activity, Zap
+  Plus, RefreshCcw, Activity, Zap, User,
+  BarChart,
+  PieChartIcon
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -22,7 +24,8 @@ export default function Dashboard() {
     try {
       const response = await fetch('http://127.0.0.1:8000/history/', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
       const result = await response.json();
@@ -74,30 +77,31 @@ export default function Dashboard() {
             Analyse en temps réel du portefeuille crédit
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-row items-center gap-4 w-full md:w-auto">
           <button
             onClick={fetchStats}
-            className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+            className="p-3 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
           >
             <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <Link
             to="/new"
-            className="flex items-center gap-2 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-medium shadow-lg transition-all"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-medium shadow-lg transition-all text-sm sm:text-base whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
-            Nouveau Dossier
+            Nouvelle Analyse
           </Link>
         </div>
       </div>
 
       {/* --- BLOCS KPI --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {[
-          { label: 'Audits', val: totalDossiers, sub: 'Dossiers analysés', icon: FileText, color: 'blue' },
-          { label: 'Volume', val: `${(totalAmount / 1000000).toFixed(2)} M€`, sub: 'Volume total', icon: Wallet, color: 'emerald' },
-          { label: 'Acceptation', val: `${acceptanceRate.toFixed(0)}%`, sub: "Taux d'acceptation", icon: Zap, color: 'amber' },
-          { label: 'Mix Pro', val: `${((prosCount / totalDossiers) * 100 || 0).toFixed(0)}%`, sub: 'Part entreprises', icon: Building2, color: 'indigo' }
+          { id: 'audits', label: 'Audits', val: totalDossiers, sub: 'Dossiers analysés', icon: FileText, color: 'blue' },
+          { id: 'mix', label: 'RÉPARTITION', val: '', sub: '', icon: PieChartIcon, color: 'purple' },
+          { id: 'volume', label: 'Volume', val: `${(totalAmount / 1000000).toFixed(2)} M€`, sub: 'Volume total', icon: Wallet, color: 'emerald' },
+          { id: 'accept', label: 'Acceptation', val: `${acceptanceRate.toFixed(0)}%`, sub: "Taux d'acceptation", icon: Zap, color: 'amber' }
+
         ].map((kpi, i) => (
           <div key={i} className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-50 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300 group">
             <div className="flex items-center justify-between mb-4">
@@ -106,8 +110,29 @@ export default function Dashboard() {
               </div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{kpi.label}</span>
             </div>
-            <h3 className="text-3xl font-semibold text-slate-800 dark:text-white tracking-tight">{kpi.val}</h3>
-            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 font-medium">{kpi.sub}</p>
+
+            {kpi.id === 'mix' ? (
+              <div className="flex items-center gap-6 mt-1">
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-indigo-500" /> {prosCount}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-1">PRO</span>
+                </div>
+                <div className="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-500" /> {partCount}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-1">PART</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-3xl font-semibold text-slate-800 dark:text-white tracking-tight">{kpi.val}</h3>
+                <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 font-medium">{kpi.sub}</p>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -142,20 +167,20 @@ export default function Dashboard() {
         </div>
 
         {/* Area Chart */}
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm lg:col-span-2">
-          <h3 className="text-lg font-medium text-slate-800 dark:text-white mb-2">Activité Commerciale</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm lg:col-span-2 overflow-hidden">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-white mb-2">Activité</h3>
           <p className="text-sm text-slate-400 dark:text-slate-500 mb-8">Volume mensuel des analyses</p>
-          <div className="h-[300px] w-full">
+          <div className="h-[300px] w-full -ml-4 sm:ml-0">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={barData}>
                 <defs>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.1} />
+                    <stop offset="5%" stopColor="#117fe6ff" stopOpacity={isDark ? 0.3 : 0.1} />
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#24334bff" : "#f8fafc"} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#99a3b0ff' : '#99a3b0ff', fontSize: 12 }} dy={10} />
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={isDark ? "#334155" : "#e2e8f0"} strokeOpacity={isDark ? 0.3 : 0.6} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#64748b' : '#94a3b8', fontSize: 11 }} dy={10} />
                 <YAxis hide />
                 <Tooltip
                   contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }}
@@ -176,7 +201,7 @@ export default function Dashboard() {
           </Link>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                 <th className="px-8 py-4 text-left">Client</th>
@@ -201,7 +226,7 @@ export default function Dashboard() {
                   <td className="px-8 py-5 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">{Number(app.amount).toLocaleString()} €</td>
                   <td className="px-8 py-5 text-center">
                     <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${app.score >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
-                        app.score >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'
+                      app.score >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'
                       }`}>
                       {app.score}/100
                     </span>

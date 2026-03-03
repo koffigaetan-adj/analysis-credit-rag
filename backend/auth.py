@@ -31,13 +31,16 @@ class UpdatePasswordRequest(BaseModel):
     new_password: str
 
 class UpdateProfileRequest(BaseModel):
-    full_name: str
+    first_name: str
+    last_name: str
     email: str
     establishment: Optional[str] = None
     password: str
 
 class AdminUpdateUserRequest(BaseModel):
-    full_name: str
+    first_name: str
+    last_name: str
+    establishment: Optional[str] = None
     email: str
     role: str
 
@@ -45,7 +48,9 @@ class AdminDeleteUserRequest(BaseModel):
     password: str
 
 class AdminCreateUserRequest(BaseModel):
-    full_name: str
+    first_name: str
+    last_name: str
+    establishment: Optional[str] = None
     email: str
     password: str
     role: str
@@ -100,6 +105,24 @@ def check_role(allowed_roles: List[str]):
         return current_user
     return role_checker
 
+def check_admin_target_role(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+):
+    """ Middleware additionnel pour s'assurer qu'un ADMIN ne modifie/supprime pas un SUPER_ADMIN ou un autre ADMIN """
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+        
+    if current_admin.role == "ADMIN" and target_user.role in ["SUPER_ADMIN", "ADMIN"]:
+         raise HTTPException(
+             status_code=403, 
+             detail="Un Administrateur ne peut modifier ou supprimer que les comptes Analystes."
+         )
+         
+    return target_user
+
 # --- ROUTES ---
 
 @router.post("/login")
@@ -137,7 +160,9 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         "is_first_login": user.is_first_login,
         "user_info": {
             "id": user.id,
-            "full_name": user.full_name,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "establishment": user.establishment,
             "role": user.role,
             "email": user.email,
             "avatar_url": user.avatar_url,
@@ -180,17 +205,22 @@ def update_profile(
             raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
             
     # Vérification des permissions pour l'email
-    if request.email != current_user.email and current_user.role != "SUPER_ADMIN":
-         raise HTTPException(status_code=403, detail="Seul un Super Administrateur peut modifier l'adresse email d'un compte.")
+    if request.email != current_user.email and current_user.role == "ANALYST":
+         raise HTTPException(status_code=403, detail="Un analyste ne peut pas modifier son adresse email. Contactez un administrateur.")
 
     # Restreindre les analystes sur le nom complet
     if current_user.role == "ANALYST":
-        if request.full_name != current_user.full_name:
+        if request.first_name != current_user.first_name or request.last_name != current_user.last_name:
             raise HTTPException(status_code=403, detail="Un analyste ne peut pas modifier son nom. Contactez un administrateur.")
+        if request.establishment and request.establishment != current_user.establishment:
+            raise HTTPException(status_code=403, detail="Un analyste ne peut pas modifier son établissement. Contactez un administrateur.")
     
-    current_user.full_name = request.full_name
+    current_user.first_name = request.first_name
+    current_user.last_name = request.last_name
     current_user.email = request.email
-        # Note: On stocke dans organization_id de manière simplifiée si besoin, ou on ajoute property
+    
+    if current_user.role == "SUPER_ADMIN" and request.establishment is not None:
+        current_user.establishment = request.establishment
     
     db.commit()
     db.refresh(current_user)
@@ -199,7 +229,9 @@ def update_profile(
         "message": "Profil mis à jour",
         "user_info": {
             "id": current_user.id,
-            "full_name": current_user.full_name,
+            "first_name": current_user.first_name,
+            "last_name": current_user.last_name,
+            "establishment": current_user.establishment,
             "role": current_user.role,
             "email": current_user.email,
             "avatar_url": current_user.avatar_url
@@ -250,14 +282,21 @@ async def upload_avatar(
 @router.get("/users")
 def get_all_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user) # Tous les utilisateurs connectés
+    current_user: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
 ):
     users = db.query(User).all()
+    
+    # Filtrer les utilisateurs selon le rôle de l'appelant
+    if current_user.role == "ADMIN":
+        users = [u for u in users if u.role != "SUPER_ADMIN"]
+
     # On renvoie les données sans le mot de passe
     return [
         {
             "id": u.id,
-            "full_name": u.full_name,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "establishment": u.establishment,
             "email": u.email,
             "role": u.role,
             "avatar_url": u.avatar_url,
@@ -284,7 +323,9 @@ def admin_create_user(
         
     new_user = User(
         id=str(uuid.uuid4()),
-        full_name=request.full_name,
+        first_name=request.first_name,
+        last_name=request.last_name,
+        establishment=request.establishment,
         email=request.email,
         password_hash=get_password_hash(request.password),
         role=request.role,
@@ -299,7 +340,7 @@ def admin_create_user(
     print(f"Destinataire : {request.email}")
     print(f"Objet : Bienvenue chez Fluxia - Vos accès {request.role}")
     print("-" * 50)
-    print(f"Bonjour {request.full_name},")
+    print(f"Bonjour {request.first_name} {request.last_name},")
     print("\nVous avez été invité(e) à rejoindre l'espace d'analyse Fluxia.")
     print("Voici vos identifiants de connexion provisoires :")
     print(f"Email : {request.email}")
@@ -316,19 +357,16 @@ def admin_update_user(
     user_id: str,
     request: AdminUpdateUserRequest,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"])),
+    target_user: User = Depends(check_admin_target_role) # Le middleware bloque si un admin tente d'accéder à un autre admin
 ):
-    target_user = db.query(User).filter(User.id == user_id).first()
-    if not target_user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
-    
     # Seul un SUPER_ADMIN peut modifier un autre SUPER_ADMIN ou nommer quelqu'un SUPER_ADMIN
     if target_user.role == "SUPER_ADMIN" and request.role != "SUPER_ADMIN":
          raise HTTPException(status_code=403, detail="Le rôle d'un Super Administrateur ne peut pas être rétrogradé.")
     
-    # Correction : On permet à tout Admin de mettre à jour sauf vers SUPER_ADMIN
-    if request.role == "SUPER_ADMIN" and current_admin.role != "SUPER_ADMIN":
-         raise HTTPException(status_code=403, detail="Seul un Super Administrateur peut accorder ce rôle.")
+    # Correction : On permet à tout Admin de mettre à jour sauf vers SUPER_ADMIN ou ADMIN (si l'appelant est seulement ADMIN)
+    if request.role in ["SUPER_ADMIN", "ADMIN"] and current_admin.role != "SUPER_ADMIN":
+         raise HTTPException(status_code=403, detail="Seul un Super Administrateur peut accorder ces rôles.")
 
     # Vérification email s'il change
     if request.email != target_user.email:
@@ -342,7 +380,12 @@ def admin_update_user(
     else:
         target_user.role = request.role
         
-    target_user.full_name = request.full_name
+    target_user.first_name = request.first_name
+    target_user.last_name = request.last_name
+    
+    if current_admin.role == "SUPER_ADMIN" and request.establishment is not None:
+        target_user.establishment = request.establishment
+        
     target_user.email = request.email
     db.commit()
 
@@ -353,15 +396,12 @@ def admin_delete_user(
     user_id: str,
     request: AdminDeleteUserRequest,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"])),
+    target_user: User = Depends(check_admin_target_role) # Le middleware s'occupe de la restriction Admin -> Analyst
 ):
     # Sécurité par mot de passe obligatoire
     if not verify_password(request.password, current_admin.password_hash):
         raise HTTPException(status_code=400, detail="Mot de passe administrateur incorrect. Action annulée.")
-
-    target_user = db.query(User).filter(User.id == user_id).first()
-    if not target_user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
 
     # Empêcher l'auto-suppression
     if target_user.id == current_admin.id:
@@ -380,15 +420,12 @@ def admin_delete_user(
 def admin_toggle_user_status(
     user_id: str,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"])),
+    target_user: User = Depends(check_admin_target_role) # Middleware gère la hiérarchie
 ):
-    target_user = db.query(User).filter(User.id == user_id).first()
-    if not target_user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
-        
     if target_user.id == current_admin.id:
         raise HTTPException(status_code=400, detail="Vous ne pouvez pas désactiver votre propre compte.")
-        
+
     if target_user.role == "SUPER_ADMIN":
          raise HTTPException(status_code=403, detail="Le compte d'un Super Administrateur ne peut pas être désactivé.")
 

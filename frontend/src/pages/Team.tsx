@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react';
 // Interfaces pour le typage
 interface TeamMember {
   id: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
+  establishment?: string;
   email: string;
   role: string;
   avatar_url?: string;
@@ -29,8 +31,8 @@ export default function Team() {
   const [modalError, setModalError] = useState<string | null>(null);
 
   // Formulaires
-  const [editForm, setEditForm] = useState({ prenom: '', nom: '', email: '', role: 'ANALYST' });
-  const [createForm, setCreateForm] = useState({ prenom: '', nom: '', email: '', role: 'ANALYST', password: '' });
+  const [editForm, setEditForm] = useState({ prenom: '', nom: '', email: '', role: 'ANALYST', establishment: '' });
+  const [createForm, setCreateForm] = useState({ prenom: '', nom: '', email: '', role: 'ANALYST', password: '', establishment: '' });
 
   // Récupérer les utilisateurs
   const fetchUsers = async () => {
@@ -40,7 +42,10 @@ export default function Team() {
       });
       if (!res.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
       const data = await res.json();
+
+      // ADMIN and SUPER_ADMIN will fetch users and see everyone
       setMembers(data);
+
     } catch (err) {
       console.error(err);
       setErrorMsg("Impossible de charger les membres.");
@@ -56,10 +61,7 @@ export default function Team() {
   // Actions
   const handleEditClick = (member: TeamMember) => {
     setEditingUser(member);
-    const parts = member.full_name.split(' ');
-    const prenom = parts[0] || '';
-    const nom = parts.slice(1).join(' ');
-    setEditForm({ prenom, nom, email: member.email, role: member.role });
+    setEditForm({ prenom: member.first_name, nom: member.last_name, email: member.email, role: member.role, establishment: member.establishment || '' });
     setModalError(null);
   };
 
@@ -69,7 +71,9 @@ export default function Team() {
     setModalLoading(true);
     try {
       const payload = {
-        full_name: `${editForm.prenom.trim()} ${editForm.nom.trim()}`,
+        first_name: editForm.prenom.trim(),
+        last_name: editForm.nom.trim(),
+        establishment: editForm.establishment.trim(),
         email: editForm.email,
         role: editForm.role
       };
@@ -166,7 +170,9 @@ export default function Team() {
     setModalLoading(true);
     try {
       const payload = {
-        full_name: `${createForm.prenom.trim()} ${createForm.nom.trim()}`,
+        first_name: createForm.prenom.trim(),
+        last_name: createForm.nom.trim(),
+        establishment: createForm.establishment.trim(),
         email: createForm.email,
         password: createForm.password,
         role: createForm.role
@@ -206,7 +212,7 @@ export default function Team() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in text-left pb-20">
+    <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 space-y-6 animate-fade-in text-left">
       {/* HEADER SIMPLE & PRO */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -219,7 +225,7 @@ export default function Team() {
         <button
           onClick={() => {
             setShowCreateModal(true);
-            setCreateForm({ prenom: '', nom: '', email: '', role: 'ANALYST', password: '' });
+            setCreateForm({ prenom: '', nom: '', email: '', role: 'ANALYST', password: '', establishment: '' });
             setModalError(null);
           }}
           className="px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95">
@@ -265,7 +271,7 @@ export default function Team() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[700px]">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50">
                 <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Membre</th>
@@ -288,13 +294,13 @@ export default function Team() {
                           <img src={`http://localhost:8000${member.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-blue-500 font-bold text-xs uppercase">
-                            {member.full_name.split(' ').map((n) => n[0]).join('').substring(0, 2)}
+                            {member.first_name[0]}{member.last_name[0]}
                           </span>
                         )}
                       </div>
                       <div>
                         <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                          {member.full_name}
+                          {member.first_name} {member.last_name}
                           {member.id === user?.id && <span className="text-slate-400 font-normal ml-1">(Vous)</span>}
                         </div>
                         <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
@@ -320,34 +326,48 @@ export default function Team() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 
-                      {/* Bouton Toggle Status (uniquement super admin ou admin et pas soi-même) */}
-                      {member.id !== user?.id && (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') && (
-                        <button
-                          onClick={() => handleToggleStatus(member.id)}
-                          className={`p-2 rounded-lg transition-all ${member.is_active ? 'text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30' : 'text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'}`}
-                          title={member.is_active ? "Désactiver ce compte" : "Réactiver ce compte"}
-                        >
-                          <Lock className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => handleEditClick(member)}
-                        className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
-                        title="Modifier les infos"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-
+                      {/* Bouton Toggle Status (uniquement super admin ou admin et pas soi-même, admin restreint aux analystes) */}
                       {member.id !== user?.id && (
-                        <button
-                          onClick={() => handleDeleteClick(member)}
-                          className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-500 transition-all"
-                          title="Supprimer ce membre"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                        user?.role === 'SUPER_ADMIN' ||
+                        (user?.role === 'ADMIN' && member.role === 'ANALYST')
+                      ) && (
+                          <button
+                            onClick={() => handleToggleStatus(member.id)}
+                            className={`p-2 rounded-lg transition-all ${member.is_active ? 'text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30' : 'text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'}`}
+                            title={member.is_active ? "Désactiver ce compte" : "Réactiver ce compte"}
+                          >
+                            <Lock className="w-4 h-4" />
+                          </button>
+                        )}
+
+                      {/* Bouton Modifier (uniquement super admin ou admin restreint aux analystes, ou soi-même) */}
+                      {(
+                        user?.role === 'SUPER_ADMIN' ||
+                        member.id === user?.id ||
+                        (user?.role === 'ADMIN' && member.role === 'ANALYST')
+                      ) && (
+                          <button
+                            onClick={() => handleEditClick(member)}
+                            className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
+                            title="Modifier les infos"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        )}
+
+                      {/* Bouton Supprimer (uniquement super admin ou admin restreint aux analystes, pas soi-même) */}
+                      {member.id !== user?.id && (
+                        user?.role === 'SUPER_ADMIN' ||
+                        (user?.role === 'ADMIN' && member.role === 'ANALYST')
+                      ) && (
+                          <button
+                            onClick={() => handleDeleteClick(member)}
+                            className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-500 transition-all"
+                            title="Supprimer ce membre"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -412,6 +432,18 @@ export default function Team() {
                 />
               </div>
 
+              {user?.role === 'SUPER_ADMIN' && (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Établissement</label>
+                  <input
+                    type="text"
+                    value={editForm.establishment}
+                    onChange={(e) => setEditForm({ ...editForm, establishment: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  />
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Rôle</label>
                 <select
@@ -421,7 +453,7 @@ export default function Team() {
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <option value="ANALYST">Analyste</option>
-                  {(user?.role === 'SUPER_ADMIN' || editingUser.role === 'ADMIN' || editingUser.role === 'SUPER_ADMIN') && (
+                  {user?.role === 'SUPER_ADMIN' && (
                     <>
                       <option value="ADMIN">Administrateur</option>
                       <option value="SUPER_ADMIN">Super Administrateur</option>
@@ -461,7 +493,7 @@ export default function Team() {
             <div className="p-6 border-b border-rose-100 dark:border-rose-900/30 flex justify-between items-center bg-rose-50/50 dark:bg-rose-900/10">
               <h3 className="text-lg font-bold text-rose-600 dark:text-rose-500 flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />
-                Supprimer {deletingUser.full_name.split(' ')[0]} ?
+                Supprimer {deletingUser.first_name} ?
               </h3>
               <button
                 onClick={() => setDeletingUser(null)}
@@ -575,6 +607,18 @@ export default function Team() {
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 />
               </div>
+
+              {user?.role === 'SUPER_ADMIN' && (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Établissement</label>
+                  <input
+                    type="text"
+                    value={createForm.establishment}
+                    onChange={(e) => setCreateForm({ ...createForm, establishment: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  />
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Mot de passe provisoire</label>

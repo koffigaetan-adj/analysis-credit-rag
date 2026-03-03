@@ -165,11 +165,7 @@ export default function Login() {
       const data = await response.json();
       login(data.access_token, data.user_info, data.is_first_login);
 
-      if (data.is_first_login) {
-        navigate('/update-password');
-      } else {
-        navigate('/dashboard');
-      }
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {

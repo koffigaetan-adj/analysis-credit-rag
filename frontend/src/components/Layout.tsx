@@ -2,9 +2,11 @@ import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { Outlet } from 'react-router-dom';
+import UpdatePasswordModal from './UpdatePasswordModal';
 
 export default function Layout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-500 relative">
@@ -24,19 +26,27 @@ export default function Layout() {
 
       {/* --- STRUCTURE --- */}
       <div className="print:hidden">
-        <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        <Sidebar
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+          isOpenMobile={isMobileMenuOpen}
+          setIsOpenMobile={setIsMobileMenuOpen}
+        />
       </div>
 
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 z-10 print:ml-0 print:bg-white ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 z-10 print:ml-0 print:bg-white w-full ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <div className="print:hidden">
-          <Header />
+          <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
         </div>
-        <main className="p-8 print:p-0 flex-1 relative">
+        <main className="p-4 md:p-8 print:p-0 flex-1 relative">
           <div className="relative z-20 print:w-full print:max-w-none print:m-0 print:p-0">
             <Outlet />
           </div>
         </main>
       </div>
+
+      {/* MODALE DE PREMIERE CONNEXION */}
+      <UpdatePasswordModal />
     </div>
   );
 }

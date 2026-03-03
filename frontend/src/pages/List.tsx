@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, ArrowUpRight, User, Building2, Eye,
+  Search, User, Building2, Eye,
   CheckCircle2, XCircle, Clock, AlertTriangle, Loader2, RefreshCcw,
-  Trash2
+  Trash2, Plus
 } from 'lucide-react';
 import AnimatedModal from '../components/AnimatedModal';
 
@@ -24,7 +24,7 @@ export default function Applications() {
     try {
       const response = await fetch('http://127.0.0.1:8000/history/', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
       const data = await response.json();
@@ -53,7 +53,7 @@ export default function Applications() {
       const response = await fetch(`http://127.0.0.1:8000/applications/${appToDelete.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
       if (response.ok) {
@@ -111,12 +111,19 @@ export default function Applications() {
           </h1>
           <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Consultez et gérez l'ensemble de vos audits clients.</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={fetchApplications} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-500 hover:border-blue-100 dark:hover:border-slate-700 transition-all shadow-sm active:scale-95">
+        <div className="flex flex-row items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
+          <button
+            onClick={fetchApplications}
+            className="p-3 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+          >
             <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-          <button onClick={() => navigate('/new')} className="flex items-center gap-2 bg-slate-900 dark:bg-blue-600 text-white px-6 py-3 rounded-2xl text-sm font-medium hover:bg-blue-600 dark:hover:bg-blue-500 shadow-lg transition-all duration-300">
-            <ArrowUpRight className="w-4 h-4" /> Nouveau Dossier
+          <button
+            onClick={() => navigate('/new')}
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-medium shadow-lg transition-all text-sm sm:text-base whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            Nouvelle Analyse
           </button>
         </div>
       </div>
@@ -147,7 +154,7 @@ export default function Applications() {
       {/* TABLE SECTION */}
       <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden transition-colors">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-50 dark:border-slate-800 text-[10px] uppercase text-slate-400 dark:text-slate-500 font-bold tracking-[0.1em]">
                 <th className="px-8 py-6">Identité Client</th>

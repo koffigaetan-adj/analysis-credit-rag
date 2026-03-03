@@ -14,9 +14,11 @@ def seed_super_admin():
 
     admin_user = User(
         id=str(uuid.uuid4()),
-        full_name="Koffi Gaetan",
+        first_name="Gaetan",
+        last_name="Koffi",
+        establishment="Fluxia HQ",
         email="gaetan.eyes@gmail.com",
-        password_hash=get_password_hash("Fluxia2026!"),
+        password_hash=get_password_hash("azerty"),
         role="SUPER_ADMIN",
         is_first_login=True,
         organization_id=None
