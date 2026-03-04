@@ -92,6 +92,22 @@ export default function AnalysisResult() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // State for Email Modal
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailToSend, setEmailToSend] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  // Set default email efficiently when possible
+  useEffect(() => {
+    try {
+      const rawUser = localStorage.getItem('user_info');
+      if (rawUser) {
+        const ui = JSON.parse(rawUser);
+        if (ui.email) setEmailToSend(ui.email);
+      }
+    } catch (e) { }
+  }, []);
+
   // Détection dynamique du mode sombre pour les graphiques
   const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
 
@@ -144,6 +160,65 @@ export default function AnalysisResult() {
       console.error("Erreur lors de la création de la notification d'export:", e);
     }
     window.print();
+  };
+
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailToSend.trim()) return;
+
+    setIsSendingEmail(true);
+
+    try {
+      // 1. Generate PDF dynamically (similar to handleExport but returning Blob)
+      const element = printRef.current || document.getElementById('section-to-print');
+      if (!element) throw new Error("Element non trouvé");
+
+      // Temporarily remove dark mode for PDF generation if active
+      const wasDark = document.documentElement.classList.contains('dark');
+      if (wasDark) document.documentElement.classList.remove('dark');
+
+      const html2pdf = (await import('html2pdf.js')).default;
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Rapport_${clientType}_${clientInfo.fullName.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+
+      if (wasDark) document.documentElement.classList.add('dark');
+
+      // 2. Prepare Form Data
+      const formData = new FormData();
+      formData.append('email', emailToSend);
+      formData.append('subject', `Rapport d'Analyse - ${clientInfo.fullName}`);
+      formData.append('file', pdfBlob, opt.filename);
+
+      const token = sessionStorage.getItem('token');
+
+      // 3. Send to API
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/send-report/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur de l'envoi");
+      }
+
+      alert('Rapport envoyé avec succès !');
+      setIsEmailModalOpen(false);
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi du PDF:', error);
+      alert('Une erreur est survenue lors de l\'envoi. Veuillez réessayer.');
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   useEffect(() => {
@@ -369,6 +444,14 @@ export default function AnalysisResult() {
             <p className="text-slate-500 dark:text-slate-400 font-medium">{clientInfo.fullName}</p>
           </div>
           <div className="flex items-center gap-3 print:hidden">
+            <button
+              onClick={() => setIsEmailModalOpen(true)}
+              className="px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all flex items-center gap-2"
+              title="Envoyer par email"
+            >
+              <Send className="w-4 h-4" />
+              <span className="hidden sm:inline text-sm font-medium">Envoyer</span>
+            </button>
             <button onClick={handleExport} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
               <Download className="w-4 h-4" />
             </button>
@@ -557,6 +640,65 @@ export default function AnalysisResult() {
         onConfirm={executeDelete}
         cancelText="Annuler"
       />
+
+      {/* EMAIL MODAL */}
+      <AnimatedModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        title="Envoyer le rapport par email"
+      >
+        <div className="p-6 text-slate-700 dark:text-slate-300">
+          <p className="mb-6 text-sm">
+            Vous pouvez envoyer ce rapport PDF directement par email.
+            Modifiez l'adresse ci-dessous si vous souhaitez l'envoyer à un collaborateur ou un client.
+          </p>
+
+          <form onSubmit={handleSendEmail} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+                Adresse Email Destinataire
+              </label>
+              <input
+                type="email"
+                value={emailToSend}
+                onChange={(e) => setEmailToSend(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+                placeholder="Ex. collegue@kaisanalytics.com"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8">
+              <button
+                type="button"
+                onClick={() => setIsEmailModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors"
+                disabled={isSendingEmail}
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={isSendingEmail || !emailToSend.trim()}
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSendingEmail ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Envoi en cours...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Envoyer
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </AnimatedModal>
+
     </div>
   );
 }

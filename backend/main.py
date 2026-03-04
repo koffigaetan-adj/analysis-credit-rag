@@ -477,6 +477,80 @@ def save_application(req: SaveAppRequest, db: Session = Depends(database.get_db)
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+def send_report_email(email: str, subject: str, message: bytes, attachment_name: str):
+    try:
+        from email.mime.application import MIMEApplication
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.image import MIMEImage
+        import smtplib
+
+        msg = MIMEMultipart("related")
+        msg['Subject'] = subject
+        msg['From'] = f"{os.getenv('FROM_NAME', 'Kaïs Analytics')} <{os.getenv('REPLY_TO', 'no-reply@kaisanalytics.com')}>"
+        msg['Reply-To'] = os.getenv('REPLY_TO', 'no-reply@kaisanalytics.com')
+        msg['To'] = email
+
+        template_html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; max-width: 600px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="cid:logomail" alt="Kaïs Analytics" style="max-height: 60px;">
+                    </div>
+                    <div style="background-color: white; padding: 20px; border-radius: 8px;">
+                        <h3>Votre Rapport d'Analyse</h3>
+                        <p>Veuillez trouver en pièce jointe le rapport d'analyse généré par Kaïs Analytics.</p>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #64748b;">
+                        <p>Veuillez ne pas répondre à cet email. Ce message a été généré automatiquement par Kaïs Analytics.</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        part = MIMEText(template_html, 'html')
+        msg.attach(part)
+        
+        logo_path = os.path.join(os.path.dirname(__file__), "images", "logomail.png")
+        if os.path.exists(logo_path):
+            with open(logo_path, "rb") as f:
+                img_data = f.read()
+            image = MIMEImage(img_data, name=os.path.basename(logo_path))
+            image.add_header('Content-ID', '<logomail>')
+            image.add_header('Content-Disposition', 'inline', filename='logomail.png')
+            msg.attach(image)
+
+        pdf_attachment = MIMEApplication(message, _subtype="pdf")
+        pdf_attachment.add_header('Content-Disposition', 'attachment', filename=attachment_name)
+        msg.attach(pdf_attachment)
+
+        server = smtplib.SMTP(os.getenv("SMTP_SERVER"), int(os.getenv("SMTP_PORT", 587)))
+        server.starttls()
+        server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
+        server.sendmail(os.getenv("FROM_EMAIL"), email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Erreur d'envoi du rapport: {str(e)}")
+        return False
+
+@app.post("/send-report/")
+async def send_report_route(
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    subject: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: database.User = Depends(get_current_user)
+):
+    try:
+        file_bytes = await file.read()
+        background_tasks.add_task(send_report_email, email, subject, file_bytes, file.filename)
+        return {"message": "Rapport envoyé avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
