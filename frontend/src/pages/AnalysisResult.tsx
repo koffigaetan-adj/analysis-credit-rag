@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, CheckCircle, AlertTriangle, Send, Bot, Download,
+  ArrowLeft, CheckCircle, AlertTriangle, Send, Download,
   XCircle, FileText, ShieldCheck,
   AlertOctagon, X, Save, LineChart, Sparkles,
   Trash2, User, Building2
@@ -124,6 +124,27 @@ export default function AnalysisResult() {
       window.removeEventListener('afterprint', handleAfterPrint);
     };
   }, []);
+
+  const handleExport = async () => {
+    try {
+      // Envoi d'une notification d'exportation
+      await fetch('http://localhost:8000/auth/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          title: "Analyse exportée",
+          message: `L'analyse de ${state?.clientInfo?.fullName} a été téléchargée/imprimée.`,
+          type: "INFO"
+        })
+      });
+    } catch (e) {
+      console.error("Erreur lors de la création de la notification d'export:", e);
+    }
+    window.print();
+  };
 
   useEffect(() => {
     if (state?.clientInfo?.fullName) {
@@ -348,7 +369,7 @@ export default function AnalysisResult() {
             <p className="text-slate-500 dark:text-slate-400 font-medium">{clientInfo.fullName}</p>
           </div>
           <div className="flex items-center gap-3 print:hidden">
-            <button onClick={() => window.print()} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
+            <button onClick={handleExport} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
               <Download className="w-4 h-4" />
             </button>
             {isHistoryMode ? (

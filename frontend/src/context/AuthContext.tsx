@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
      id: string;
      first_name: string;
      last_name: string;
+     sexe: string;
      establishment?: string;
      email: string;
      role: string;

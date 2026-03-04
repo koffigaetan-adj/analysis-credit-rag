@@ -1,12 +1,14 @@
 import { UserPlus, Mail, Shield, User, Trash2, Edit3, Search, X, Lock, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 // Interfaces pour le typage
 interface TeamMember {
   id: string;
   first_name: string;
   last_name: string;
+  sexe: string;
   establishment?: string;
   email: string;
   role: string;
@@ -17,7 +19,10 @@ interface TeamMember {
 
 export default function Team() {
   const { user, token } = useAuth();
+  const location = useLocation();
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -25,14 +30,16 @@ export default function Team() {
   const [editingUser, setEditingUser] = useState<TeamMember | null>(null);
   const [deletingUser, setDeletingUser] = useState<TeamMember | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [approvingReq, setApprovingReq] = useState<any>(null);
 
   const [adminPassword, setAdminPassword] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
   // Formulaires
-  const [editForm, setEditForm] = useState({ prenom: '', nom: '', email: '', role: 'ANALYST', establishment: '' });
-  const [createForm, setCreateForm] = useState({ prenom: '', nom: '', email: '', role: 'ANALYST', password: '', establishment: '' });
+  const [editForm, setEditForm] = useState({ prenom: '', nom: '', sexe: 'M', email: '', role: 'ANALYST', establishment: '' });
+  const [createForm, setCreateForm] = useState({ prenom: '', nom: '', sexe: 'M', email: '', role: 'ANALYST', password: '', establishment: '' });
+  const [approveForm, setApproveForm] = useState({ role: 'ANALYST', establishment: '', password: '' });
 
   // Récupérer les utilisateurs
   const fetchUsers = async () => {
@@ -54,14 +61,39 @@ export default function Team() {
     }
   };
 
+  const fetchRequests = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/auth/account-requests', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setRequests(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    if (token) fetchUsers();
-  }, [token]);
+    if (token) {
+      fetchUsers();
+      if (user?.role === 'SUPER_ADMIN') {
+        fetchRequests();
+      }
+    }
+  }, [token, user]);
+
+  // Écouter le state de la navigation (provenant du Header par exemple)
+  useEffect(() => {
+    if (location.state && location.state.activeTab === 'requests' && user?.role === 'SUPER_ADMIN') {
+      setActiveTab('requests');
+      // Pour éviter de re-déclencher si l'utilisateur rafraîchit
+      window.history.replaceState({}, document.title);
+    }
+  }, [location, user]);
 
   // Actions
   const handleEditClick = (member: TeamMember) => {
     setEditingUser(member);
-    setEditForm({ prenom: member.first_name, nom: member.last_name, email: member.email, role: member.role, establishment: member.establishment || '' });
+    setEditForm({ prenom: member.first_name, nom: member.last_name, sexe: member.sexe || 'M', email: member.email, role: member.role, establishment: member.establishment || '' });
     setModalError(null);
   };
 
@@ -73,6 +105,7 @@ export default function Team() {
       const payload = {
         first_name: editForm.prenom.trim(),
         last_name: editForm.nom.trim(),
+        sexe: editForm.sexe,
         establishment: editForm.establishment.trim(),
         email: editForm.email,
         role: editForm.role
@@ -172,6 +205,7 @@ export default function Team() {
       const payload = {
         first_name: createForm.prenom.trim(),
         last_name: createForm.nom.trim(),
+        sexe: createForm.sexe,
         establishment: createForm.establishment.trim(),
         email: createForm.email,
         password: createForm.password,
@@ -194,6 +228,33 @@ export default function Team() {
 
       await fetchUsers();
       setShowCreateModal(false);
+    } catch (err: any) {
+      setModalError(err.message);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleApproveRequest = async () => {
+    if (!approvingReq) return;
+    setModalError(null);
+    setModalLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8000/auth/account-requests/${approvingReq.id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(approveForm)
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Erreur d'approbation");
+      }
+      await fetchUsers();
+      await fetchRequests();
+      setApprovingReq(null);
     } catch (err: any) {
       setModalError(err.message);
     } finally {
@@ -225,7 +286,7 @@ export default function Team() {
         <button
           onClick={() => {
             setShowCreateModal(true);
-            setCreateForm({ prenom: '', nom: '', email: '', role: 'ANALYST', password: '', establishment: '' });
+            setCreateForm({ prenom: '', nom: '', sexe: 'M', email: '', role: 'ANALYST', password: '', establishment: '' });
             setModalError(null);
           }}
           className="px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95">
@@ -234,148 +295,222 @@ export default function Team() {
         </button>
       </div>
 
-      {/* STATS SIMPLES */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: "Total Membres", value: members.length, icon: <User className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-          { label: "Super Admins", value: members.filter(m => m.role === 'SUPER_ADMIN').length, icon: <Shield className="w-5 h-5" />, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
-          { label: "Administrateurs", value: members.filter(m => m.role === 'ADMIN').length, icon: <Shield className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
-          { label: "Analystes", value: members.filter(m => m.role === 'ANALYST').length, icon: <Edit3 className="w-5 h-5" />, color: "text-slate-500 dark:text-slate-400", bg: "bg-slate-50 dark:bg-slate-800/50" }
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1"
+      {user?.role === 'SUPER_ADMIN' && (
+        <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+          <button
+            onClick={() => setActiveTab('members')}
+            className={`px-4 py-2 text-sm font-bold relative ${activeTab === 'members' ? 'text-blue-600 dark:text-blue-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
-            <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center shadow-inner`}>
-              {stat.icon}
+            Membres Actifs
+            {activeTab === 'members' && <div className="absolute bottom-[-9px] left-0 w-full h-[2px] bg-blue-600 dark:bg-blue-500 rounded-t-full"></div>}
+          </button>
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={`px-4 py-2 text-sm font-bold relative flex items-center gap-2 ${activeTab === 'requests' ? 'text-blue-600 dark:text-blue-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Demandes en attente
+            {requests.length > 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[10px]">{requests.length}</span>}
+            {activeTab === 'requests' && <div className="absolute bottom-[-9px] left-0 w-full h-[2px] bg-blue-600 dark:bg-blue-500 rounded-t-full"></div>}
+          </button>
+        </div>
+      )}
+
+      {/* STATS SIMPLES */}
+      {activeTab === 'members' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: "Total Membres", value: members.length, icon: <User className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+            { label: "Super Admins", value: members.filter(m => m.role === 'SUPER_ADMIN').length, icon: <Shield className="w-5 h-5" />, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
+            { label: "Administrateurs", value: members.filter(m => m.role === 'ADMIN').length, icon: <Shield className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
+            { label: "Analystes", value: members.filter(m => m.role === 'ANALYST').length, icon: <Edit3 className="w-5 h-5" />, color: "text-slate-500 dark:text-slate-400", bg: "bg-slate-50 dark:bg-slate-800/50" }
+          ].map((stat, i) => (
+            <div
+              key={i}
+              className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1"
+            >
+              <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center shadow-inner`}>
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{stat.value}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">{stat.label}</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{stat.value}</p>
+          ))}
+        </div>
+      )}
+
+      {/* TABLEAU MEMBERS */}
+      {activeTab === 'members' && (
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+          <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-950/30 transition-colors">
+            <div className="relative w-64 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-600 transition-colors group-focus-within:text-blue-500" />
+              <input
+                type="text"
+                placeholder="Rechercher un membre..."
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm dark:text-slate-200 outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+              />
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* TABLEAU PROPRE & LISIBLE */}
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-        <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-950/30 transition-colors">
-          <div className="relative w-64 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-600 transition-colors group-focus-within:text-blue-500" />
-            <input
-              type="text"
-              placeholder="Rechercher un membre..."
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm dark:text-slate-200 outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
-            />
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[700px]">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Membre</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Rôle</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                {isLoading ? (
+                  <tr><td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">Chargement des membres...</td></tr>
+                ) : errorMsg ? (
+                  <tr><td colSpan={4} className="px-6 py-8 text-center text-sm font-bold text-rose-500">{errorMsg}</td></tr>
+                ) : members.map((member) => (
+                  <tr key={member.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
+                          {member.avatar_url ? (
+                            <img src={`http://localhost:8000${member.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-blue-500 font-bold text-xs uppercase">
+                              {member.first_name[0]}{member.last_name[0]}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {member.first_name} {member.last_name}
+                            {member.id === user?.id && <span className="text-slate-400 font-normal ml-1">(Vous)</span>}
+                          </div>
+                          <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                            <Mail className="w-3 h-3" /> {member.email}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 text-[11px] font-semibold rounded-lg border ${member.role === 'SUPER_ADMIN' ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:border-purple-800 dark:text-purple-400' : member.role === 'ADMIN' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}>
+                        {getRoleLabel(member.role)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {/* Pastille de couleur */}
+                        <div className={`w-2 h-2 rounded-full ${!member.is_active ? 'bg-rose-500' : member.is_first_login ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                        <span className={`text-[11px] font-bold uppercase tracking-wider ${!member.is_active ? 'text-rose-600 dark:text-rose-400' : member.is_first_login ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {!member.is_active ? 'Inactif' : member.is_first_login ? 'Invitation en cours' : 'Actif'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                        {/* Bouton Toggle Status (uniquement super admin ou admin et pas soi-même, admin restreint aux analystes) */}
+                        {member.id !== user?.id && (
+                          user?.role === 'SUPER_ADMIN' ||
+                          (user?.role === 'ADMIN' && member.role === 'ANALYST')
+                        ) && (
+                            <button
+                              onClick={() => handleToggleStatus(member.id)}
+                              className={`p-2 rounded-lg transition-all ${member.is_active ? 'text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30' : 'text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'}`}
+                              title={member.is_active ? "Désactiver ce compte" : "Réactiver ce compte"}
+                            >
+                              <Lock className="w-4 h-4" />
+                            </button>
+                          )}
+
+                        {/* Bouton Modifier (uniquement super admin ou admin restreint aux analystes, ou soi-même) */}
+                        {(
+                          user?.role === 'SUPER_ADMIN' ||
+                          member.id === user?.id ||
+                          (user?.role === 'ADMIN' && member.role === 'ANALYST')
+                        ) && (
+                            <button
+                              onClick={() => handleEditClick(member)}
+                              className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
+                              title="Modifier les infos"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          )}
+
+                        {/* Bouton Supprimer (uniquement super admin ou admin restreint aux analystes, pas soi-même) */}
+                        {member.id !== user?.id && (
+                          user?.role === 'SUPER_ADMIN' ||
+                          (user?.role === 'ADMIN' && member.role === 'ANALYST')
+                        ) && (
+                            <button
+                              onClick={() => handleDeleteClick(member)}
+                              className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-500 transition-all"
+                              title="Supprimer ce membre"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
+      )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[700px]">
-            <thead>
-              <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Membre</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Rôle</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Statut</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-              {isLoading ? (
-                <tr><td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">Chargement des membres...</td></tr>
-              ) : errorMsg ? (
-                <tr><td colSpan={4} className="px-6 py-8 text-center text-sm font-bold text-rose-500">{errorMsg}</td></tr>
-              ) : members.map((member) => (
-                <tr key={member.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-default">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
-                        {member.avatar_url ? (
-                          <img src={`http://localhost:8000${member.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-blue-500 font-bold text-xs uppercase">
-                            {member.first_name[0]}{member.last_name[0]}
-                          </span>
-                        )}
-                      </div>
-                      <div>
+      {/* TABLEAU REQUESTS */}
+      {activeTab === 'requests' && (
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[700px]">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Demandeur</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Poste</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                {requests.length === 0 ? (
+                  <tr><td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">Aucune demande en attente.</td></tr>
+                ) : requests.map((req) => (
+                  <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
                         <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                          {member.first_name} {member.last_name}
-                          {member.id === user?.id && <span className="text-slate-400 font-normal ml-1">(Vous)</span>}
+                          {req.first_name} {req.last_name} <span className="text-xs text-slate-400 font-normal ml-1">({req.sexe})</span>
                         </div>
                         <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                          <Mail className="w-3 h-3" /> {member.email}
+                          <Mail className="w-3 h-3" /> {req.email}
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 text-[11px] font-semibold rounded-lg border ${member.role === 'SUPER_ADMIN' ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:border-purple-800 dark:text-purple-400' : member.role === 'ADMIN' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}>
-                      {getRoleLabel(member.role)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {/* Pastille de couleur */}
-                      <div className={`w-2 h-2 rounded-full ${!member.is_active ? 'bg-rose-500' : member.is_first_login ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                      <span className={`text-[11px] font-bold uppercase tracking-wider ${!member.is_active ? 'text-rose-600 dark:text-rose-400' : member.is_first_login ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        {!member.is_active ? 'Inactif' : member.is_first_login ? 'Invitation en cours' : 'Actif'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-
-                      {/* Bouton Toggle Status (uniquement super admin ou admin et pas soi-même, admin restreint aux analystes) */}
-                      {member.id !== user?.id && (
-                        user?.role === 'SUPER_ADMIN' ||
-                        (user?.role === 'ADMIN' && member.role === 'ANALYST')
-                      ) && (
-                          <button
-                            onClick={() => handleToggleStatus(member.id)}
-                            className={`p-2 rounded-lg transition-all ${member.is_active ? 'text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30' : 'text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'}`}
-                            title={member.is_active ? "Désactiver ce compte" : "Réactiver ce compte"}
-                          >
-                            <Lock className="w-4 h-4" />
-                          </button>
-                        )}
-
-                      {/* Bouton Modifier (uniquement super admin ou admin restreint aux analystes, ou soi-même) */}
-                      {(
-                        user?.role === 'SUPER_ADMIN' ||
-                        member.id === user?.id ||
-                        (user?.role === 'ADMIN' && member.role === 'ANALYST')
-                      ) && (
-                          <button
-                            onClick={() => handleEditClick(member)}
-                            className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
-                            title="Modifier les infos"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                        )}
-
-                      {/* Bouton Supprimer (uniquement super admin ou admin restreint aux analystes, pas soi-même) */}
-                      {member.id !== user?.id && (
-                        user?.role === 'SUPER_ADMIN' ||
-                        (user?.role === 'ADMIN' && member.role === 'ANALYST')
-                      ) && (
-                          <button
-                            onClick={() => handleDeleteClick(member)}
-                            className="p-2 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-500 transition-all"
-                            title="Supprimer ce membre"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{req.poste}</td>
+                    <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">{new Date(req.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => {
+                          setApprovingReq(req);
+                          setApproveForm({ role: 'ANALYST', establishment: '', password: '' });
+                          setModalError(null);
+                        }}
+                        className="px-4 py-1.5 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors"
+                      >
+                        Approuver
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* MODAL : ÉDITION MEMBRE */}
       {editingUser && (
@@ -420,6 +555,19 @@ export default function Team() {
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Sexe</label>
+                <select
+                  value={editForm.sexe}
+                  onChange={(e) => setEditForm({ ...editForm, sexe: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                >
+                  <option value="M">Masculin</option>
+                  <option value="F">Féminin</option>
+                  <option value="NB">Non-Binaire</option>
+                </select>
               </div>
 
               <div className="space-y-1.5">
@@ -599,6 +747,19 @@ export default function Team() {
               </div>
 
               <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Sexe</label>
+                <select
+                  value={createForm.sexe}
+                  onChange={(e) => setCreateForm({ ...createForm, sexe: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                >
+                  <option value="M">Masculin</option>
+                  <option value="F">Féminin</option>
+                  <option value="NB">Non-Binaire</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Email</label>
                 <input
                   type="email"
@@ -666,6 +827,93 @@ export default function Team() {
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
               >
                 {modalLoading ? 'Création...' : <><UserPlus className="w-4 h-4" /> Créer le compte</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL : APPROBATION DEMANDE */}
+      {approvingReq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-blue-50/30 dark:bg-blue-900/10">
+              <h3 className="text-lg font-bold text-blue-600 dark:text-blue-500 flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                Approuver {approvingReq.first_name} {approvingReq.last_name}
+              </h3>
+              <button
+                onClick={() => setApprovingReq(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Vous êtes sur le point d'approuver un compte pour le poste de <span className="font-bold text-slate-700 dark:text-slate-300">{approvingReq.poste}</span>. Fournissez un mot de passe temporaire et assignez un rôle.
+              </p>
+
+              {modalError && (
+                <div className="p-3 rounded-lg text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  {modalError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Établissement</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Siège Social, Agence Centrale..."
+                  value={approveForm.establishment}
+                  onChange={(e) => setApproveForm({ ...approveForm, establishment: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Rôle</label>
+                <select
+                  value={approveForm.role}
+                  onChange={(e) => setApproveForm({ ...approveForm, role: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                >
+                  <option value="ANALYST">Analyste</option>
+                  <option value="ADMIN">Administrateur</option>
+                  <option value="SUPER_ADMIN">Super Administrateur</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Mot de passe temporaire</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Sera modifié à la 1ère connexion"
+                    value={approveForm.password}
+                    onChange={(e) => setApproveForm({ ...approveForm, password: e.target.value })}
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+              <button
+                onClick={() => setApprovingReq(null)}
+                className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                disabled={modalLoading}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleApproveRequest}
+                disabled={modalLoading || !approveForm.password}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {modalLoading ? 'Approbation...' : 'Approuver la demande'}
               </button>
             </div>
           </div>

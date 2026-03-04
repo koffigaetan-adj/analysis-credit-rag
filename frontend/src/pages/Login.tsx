@@ -142,45 +142,77 @@ export default function Login() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [sexe, setSexe] = useState('M');
+  const [poste, setPoste] = useState('');
+
+  const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Animation 3D au survol
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+ // const [, setTilt] = useState({ x: 0, y: 0 });
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+/*   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left - rect.width / 2;
     const y = e.clientY - rect.top - rect.height / 2;
     // Rotation max de +/- 30 degrés
     setTilt({ x: -(y / rect.height) * 40, y: (x / rect.width) * 40 });
-  };
+  }; */
 
-  const handleMouseLeave = () => {
+/*   const handleMouseLeave = () => {
     setTilt({ x: 0, y: 0 });
-  };
+  }; */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
-      const response = await fetch('http://localhost:8000/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      if (isSignUp) {
+        // Logique de création de compte
+        const response = await fetch('http://localhost:8000/auth/request-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            sexe,
+            email: email.trim(),
+            poste: poste.trim() || 'Data Analyst'
+          })
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Erreur lors de la connexion');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Erreur lors de la demande de création");
+        }
+
+        setSuccessMessage("Votre demande de compte a été enregistrée. Elle sera validée par un administrateur.");
+        setIsSignUp(false); // Retour à la connexion
+        // On pourrait vider les champs optionnellement
+      } else {
+        // Logique de connexion existante
+        const response = await fetch('http://localhost:8000/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Erreur lors de la connexion');
+        }
+
+        const data = await response.json();
+        login(data.access_token, data.user_info, data.is_first_login);
+        navigate('/dashboard');
       }
-
-      const data = await response.json();
-      login(data.access_token, data.user_info, data.is_first_login);
-
-      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -200,8 +232,8 @@ export default function Login() {
           <div className="max-w-md text-left">
             <div
               className="mb-14 w-fit inline-block cursor-crosshair"
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
+              /* onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave} */
               style={{ perspective: '1000px' }}
             >
 
@@ -242,9 +274,28 @@ export default function Login() {
         {/* SECTION DROITE */}
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[40px] shadow-2xl">
-            <div className="mb-10 text-left">
-              <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Connexion</h2>
-              <p className="text-slate-400 text-sm font-medium">Console d'audit professionnelle.</p>
+            <div className="mb-8 text-left">
+              <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
+                {isSignUp ? "Créer un compte" : "Connexion"}
+              </h2>
+              <p className="text-slate-400 text-sm font-medium">
+                {isSignUp ? "Demandez votre accès à Kaïs" : "Console d'audit professionnelle."}
+              </p>
+            </div>
+
+            <div className="flex mb-6 bg-white/5 p-1 rounded-xl">
+              <button
+                onClick={() => { setIsSignUp(false); setError(null); setSuccessMessage(null); }}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${!isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
+              >
+                Se connecter
+              </button>
+              <button
+                onClick={() => { setIsSignUp(true); setError(null); setSuccessMessage(null); }}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
+              >
+                S'inscrire
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -252,6 +303,63 @@ export default function Login() {
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm font-medium">
                   {error}
                 </div>
+              )}
+              {successMessage && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-medium">
+                  {successMessage}
+                </div>
+              )}
+
+              {isSignUp && (
+                <>
+                  <div className="flex gap-3">
+                    <div className="space-y-2 flex-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Prénom</label>
+                      <input
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
+                        required={isSignUp}
+                      />
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nom</label>
+                      <input
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
+                        required={isSignUp}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="space-y-2 flex-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sexe</label>
+                      <select
+                        value={sexe}
+                        onChange={(e) => setSexe(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#222222] border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm appearance-none"
+                      >
+                        <option value="M">Masculin</option>
+                        <option value="F">Féminin</option>
+                        <option value="NB">Non-Binaire</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Poste (opt)</label>
+                      <input
+                        type="text"
+                        value={poste}
+                        placeholder="Data Analyst"
+                        onChange={(e) => setPoste(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="space-y-2">
@@ -269,30 +377,32 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center px-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mot de passe</label>
-                  <a href="#" className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">Oublié ?</a>
+              {!isSignUp && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mot de passe</label>
+                    <a href="#" className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">Oublié ?</a>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
+                      required={!isSignUp}
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
-                    required
-                  />
-                </div>
-              </div>
+              )}
 
               <button
                 type="submit"
                 disabled={isLoading}
                 className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
               >
-                {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Accéder <ArrowRight className="w-4 h-4" /></>}
+                {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Envoyer la demande" : "Accéder"} <ArrowRight className="w-4 h-4" /></>}
               </button>
             </form>
           </div>

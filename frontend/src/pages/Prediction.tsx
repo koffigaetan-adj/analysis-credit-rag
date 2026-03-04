@@ -8,7 +8,7 @@ export default function Prediction() {
           <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 animate-fade-in text-center font-sans">
                <div className="flex flex-col items-center justify-center min-h-[60vh]">
                     <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-8 relative">
-                         <Sparkles className="w-12 h-12 text-blue-600 dark:text-blue-500 animate-pulse" />
+                         <img src="/src/images/logo_kais.svg" alt="Logo" className="w-12 h-12" />
                          <div className="absolute inset-0 border-4 border-blue-500/20 rounded-full animate-ping"></div>
                     </div>
 

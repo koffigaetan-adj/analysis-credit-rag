@@ -60,12 +60,35 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, default="ANALYST") # SUPER_ADMIN, ADMIN, ANALYST
+    sexe = Column(String, default="M") # M ou F
+    poste = Column(String, default="Data Analyst")
     is_active = Column(Boolean, default=True)
     is_first_login = Column(Boolean, default=True)
     organization_id = Column(Integer, nullable=True)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class AccountRequest(Base):
+    __tablename__ = "account_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+    sexe = Column(String, default="M")
+    email = Column(String, unique=True, index=True, nullable=False)
+    poste = Column(String, default="Data Analyst")
+    status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=True) # Null for SUPER_ADMIN general notifications
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String) # ACCOUNT_REQUEST, WELCOME, INFO
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 # Création des tables
 Base.metadata.create_all(bind=engine)

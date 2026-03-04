@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import shutil
 import uuid
-from database import get_db, User
+from database import get_db, User, AccountRequest, Notification
 
 # Paramètres Sécurité & JWT (à configurer via .env en prod)
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "une_cle_secrete_tres_complexe_ici_123!")
@@ -33,6 +33,8 @@ class UpdatePasswordRequest(BaseModel):
 class UpdateProfileRequest(BaseModel):
     first_name: str
     last_name: str
+    sexe: str = "M"
+    poste: str = "Data Analyst"
     email: str
     establishment: Optional[str] = None
     password: str
@@ -40,6 +42,8 @@ class UpdateProfileRequest(BaseModel):
 class AdminUpdateUserRequest(BaseModel):
     first_name: str
     last_name: str
+    sexe: str = "M"
+    poste: str = "Data Analyst"
     establishment: Optional[str] = None
     email: str
     role: str
@@ -50,10 +54,29 @@ class AdminDeleteUserRequest(BaseModel):
 class AdminCreateUserRequest(BaseModel):
     first_name: str
     last_name: str
+    sexe: str = "M"
+    poste: str = "Data Analyst"
     establishment: Optional[str] = None
     email: str
     password: str
     role: str
+
+class CreateAccountRequest(BaseModel):
+    first_name: str
+    last_name: str
+    sexe: str = "M"
+    email: str
+    poste: str = "Data Analyst"
+
+class ApproveAccountRequest(BaseModel):
+    establishment: str
+    role: str
+    password: str
+
+class CreateNotificationRequest(BaseModel):
+    title: str
+    message: str
+    type: str = "INFO"
 
 # --- FONCTIONS UTILITAIRES ---
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -162,6 +185,8 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
             "id": user.id,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "sexe": user.sexe,
+            "poste": user.poste,
             "establishment": user.establishment,
             "role": user.role,
             "email": user.email,
@@ -181,9 +206,17 @@ def update_password(
         raise HTTPException(status_code=400, detail="L'ancien mot de passe est incorrect.")
         
     # 2. Hachage du nouveau MDP
-    new_hashed_password = get_password_hash(request.new_password)
-    current_user.password_hash = new_hashed_password
+    current_user.password_hash = get_password_hash(request.new_password)
     current_user.is_first_login = False
+    
+    # Create notification for password change
+    password_notif = Notification(
+        user_id=current_user.id,
+        title="Sécurité du compte",
+        message="Votre mot de passe a été modifié avec succès.",
+        type="INFO"
+    )
+    db.add(password_notif)
     
     db.commit()
     return {"message": "Mot de passe mis à jour avec succès."}
@@ -217,6 +250,8 @@ def update_profile(
     
     current_user.first_name = request.first_name
     current_user.last_name = request.last_name
+    current_user.sexe = request.sexe
+    current_user.poste = request.poste
     current_user.email = request.email
     
     if current_user.role == "SUPER_ADMIN" and request.establishment is not None:
@@ -231,6 +266,8 @@ def update_profile(
             "id": current_user.id,
             "first_name": current_user.first_name,
             "last_name": current_user.last_name,
+            "sexe": current_user.sexe,
+            "poste": current_user.poste,
             "establishment": current_user.establishment,
             "role": current_user.role,
             "email": current_user.email,
@@ -296,6 +333,8 @@ def get_all_users(
             "id": u.id,
             "first_name": u.first_name,
             "last_name": u.last_name,
+            "sexe": u.sexe,
+            "poste": u.poste,
             "establishment": u.establishment,
             "email": u.email,
             "role": u.role,
@@ -325,6 +364,8 @@ def admin_create_user(
         id=str(uuid.uuid4()),
         first_name=request.first_name,
         last_name=request.last_name,
+        sexe=request.sexe,
+        poste=request.poste,
         establishment=request.establishment,
         email=request.email,
         password_hash=get_password_hash(request.password),
@@ -382,6 +423,8 @@ def admin_update_user(
         
     target_user.first_name = request.first_name
     target_user.last_name = request.last_name
+    target_user.sexe = request.sexe
+    target_user.poste = request.poste
     
     if current_admin.role == "SUPER_ADMIN" and request.establishment is not None:
         target_user.establishment = request.establishment
@@ -434,3 +477,187 @@ def admin_toggle_user_status(
     
     status_str = "activé" if target_user.is_active else "désactivé"
     return {"message": f"Le compte a été {status_str} avec succès.", "is_active": target_user.is_active}
+
+# --- ACCOUNT REQUESTS & NOTIFICATIONS ---
+
+@router.post("/request-account")
+def request_account(request: CreateAccountRequest, db: Session = Depends(get_db)):
+    # Vérification email
+    existing_user = db.query(User).filter(User.email == request.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
+    
+    existing_request = db.query(AccountRequest).filter(AccountRequest.email == request.email).first()
+    if existing_request:
+        if existing_request.status == "PENDING":
+            raise HTTPException(status_code=400, detail="Une demande avec cet email est déjà en attente.")
+        else:
+            raise HTTPException(status_code=400, detail="Une demande avec cet email a déjà été traitée.")
+
+    new_request = AccountRequest(
+        first_name=request.first_name,
+        last_name=request.last_name,
+        sexe=request.sexe,
+        email=request.email,
+        poste=request.poste
+    )
+    db.add(new_request)
+    db.commit()
+
+    # Créer une notification globale pour les SUPER_ADMIN
+    admin_notif = Notification(
+        user_id=None, # Globale
+        title="Nouvelle demande de compte",
+        message=f"{request.first_name} {request.last_name} a demandé la création d'un compte.",
+        type="ACCOUNT_REQUEST"
+    )
+    db.add(admin_notif)
+    db.commit()
+
+    return {"message": "Votre demande de compte a été enregistrée. Elle sera validée par un administrateur."}
+
+
+@router.get("/account-requests")
+def get_account_requests(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(check_role(["SUPER_ADMIN"]))
+):
+    requests = db.query(AccountRequest).filter(AccountRequest.status == "PENDING").all()
+    return [
+        {
+            "id": r.id,
+            "first_name": r.first_name,
+            "last_name": r.last_name,
+            "sexe": r.sexe,
+            "email": r.email,
+            "poste": r.poste,
+            "status": r.status,
+            "created_at": r.created_at
+        } for r in requests
+    ]
+
+
+@router.post("/account-requests/{request_id}/approve")
+def approve_account_request(
+    request_id: int,
+    approval: ApproveAccountRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(check_role(["SUPER_ADMIN"]))
+):
+    acc_req = db.query(AccountRequest).filter(AccountRequest.id == request_id).first()
+    if not acc_req:
+        raise HTTPException(status_code=404, detail="Demande introuvable.")
+        
+    if acc_req.status != "PENDING":
+        raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée.")
+
+    existing_user = db.query(User).filter(User.email == acc_req.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Un compte avec cet email existe déjà.")
+
+    # Création de l'utilisateur
+    new_user = User(
+        id=str(uuid.uuid4()),
+        first_name=acc_req.first_name,
+        last_name=acc_req.last_name,
+        sexe=acc_req.sexe,
+        poste=acc_req.poste,
+        establishment=approval.establishment,
+        email=acc_req.email,
+        password_hash=get_password_hash(approval.password),
+        role=approval.role,
+        is_first_login=True
+    )
+    db.add(new_user)
+    
+    # Marquer la demande comme approuvée
+    acc_req.status = "APPROVED"
+    
+    # Créer une notification de bienvenue
+    welcome_notif = Notification(
+        user_id=new_user.id,
+        title="Bienvenue sur Kaïs !",
+        message="Votre compte a été approuvé. Pensez à modifier votre mot de passe.",
+        type="WELCOME"
+    )
+    db.add(welcome_notif)
+    
+    db.commit()
+    
+    # --- SIMULATION ENVOI EMAIL ---
+    print("\n" + "="*50)
+    print("📧 SIMULATION D'ENVOI D'EMAIL (Approbation)")
+    print(f"Destinataire : {new_user.email}")
+    print(f"Objet : Votre compte Kaïs est approuvé !")
+    print("-" * 50)
+    print(f"Bonjour {new_user.first_name} {new_user.last_name},")
+    print(f"\nVotre demande de compte a été approuvée avec le rôle {new_user.role}.")
+    print("Voici vos identifiants de connexion provisoires :")
+    print(f"Email : {new_user.email}")
+    print(f"Mot de passe temporaire : {approval.password}")
+    print("\nLors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.")
+    print("\nCordialement,\nL'équipe Kaïs")
+    print("="*50 + "\n")
+
+    return {"message": "Demande approuvée. L'utilisateur a été créé et notifié."}
+
+
+@router.get("/notifications")
+def get_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Les SUPER_ADMIN voient les notifications globales (user_id IS NULL) ET leurs notifs perso
+    if current_user.role == "SUPER_ADMIN":
+        notifs = db.query(Notification).filter(
+            (Notification.user_id == current_user.id) | (Notification.user_id == None)
+        ).order_by(Notification.created_at.desc()).all()
+    else:
+        notifs = db.query(Notification).filter(
+            Notification.user_id == current_user.id
+        ).order_by(Notification.created_at.desc()).all()
+        
+    return [
+        {
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "type": n.type,
+            "is_read": n.is_read,
+            "created_at": n.created_at
+        } for n in notifs
+    ]
+
+@router.post("/notifications")
+def create_notification(
+    request: CreateNotificationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_notif = Notification(
+        user_id=current_user.id,
+        title=request.title,
+        message=request.message,
+        type=request.type
+    )
+    db.add(new_notif)
+    db.commit()
+    return {"message": "Notification créée."}
+
+@router.put("/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification introuvable.")
+        
+    if notif.user_id is not None and notif.user_id != current_user.id:
+        if current_user.role != "SUPER_ADMIN":
+            raise HTTPException(status_code=403, detail="Non autorisé.")
+            
+    notif.is_read = True
+    db.commit()
+    return {"message": "Notification lue."}

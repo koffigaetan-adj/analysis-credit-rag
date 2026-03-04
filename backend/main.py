@@ -351,6 +351,15 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
     if current_user.role != "SUPER_ADMIN" and app_record.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Non autorisé")
         
+    # Notification de suppression
+    delete_notif = database.Notification(
+        user_id=current_user.id,
+        title="Analyse supprimée",
+        message=f"L'analyse de {app_record.full_name} a été supprimée.",
+        type="INFO"
+    )
+    db.add(delete_notif)
+
     db.delete(app_record)
     db.commit()
     return {"message": "Supprimé"}
@@ -423,6 +432,16 @@ def save_application(req: SaveAppRequest, db: Session = Depends(database.get_db)
             chat_history=[]
         )
         db.add(new_app)
+        
+        # Notification d'enregistrement
+        save_notif = database.Notification(
+            user_id=current_user.id,
+            title="Analyse enregistrée",
+            message=f"L'analyse de {req.fullName} a été sauvegardée avec succès.",
+            type="INFO"
+        )
+        db.add(save_notif)
+        
         db.commit()
         db.refresh(new_app)
         return {"id": new_app.id, "message": "Enregistré avec succès"}
