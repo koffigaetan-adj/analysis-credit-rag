@@ -96,7 +96,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
             </div>
           ) : (
             <div className="animate-in fade-in duration-500 flex justify-left w-full pl-4">
-              <img src="/src/images/Logocomplet.svg" alt="Kaïs Analytics" className="h-12 object-contain" />
+              <img src="/Logocomplet.svg" alt="Kaïs Analytics" className="h-12 object-contain" />
             </div>
           )}
         </div>

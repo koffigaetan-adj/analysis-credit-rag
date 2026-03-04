@@ -271,7 +271,7 @@ export default function Login() {
             >
 
               <img
-                src="/src/images/Logocomplet.svg"
+                src="/Logocomplet.svg"
                 alt="Kaïs Logo"
                 className="h-56 object-contain drop-shadow-[0_2000x_200px_rgba(230,57,25,0.2)] pointer-events-none"
               />
@@ -309,7 +309,7 @@ export default function Login() {
           {/* Logo Mobile */}
           <div className="lg:hidden mb-10 mt-8 flex justify-center w-full animate-fade-in">
             <img
-              src="/src/images/Logocomplet.svg"
+              src="/Logocomplet.svg"
               alt="Kaïs Logo"
               className="h-24 object-contain drop-shadow-[0_20px_50px_rgba(230,57,25,0.2)]"
             />
