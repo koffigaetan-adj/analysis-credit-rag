@@ -305,7 +305,16 @@ export default function Login() {
         </div>
 
         {/* SECTION DROITE */}
-        <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex-1 flex flex-col items-center justify-center p-8">
+          {/* Logo Mobile */}
+          <div className="lg:hidden mb-10 mt-8 flex justify-center w-full animate-fade-in">
+            <img
+              src="/src/images/Logocomplet.svg"
+              alt="Kaïs Logo"
+              className="h-24 object-contain drop-shadow-[0_20px_50px_rgba(230,57,25,0.2)]"
+            />
+          </div>
+
           <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[40px] shadow-2xl">
             <div className="mb-8 text-left">
               <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
