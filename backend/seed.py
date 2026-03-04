@@ -18,7 +18,7 @@ def seed_super_admin():
         last_name="Koffi",
         establishment="Kof Company",
         email="gaetan.eyes@gmail.com",
-        password_hash=get_password_hash("azerty"),
+        password_hash=get_password_hash("Kais2026"),
         role="SUPER_ADMIN",
         is_first_login=True,
         organization_id=None
