@@ -164,6 +164,58 @@ def check_admin_target_role(
          
     return target_user
 
+# --- FONCTIONS UTILITAIRES POUR EMAIL ---
+def parse_user_agent(ua_string: str) -> str:
+    ua_lower = ua_string.lower()
+    device = "Inconnu"
+    if "windows" in ua_lower: device = "PC Windows"
+    elif "macintosh" in ua_lower or "mac os" in ua_lower: device = "Mac"
+    elif "linux" in ua_lower: device = "Linux"
+    elif "iphone" in ua_lower: device = "iPhone"
+    elif "ipad" in ua_lower: device = "iPad"
+    elif "android" in ua_lower: device = "Smartphone Android"
+    
+    browser = "Navigateur web"
+    if "edg" in ua_lower: browser = "Edge"
+    elif "chrome" in ua_lower: browser = "Chrome"
+    elif "firefox" in ua_lower: browser = "Firefox"
+    elif "safari" in ua_lower and "chrome" not in ua_lower: browser = "Safari"
+    
+    return f"{device} (via {browser})"
+
+def get_location_from_ip(ip: str) -> str:
+    if not ip or ip in ["127.0.0.1", "localhost", "0.0.0.0", "Inconnue"]:
+        return "Position inconnue (Réseau local)"
+    try:
+        import urllib.request
+        import json
+        with urllib.request.urlopen(f"http://ip-api.com/json/{ip}?lang=fr", timeout=2) as url:
+            data = json.loads(url.read().decode())
+            if data and data.get("status") == "success":
+                return f"{data.get('city', '')}, {data.get('country', '')}".strip(" ,")
+    except Exception:
+        pass
+    return "Position non identifiable"
+
+def send_login_alert_async(user_email: str, first_name: str, last_name: str, ip_address: str, user_agent: str, login_time: str):
+    device_info = parse_user_agent(user_agent)
+    location = get_location_from_ip(ip_address)
+    
+    login_html = f"""
+    <h3>Nouvelle connexion à votre compte</h3>
+    <p>Bonjour <b>{first_name} {last_name}</b>,</p>
+    <p>Une nouvelle connexion a été détectée sur votre compte Kaïs Analytics :</p>
+    <ul>
+      <li><strong>Appareil :</strong> {device_info}</li>
+      <li><strong>Localisation :</strong> {location}</li>
+      <li><strong>Date et Heure :</strong> {login_time}</li>
+    </ul>
+    <p style="color: #ef4444; font-weight: bold; margin-top: 20px;">Si vous n'êtes pas à l'origine de cette connexion :</p>
+    <p>Veuillez <a href="{os.getenv('FRONTEND_URL', 'https://kais-analytics.netlify.app')}" style="color: #2563eb; font-weight: bold;">cliquer ici pour vous rendre sur l'application</a> et utiliser la fonction "Mot de passe oublié" pour réinitialiser vos accès immédiatement.</p>
+    """
+    from .email_service import send_email_sync
+    send_email_sync(user_email, "Kaïs Analytics - Nouvelle connexion détectée", login_html)
+
 # --- ROUTES ---
 
 @router.post("/login")
@@ -197,22 +249,15 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
     
     # 4. Envoi de l'alerte de connexion
     ip_address = request.client.host if request.client else "Inconnue"
+    # Reverse proxy fallback
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        ip_address = forwarded_for.split(",")[0].strip()
+
     user_agent = request.headers.get("user-agent", "Inconnu")
     login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     
-    login_html = f"""
-    <h3>Nouvelle connexion à votre compte</h3>
-    <p>Bonjour <b>{user.first_name} {user.last_name}</b>,</p>
-    <p>Une nouvelle connexion a été détectée sur votre compte Kaïs Analytics :</p>
-    <ul>
-      <li><strong>Adresse IP :</strong> {ip_address}</li>
-      <li><strong>Appareil / Navigateur :</strong> {user_agent}</li>
-      <li><strong>Date et Heure :</strong> {login_time}</li>
-    </ul>
-    <p style="color: #ef4444; font-weight: bold; margin-top: 20px;">Si vous n'êtes pas à l'origine de cette connexion :</p>
-    <p>Veuillez <a href="{os.getenv('FRONTEND_URL', 'https://kais-analytics.netlify.app')}" style="color: #2563eb; font-weight: bold;">cliquer ici pour vous rendre sur l'application</a> et utiliser la fonction "Mot de passe oublié" pour réinitialiser vos accès immédiatement.</p>
-    """
-    background_tasks.add_task(send_email_sync, user.email, "Kaïs Analytics - Nouvelle connexion détectée", login_html)
+    background_tasks.add_task(send_login_alert_async, user.email, user.first_name, user.last_name, ip_address, user_agent, login_time)
     
     return {
         "access_token": access_token, 

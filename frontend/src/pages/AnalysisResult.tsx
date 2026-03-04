@@ -190,15 +190,38 @@ export default function AnalysisResult() {
       const wasDark = document.documentElement.classList.contains('dark');
       if (wasDark) document.documentElement.classList.remove('dark');
 
-      const html2pdf = (await import('html2pdf.js')).default;
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: `Rapport_${clientType}_${clientInfo.fullName.replace(/\s+/g, '_')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          onclone: (clonedDoc: HTMLDocument) => {
+            // Force Tailwind's @media print rules to apply on the cloned screen document
+            const style = clonedDoc.createElement('style');
+            let printRules = '';
+            Array.from(document.styleSheets).forEach(sheet => {
+              try {
+                Array.from(sheet.cssRules).forEach(rule => {
+                  if (rule instanceof CSSMediaRule && rule.conditionText === 'print') {
+                    Array.from(rule.cssRules).forEach(innerRule => {
+                      printRules += innerRule.cssText + '\n';
+                    });
+                  }
+                });
+              } catch (e) { /* ignore cross-origin errors */ }
+            });
+            style.innerHTML = printRules;
+            clonedDoc.head.appendChild(style);
+          }
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+        pagebreak: { mode: ['css', 'legacy'] }
       };
 
+      const html2pdf = (await import('html2pdf.js')).default;
       const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
 
       if (wasDark) document.documentElement.classList.add('dark');
