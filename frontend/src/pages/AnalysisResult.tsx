@@ -84,6 +84,7 @@ export default function AnalysisResult() {
   const state = location.state as LocationState;
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -94,7 +95,9 @@ export default function AnalysisResult() {
 
   // State for Email Modal
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailSelection, setEmailSelection] = useState<'me' | 'other'>('me');
   const [emailToSend, setEmailToSend] = useState('');
+  const [customEmail, setCustomEmail] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Set default email efficiently when possible
@@ -164,7 +167,8 @@ export default function AnalysisResult() {
 
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailToSend.trim()) return;
+    const finalEmail = emailSelection === 'me' ? emailToSend : customEmail;
+    if (!finalEmail.trim()) return;
 
     setIsSendingEmail(true);
 
@@ -179,7 +183,7 @@ export default function AnalysisResult() {
 
       const html2pdf = (await import('html2pdf.js')).default;
       const opt = {
-        margin: [10, 10, 10, 10],
+        margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: `Rapport_${clientType}_${clientInfo.fullName.replace(/\s+/g, '_')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
@@ -192,7 +196,7 @@ export default function AnalysisResult() {
 
       // 2. Prepare Form Data
       const formData = new FormData();
-      formData.append('email', emailToSend);
+      formData.append('email', finalEmail);
       formData.append('subject', `Rapport d'Analyse - ${clientInfo.fullName}`);
       formData.append('file', pdfBlob, opt.filename);
 
@@ -650,22 +654,49 @@ export default function AnalysisResult() {
         <div className="p-6 text-slate-700 dark:text-slate-300">
           <p className="mb-6 text-sm">
             Vous pouvez envoyer ce rapport PDF directement par email.
-            Modifiez l'adresse ci-dessous si vous souhaitez l'envoyer à un collaborateur ou un client.
           </p>
 
-          <form onSubmit={handleSendEmail} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-                Adresse Email Destinataire
+          <form onSubmit={handleSendEmail} className="space-y-6">
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="emailTarget"
+                  checked={emailSelection === 'me'}
+                  onChange={() => setEmailSelection('me')}
+                  className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium">L'envoyer à mon adresse</span>
               </label>
-              <input
-                type="email"
-                value={emailToSend}
-                onChange={(e) => setEmailToSend(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
-                placeholder="Ex. collegue@kaisanalytics.com"
-              />
+              {emailSelection === 'me' && emailToSend && (
+                <p className="text-xs text-slate-500 ml-7 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
+                  L'email sera envoyé à : <strong>{emailToSend}</strong>
+                </p>
+              )}
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="emailTarget"
+                  checked={emailSelection === 'other'}
+                  onChange={() => setEmailSelection('other')}
+                  className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium">L'envoyer à une autre adresse</span>
+              </label>
+
+              {emailSelection === 'other' && (
+                <div className="ml-7 mt-3 animate-fade-in">
+                  <input
+                    type="email"
+                    value={customEmail}
+                    onChange={(e) => setCustomEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+                    placeholder="Ex. client@entreprise.com"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 mt-8">
@@ -679,7 +710,7 @@ export default function AnalysisResult() {
               </button>
               <button
                 type="submit"
-                disabled={isSendingEmail || !emailToSend.trim()}
+                disabled={isSendingEmail || (emailSelection === 'me' ? !emailToSend : !customEmail.trim())}
                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSendingEmail ? (

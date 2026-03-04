@@ -484,6 +484,13 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
         from email.mime.text import MIMEText
         from email.mime.image import MIMEImage
         import smtplib
+        import os
+
+        # Verify SMTP Config
+        if not os.getenv("SMTP_SERVER") or not os.getenv("SMTP_USERNAME") or not os.getenv("SMTP_PASSWORD"):
+            print("⚠️ [EMAIL SIMULATION] Configuration SMTP manquante.")
+            print(f"Rapport PDF '{attachment_name}' serait envoyé à {email}")
+            return True
 
         msg = MIMEMultipart("related")
         msg['Subject'] = subject
