@@ -549,10 +549,10 @@ export default function AnalysisResult() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800 transition-colors">
                   <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? "Dette / Fonds Propres" : "Dette / EBE") : "Ratio Dette"}
+                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? "Dette / Fonds Propres" : "Dette / EBE") : "Taux d'endettement"}
                   </p>
                   <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? `${fins.debt_to_equity_percent}%` : `${fins.debt_to_ebitda || 0}x`) : `${fins.debt_to_revenue_percent ?? fins.debt_ratio ?? 0}%`}
+                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? `${fins.debt_to_equity_percent}%` : `${fins.debt_to_ebitda || 0}x`) : `${fins.taux_endettement_personnel_percent ?? fins.debt_ratio ?? 0}%`}
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800 transition-colors">
@@ -578,10 +578,18 @@ export default function AnalysisResult() {
                       -((fins.charges_annuelles !== undefined) ? (fins.charges_annuelles / 12 + (fins.mensualites_credits ?? 0)) : (fins.revenue ? ((fins.revenue - (fins.net_income || 0)) / 12) : (fins.monthly_expenses ?? 0))),
                       (fins.reste_a_vivre_annuel !== undefined) ? (fins.reste_a_vivre_annuel / 12) : ((fins.net_income ? (fins.net_income / 12) : (fins.rest_to_live ?? 0)))
                     ],
-                  connector: { line: { color: isDarkMode ? "#334155" : "#e2e8f0" } },
-                  decreasing: { marker: { color: "#EF4444" } },
-                  increasing: { marker: { color: "#10B981" } },
-                  totals: { marker: { color: "#3B82F6" } }
+                  text: isCompany
+                    ? [fins.revenue ?? fins.turnover ?? 0, -(((fins.revenue ?? fins.turnover) || 0) - ((fins.net_income ?? fins.net_profit) || 0)), fins.net_income ?? fins.net_profit ?? 0].map(v => `${Math.round(v).toLocaleString()}€`)
+                    : [
+                      (fins.revenus_annuels !== undefined) ? (fins.revenus_annuels / 12) : (fins.revenue ? (fins.revenue / 12) : (fins.monthly_income ?? 0)),
+                      -((fins.charges_annuelles !== undefined) ? (fins.charges_annuelles / 12 + (fins.mensualites_credits ?? 0)) : (fins.revenue ? ((fins.revenue - (fins.net_income || 0)) / 12) : (fins.monthly_expenses ?? 0))),
+                      (fins.reste_a_vivre_annuel !== undefined) ? (fins.reste_a_vivre_annuel / 12) : ((fins.net_income ? (fins.net_income / 12) : (fins.rest_to_live ?? 0)))
+                    ].map(v => `${Math.round(v).toLocaleString()}€`),
+                  textposition: "outside",
+                  connector: { line: { color: "rgba(100, 116, 139, 0.2)" } },
+                  decreasing: { marker: { color: "#ef4444", line: { color: "#ef4444", width: 2 } } },
+                  increasing: { marker: { color: "#22c55e", line: { color: "#22c55e", width: 2 } } },
+                  totals: { marker: { color: "#3b82f6", line: { color: "#3b82f6", width: 2 } } }
                 } as any]}
                 layout={{
                   autosize: true,
