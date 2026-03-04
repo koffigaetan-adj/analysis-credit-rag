@@ -128,7 +128,7 @@ export default function AnalysisResult() {
   const handleExport = async () => {
     try {
       // Envoi d'une notification d'exportation
-      await fetch('http://localhost:8000/auth/notifications', {
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -242,7 +242,7 @@ export default function AnalysisResult() {
   const executeDelete = async () => {
     setIsDeleting(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/applications/${resultData.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${resultData.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem('token')}`
@@ -280,7 +280,7 @@ export default function AnalysisResult() {
         opportunities: resultData.opportunities || []
       };
 
-      const res = await fetch('http://127.0.0.1:8000/applications/', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/applications/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -306,7 +306,7 @@ export default function AnalysisResult() {
     setInputMessage('');
     setIsTyping(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/chat/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chat/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMsg.content, client_type: clientType, context: JSON.stringify({ analyse: resultData, client: clientInfo }) }),

@@ -39,7 +39,7 @@ export default function UpdatePasswordModal({ isOpen = false, onClose }: UpdateP
           setIsLoading(true);
 
           try {
-               const response = await fetch('http://localhost:8000/auth/update-password', {
+               const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/update-password`, {
                     method: 'POST',
                     headers: {
                          'Content-Type': 'application/json',

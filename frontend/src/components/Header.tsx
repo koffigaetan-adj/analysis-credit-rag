@@ -37,7 +37,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const fetchNotifications = async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:8000/auth/notifications', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -58,7 +58,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const markAsRead = async (id: number, type: string) => {
     try {
-      await fetch(`http://localhost:8000/auth/notifications/${id}/read`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications/${id}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -155,7 +155,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
               <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden transition-all">
                 {user?.avatar_url ? (
-                  <img src={`http://localhost:8000${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={`${import.meta.env.VITE_API_URL}${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-slate-600 dark:text-slate-300 font-bold text-xs uppercase">
                     {getInitials(user?.first_name, user?.last_name)}

@@ -55,7 +55,7 @@ export default function Chat() {
           setIsTyping(true);
 
           try {
-               const response = await fetch('http://localhost:8000/chat/finance/', {
+               const response = await fetch(`${import.meta.env.VITE_API_URL}/chat/finance/`, {
                     method: 'POST',
                     headers: {
                          'Content-Type': 'application/json',

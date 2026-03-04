@@ -176,7 +176,7 @@ export default function Login() {
     try {
       if (isSignUp) {
         // Logique de création de compte
-        const response = await fetch('http://localhost:8000/auth/request-account', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/request-account`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -198,7 +198,7 @@ export default function Login() {
         // On pourrait vider les champs optionnellement
       } else {
         // Logique de connexion existante
-        const response = await fetch('http://localhost:8000/auth/login', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })

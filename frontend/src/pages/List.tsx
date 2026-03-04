@@ -22,7 +22,7 @@ export default function Applications() {
   const fetchApplications = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/history/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/history/`, {
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
@@ -50,7 +50,7 @@ export default function Applications() {
     if (!appToDelete) return;
     setIsDeleting(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/applications/${appToDelete.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${appToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem('token')}`

@@ -22,7 +22,7 @@ export default function AnalysisDetail() {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        const response = await fetch('http://localhost:8000/history/');
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/history/`);
         const data = await response.json();
         // On trouve le dossier spécifique par son ID
         const currentApp = data.find((a: any) => a.id === parseInt(id || '0'));

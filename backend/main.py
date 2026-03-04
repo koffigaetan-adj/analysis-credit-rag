@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 import scoring_engine
 from fastapi import HTTPException
 from auth import router as auth_router, get_current_user
+from email_service import send_email_sync
 
 # --- 1. CONFIGURATION ---
 load_dotenv()
@@ -24,7 +25,7 @@ app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -365,20 +366,27 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
     return {"message": "Supprimé"}
 
 def send_contact_email(email: str, subject: str, message: str, attachment_name: typing.Optional[str] = None):
+    # Envoi d'un vrai email via le service SMTP configuré
+    target_admin_email = os.getenv("FROM_EMAIL", "gaetan.eyes@gmail.com") # ou une autre adresse fixe gérant le support
+    
+    html_content = f"""
+    <html>
+      <body>
+        <h3>Nouveau message de contact depuis l'application Kaïs</h3>
+        <p><strong>De :</strong> {email}</p>
+        <p><strong>Sujet :</strong> {subject}</p>
+        <hr />
+        <p><strong>Message :</strong></p>
+        <p>{message.replace(chr(10), '<br>')}</p>
+        <hr />
     """
-    Simulation of sending an email to gaetan.eyes@gmail.com.
-    In production, use smtplib or a service like SendGrid, AWS SES, etc.
-    """
-    # Here we would normally implement the SMTP logic.
-    # For now, we simulate success and log it.
-    print(f"[EMAIL SENDING SIMULATION]")
-    print(f"To: gaetan.eyes@gmail.com")
-    print(f"From: {email}")
-    print(f"Subject: {subject}")
-    print(f"Message: {message}")
     if attachment_name:
-        print(f"Attachment: {attachment_name}")
-    print(f"[END SIMULATION]")
+        html_content += f"<p><em>Une pièce jointe a été fournie : {attachment_name} (Stockage local non implémenté)</em></p>"
+    
+    html_content += "</body></html>"
+    
+    # En production, envoyer à target_admin_email
+    send_email_sync(target_admin_email, f"Contact App Kaïs : {subject}", html_content)
 
 @app.post("/contact/")
 async def handle_contact(

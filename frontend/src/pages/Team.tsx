@@ -44,7 +44,7 @@ export default function Team() {
   // Récupérer les utilisateurs
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:8000/auth/users', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
@@ -63,7 +63,7 @@ export default function Team() {
 
   const fetchRequests = async () => {
     try {
-      const res = await fetch('http://localhost:8000/auth/account-requests', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/account-requests`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) setRequests(await res.json());
@@ -110,7 +110,7 @@ export default function Team() {
         email: editForm.email,
         role: editForm.role
       };
-      const res = await fetch(`http://localhost:8000/auth/users/${editingUser.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${editingUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ export default function Team() {
     setModalLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:8000/auth/users/${deletingUser.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${deletingUser.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -175,7 +175,7 @@ export default function Team() {
 
   const handleToggleStatus = async (userId: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/auth/users/${userId}/toggle-status`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${userId}/toggle-status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -212,7 +212,7 @@ export default function Team() {
         role: createForm.role
       };
 
-      const res = await fetch('http://localhost:8000/auth/users', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -240,7 +240,7 @@ export default function Team() {
     setModalError(null);
     setModalLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/auth/account-requests/${approvingReq.id}/approve`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/account-requests/${approvingReq.id}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -375,7 +375,7 @@ export default function Team() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
                           {member.avatar_url ? (
-                            <img src={`http://localhost:8000${member.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                            <img src={`${import.meta.env.VITE_API_URL}${member.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-blue-500 font-bold text-xs uppercase">
                               {member.first_name[0]}{member.last_name[0]}

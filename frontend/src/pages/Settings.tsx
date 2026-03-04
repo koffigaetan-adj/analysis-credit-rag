@@ -32,7 +32,7 @@ export default function Settings() {
       setEmail(user.email || '');
       setEstablishment(user.establishment || 'Kof Company');
       if (user.avatar_url) {
-        setAvatarPreview(`http://localhost:8000${user.avatar_url}`);
+        setAvatarPreview(`${import.meta.env.VITE_API_URL}${user.avatar_url}`);
       }
     }
   }, [user]);
@@ -60,7 +60,7 @@ export default function Settings() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/auth/profile', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export default function Settings() {
         const formData = new FormData();
         formData.append('file', selectedFile);
 
-        const avatarResponse = await fetch('http://localhost:8000/auth/avatar', {
+        const avatarResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/avatar`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

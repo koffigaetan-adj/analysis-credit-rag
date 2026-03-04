@@ -3,13 +3,14 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 import bcrypt
 from jose import JWTError, jwt
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import shutil
 import uuid
 from database import get_db, User, AccountRequest, Notification
+from email_service import send_email_sync
 
 # Paramètres Sécurité & JWT (à configurer via .env en prod)
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "une_cle_secrete_tres_complexe_ici_123!")
@@ -348,6 +349,7 @@ def get_all_users(
 @router.post("/users")
 def admin_create_user(
     request: AdminCreateUserRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
 ):
@@ -375,21 +377,23 @@ def admin_create_user(
     db.add(new_user)
     db.commit()
 
-    # --- SIMULATION ENVOI EMAIL ---
-    print("\n" + "="*50)
-    print("📧 SIMULATION D'ENVOI D'EMAIL")
-    print(f"Destinataire : {request.email}")
-    print(f"Objet : Bienvenue chez Kaïs - Vos accès {request.role}")
-    print("-" * 50)
-    print(f"Bonjour {request.first_name} {request.last_name},")
-    print("\nVous avez été invité(e) à rejoindre l'espace d'analyse Kaïs.")
-    print("Voici vos identifiants de connexion provisoires :")
-    print(f"Email : {request.email}")
-    print(f"Mot de passe temporaire : {request.password}")
-    print("\nLors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.")
-    print("\nCordialement,")
-    print("L'équipe Kaïs")
-    print("="*50 + "\n")
+    html_content = f"""
+    <html>
+      <body>
+        <h3>Bonjour {request.first_name} {request.last_name},</h3>
+        <p>Vous avez été invité(e) à rejoindre l'espace d'analyse Kaïs en tant que <strong>{request.role}</strong>.</p>
+        <p>Voici vos identifiants provisoires :</p>
+        <ul>
+          <li><strong>Email :</strong> {request.email}</li>
+          <li><strong>Mot de passe :</strong> {request.password}</li>
+        </ul>
+        <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
+        <br>
+        <p>L'équipe Kaïs</p>
+      </body>
+    </html>
+    """
+    background_tasks.add_task(send_email_sync, request.email, "Bienvenue chez Kaïs - Vos accès", html_content)
 
     return {"message": "Utilisateur créé avec succès. Un email contenant les accès a été envoyé."}
 
@@ -538,9 +542,10 @@ def get_account_requests(
 
 
 @router.post("/account-requests/{request_id}/approve")
-def approve_account_request(
+def approve_request_endpoint(
     request_id: int,
     approval: ApproveAccountRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_admin: User = Depends(check_role(["SUPER_ADMIN"]))
 ):
@@ -584,20 +589,23 @@ def approve_account_request(
     
     db.commit()
     
-    # --- SIMULATION ENVOI EMAIL ---
-    print("\n" + "="*50)
-    print("📧 SIMULATION D'ENVOI D'EMAIL (Approbation)")
-    print(f"Destinataire : {new_user.email}")
-    print(f"Objet : Votre compte Kaïs est approuvé !")
-    print("-" * 50)
-    print(f"Bonjour {new_user.first_name} {new_user.last_name},")
-    print(f"\nVotre demande de compte a été approuvée avec le rôle {new_user.role}.")
-    print("Voici vos identifiants de connexion provisoires :")
-    print(f"Email : {new_user.email}")
-    print(f"Mot de passe temporaire : {approval.password}")
-    print("\nLors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.")
-    print("\nCordialement,\nL'équipe Kaïs")
-    print("="*50 + "\n")
+    html_content = f"""
+    <html>
+      <body>
+        <h3>Bonjour {new_user.first_name} {new_user.last_name},</h3>
+        <p>Votre demande de compte a été approuvée avec le rôle <strong>{new_user.role}</strong>.</p>
+        <p>Voici vos identifiants de connexion :</p>
+        <ul>
+          <li><strong>Email :</strong> {new_user.email}</li>
+          <li><strong>Mot de passe temporaire :</strong> {approval.password}</li>
+        </ul>
+        <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
+        <br>
+        <p>L'équipe Kaïs</p>
+      </body>
+    </html>
+    """
+    background_tasks.add_task(send_email_sync, new_user.email, "Votre compte Kaïs est approuvé !", html_content)
 
     return {"message": "Demande approuvée. L'utilisateur a été créé et notifié."}
 

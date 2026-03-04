@@ -137,7 +137,7 @@ export default function NewAnalysis() {
       formData.append('email', clientInfo.email);
       formData.append('phone', clientInfo.phone);
 
-      const response = await fetch('http://127.0.0.1:8000/analyze_dashboard/', { method: 'POST', body: formData });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/analyze_dashboard/`, { method: 'POST', body: formData });
       const result = await response.json();
       const config = activeCategory === 'particulier' ? CREDIT_TYPES_PARTICULIER : CREDIT_TYPES_ENTREPRISE;
 
