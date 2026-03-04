@@ -10,7 +10,9 @@ from pydantic import BaseModel
 from pypdf import PdfReader
 from groq import Groq
 from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from seed import seed_super_admin
 import plotly.graph_objects as go
 import scoring_engine
 from fastapi import HTTPException
@@ -20,6 +22,11 @@ from email_service import send_email_sync
 # --- 1. CONFIGURATION ---
 load_dotenv()
 app = FastAPI()
+
+@app.on_event("startup")
+def on_startup():
+    print("Exécution du seed automatique...")
+    seed_super_admin()
 
 app.include_router(auth_router)
 
