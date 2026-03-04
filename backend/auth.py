@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional, List
 import bcrypt
+from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer
@@ -18,6 +19,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 Jours
 
 # Config Password Hashing (BCrypt)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -81,12 +83,18 @@ class CreateNotificationRequest(BaseModel):
 
 # --- FONCTIONS UTILITAIRES ---
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    try:
+        # Tente d'abord avec passlib (ancienne version)
+        return pwd_context.verify(plain_password, hashed_password)
+    except:
+        # Fallback bcrypt brut si passlib échoue
+        try:
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except:
+            return False
 
 def get_password_hash(password: str) -> str:
-    pwd_bytes = password.encode('utf-8')
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password=pwd_bytes, salt=salt).decode('utf-8')
+    return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
