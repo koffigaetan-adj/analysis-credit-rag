@@ -103,7 +103,7 @@ export default function AnalysisResult() {
   // Set default email efficiently when possible
   useEffect(() => {
     try {
-      const rawUser = localStorage.getItem('user_info');
+      const rawUser = sessionStorage.getItem('user');
       if (rawUser) {
         const ui = JSON.parse(rawUser);
         if (ui.email) {
