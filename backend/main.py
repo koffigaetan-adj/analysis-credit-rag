@@ -123,59 +123,56 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
         """
 
 def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict, ratios_data: dict) -> str:
+    common_prompt = f"""
+    RÔLE : Analyste crédit expérimenté dans une banque.
+    Tu dois évaluer la solidité financière et le niveau de risque d’un dossier de financement.
+    
+    DOSSIER : {client_info.get('fullName')} | MONTANT DEMANDÉ : {client_info.get('amount')}€
+    
+    Voici les résultats EXACTS calculés par notre moteur de risque (ne les modifie pas) :
+    - Score : {score_data['score']}/100
+    - Décision technique de base : {score_data['decision']}
+    - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
+    - Facteurs positifs identifiés : {score_data.get('technical_opportunities', [])}
+    
+    CONTEXTE TEXTUEL BRUT EXTRAIT (Peut inclure patrimoine, garanties, historique) : 
+    {extracted_text[0:15000]}
+    
+    Ta mission :
+    1. Analyse les informations fournies (revenus, charges, dettes, patrimoine, historique, projet financé, montant demandé, etc.).
+    2. Vérifie la cohérence globale entre le niveau de revenus ou CA, la capacité de remboursement, le montant demandé et l'apport.
+    3. Signale clairement tout élément disproportionné ou irréaliste (ex: montant demandé énorme par rapport au CA/revenu).
+    4. Ne donne JAMAIS une conclusion "parfaitement favorable" ou ne valide pas un projet si les ratios sont tendus, si c'est irréaliste ou surdimensionné.
+    5. Propose des ajustements réalistes (montant plus faible, apport) ou conditions à respecter.
+    6. Conclus avec un niveau de risque (faible/modéré/élevé), une recommandation claire (favorable, sous conditions, défavorable), et 2 ou 3 pistes d'amélioration concrètes.
+    
+    FORMAT JSON OBLIGATOIRE EN SORTIE :
+    {{
+        "risks": ["Liste claire des points bloquants ou fragilités", "Risque 2", ...],
+        "opportunities": ["Points forts du dossier", "Ajustements proposés", ...],
+        "summary": "1-2 paragraphes d'analyse argumentée et nuancée.\\n\\nSynthèse :\\nNiveau de risque : ...\\nDécision : ...\\nRecommandations : ..."
+    }}
+    """
+    
     is_particulier = (client_info.get('clientType', '').lower() == 'particulier')
     
     if is_particulier:
-        return f"""
-        RÔLE : Analyste Crédit Senior (Spécialiste Particuliers).
-        DOSSIER : {client_info.get('fullName')} | MONTANT DEMANDÉ : {client_info.get('amount')}€
+        return f"""{common_prompt}
         
-        Voici les métriques de solvabilité EXACTES calculées par notre moteur :
-        - Score : {score_data['score']}/100
-        - Décision technique : {score_data['decision']}
-        - Revenus Annuels Estimés : {fin_data.get('revenus_annuels', 0)} €
-        - Charges Annuelles (hors crédit) : {fin_data.get('charges_annuelles', 0)} €
+        DONNÉES PARTICULIER CALCULEES :
+        - Revenus Annuels : {fin_data.get('revenus_annuels', 0)} €
+        - Charges Annuelles : {fin_data.get('charges_annuelles', 0)} €
         - Mensualités Crédits en cours : {fin_data.get('mensualites_credits', 0)} € / mois
         - Taux d'endettement calculé : {ratios_data.get('taux_endettement_personnel_percent', 0)} %
         - Reste à vivre annuel : {ratios_data.get('reste_a_vivre_annuel', 0)} €
-        
-        - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
-        - Points forts identifiés : {score_data.get('technical_opportunities', [])}
-        
-        CONTEXTE TEXTUEL BRUT EXTRAIT : {extracted_text[0:20000]}
-        
-        MISSION : Rédige l'avis motivé (Risques, Opportunités, Synthèse narrative détaillée) pour justifier ce score. 
-        Tu DOIS utiliser les termes pertinents : Reste à vivre, Taux d'endettement, Salaires, etc. Ne parle JAMAIS de chiffre d'affaires, d'EBITDA, ou d'entreprise. 
-        FORMAT JSON OBLIGATOIRE EN SORTIE :
-        {{
-            "risks": ["risque 1", "risque 2", ...],
-            "opportunities": ["opportunité 1", ...],
-            "summary": "Synthèse très détaillée et professionnelle."
-        }}
         """
     else:
-        return f"""
-        RÔLE : Analyste Crédit Senior (Spécialiste Entreprises).
-        DOSSIER : {client_info.get('fullName')} | MONTANT : {client_info.get('amount')}€
+        return f"""{common_prompt}
         
-        Voici les résultats EXACTS calculés par notre moteur de risque (ne les modifie pas) :
-        - Score : {score_data['score']}/100
-        - Décision technique : {score_data['decision']}
-        - Chiffre d'affaires : {fin_data.get('revenue', 0)}
-        - Résultat Net : {fin_data.get('net_income', 0)}
-        - Dettes Totales : {fin_data.get('total_debt', 0)}
-        - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
-        - Facteurs positifs identifiés : {score_data.get('technical_opportunities', [])}
-        
-        CONTEXTE TEXTUEL BRUT EXTRAIT : {extracted_text[0:20000]}
-        
-        MISSION : Rédige l'avis motivé (Risques, Opportunités, Synthèse narrative détaillée) qui justifie ce score et cette décision. Ne réinvente pas de chiffres.
-        FORMAT JSON OBLIGATOIRE EN SORTIE :
-        {{
-            "risks": ["risque 1", "risque 2", ...],
-            "opportunities": ["opportunité 1", ...],
-            "summary": "Synthèse très détaillée et professionnelle des finances et du projet."
-        }}
+        DONNÉES ENTREPRISE CALCULEES :
+        - Chiffre d'affaires : {fin_data.get('revenue', 0)} €
+        - Résultat Net : {fin_data.get('net_income', 0)} €
+        - Dettes Totales : {fin_data.get('total_debt', 0)} €
         """
 
 # --- 4. ROUTES API ---

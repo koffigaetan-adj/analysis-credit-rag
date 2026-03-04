@@ -65,6 +65,7 @@ def calculate_ratios(data: FinancialData, client_type: str) -> dict:
         return {
             "taux_endettement_personnel_percent": round(taux_endettement, 2),
             "reste_a_vivre_annuel": round(reste_a_vivre, 2),
+            "revenus_annuels": revenus,
             "is_particulier": True
         }
     
@@ -88,6 +89,7 @@ def calculate_ratios(data: FinancialData, client_type: str) -> dict:
             "debt_to_equity_percent": round(debt_to_equity, 2),
             "debt_to_revenue_percent": round(debt_to_revenue, 2),
             "equity_is_negative": equity < 0,
+            "revenue": revenue,
             "is_particulier": False
         }
 
@@ -101,6 +103,24 @@ def compute_credit_score(ratios: dict, client_type: str, amount: float) -> dict:
     positive_factors = []
     
     is_particulier = ratios.get("is_particulier", False)
+
+    if amount > 0:
+        if is_particulier:
+            revenus = ratios.get("revenus_annuels", 0)
+            if revenus > 0 and amount > (revenus * 10):
+                score -= 50
+                risk_factors.append(f"Montant demandé irréaliste et disproportionné (> 10 années de revenus).")
+            elif revenus > 0 and amount > (revenus * 5):
+                score -= 20
+                risk_factors.append(f"Montant demandé élevé par rapport aux revenus annuels (> 5 années).")
+        else:
+            revenue = ratios.get("revenue", 0)
+            if revenue > 0 and amount > (revenue * 5):
+                score -= 50
+                risk_factors.append(f"Montant demandé totalement déconnecté du chiffre d'affaires (> 5x le CA).")
+            elif revenue > 0 and amount > (revenue * 2):
+                score -= 20
+                risk_factors.append(f"Montant demandé très élevé par rapport au CA (> 2x le CA).")
 
     if is_particulier:
         taux_endettement = ratios.get("taux_endettement_personnel_percent", 0)
