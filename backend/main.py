@@ -10,10 +10,8 @@ from pydantic import BaseModel
 from pypdf import PdfReader
 from groq import Groq
 from dotenv import load_dotenv
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from seed import seed_super_admin
-import plotly.graph_objects as go
 import scoring_engine
 from fastapi import HTTPException
 from auth import router as auth_router, get_current_user
