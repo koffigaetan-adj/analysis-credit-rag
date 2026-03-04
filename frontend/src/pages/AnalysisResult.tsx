@@ -106,9 +106,18 @@ export default function AnalysisResult() {
       const rawUser = localStorage.getItem('user_info');
       if (rawUser) {
         const ui = JSON.parse(rawUser);
-        if (ui.email) setEmailToSend(ui.email);
+        if (ui.email) {
+          setEmailToSend(ui.email);
+          setEmailSelection('me');
+        } else {
+          setEmailSelection('other');
+        }
+      } else {
+        setEmailSelection('other');
       }
-    } catch (e) { }
+    } catch (e) {
+      setEmailSelection('other');
+    }
   }, []);
 
   // Détection dynamique du mode sombre pour les graphiques
@@ -658,16 +667,18 @@ export default function AnalysisResult() {
 
           <form onSubmit={handleSendEmail} className="space-y-6">
             <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="emailTarget"
-                  checked={emailSelection === 'me'}
-                  onChange={() => setEmailSelection('me')}
-                  className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium">L'envoyer à mon adresse</span>
-              </label>
+              {emailToSend && (
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="emailTarget"
+                    checked={emailSelection === 'me'}
+                    onChange={() => setEmailSelection('me')}
+                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium">L'envoyer à mon adresse</span>
+                </label>
+              )}
               {emailSelection === 'me' && emailToSend && (
                 <p className="text-xs text-slate-500 ml-7 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
                   L'email sera envoyé à : <strong>{emailToSend}</strong>

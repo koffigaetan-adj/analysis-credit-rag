@@ -536,7 +536,8 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
         server = smtplib.SMTP(os.getenv("SMTP_SERVER"), int(os.getenv("SMTP_PORT", 587)))
         server.starttls()
         server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
-        server.sendmail(os.getenv("FROM_EMAIL"), email, msg.as_string())
+        from_email_addr = os.getenv("FROM_EMAIL") or os.getenv("SMTP_USERNAME") or "no-reply@kaisanalytics.com"
+        server.sendmail(from_email_addr, email, msg.as_string())
         server.quit()
         return True
     except Exception as e:
