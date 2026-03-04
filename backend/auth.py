@@ -4,7 +4,7 @@ from typing import Optional, List
 import bcrypt
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -167,9 +167,9 @@ def check_admin_target_role(
 # --- ROUTES ---
 
 @router.post("/login")
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, login_req: LoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # 1. Recherche Utilisateur
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(User.email == login_req.email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -184,7 +184,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         )
         
     # 2. Vérification Mot de passe
-    if not verify_password(request.password, user.password_hash):
+    if not verify_password(login_req.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect."
@@ -194,6 +194,25 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     access_token = create_access_token(
         data={"sub": user.id, "email": user.email, "role": user.role}
     )
+    
+    # 4. Envoi de l'alerte de connexion
+    ip_address = request.client.host if request.client else "Inconnue"
+    user_agent = request.headers.get("user-agent", "Inconnu")
+    login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    
+    login_html = f"""
+    <h3>Nouvelle connexion à votre compte</h3>
+    <p>Bonjour <b>{user.first_name} {user.last_name}</b>,</p>
+    <p>Une nouvelle connexion a été détectée sur votre compte Kaïs Analytics :</p>
+    <ul>
+      <li><strong>Adresse IP :</strong> {ip_address}</li>
+      <li><strong>Appareil / Navigateur :</strong> {user_agent}</li>
+      <li><strong>Date et Heure :</strong> {login_time}</li>
+    </ul>
+    <p style="color: #ef4444; font-weight: bold; margin-top: 20px;">Si vous n'êtes pas à l'origine de cette connexion :</p>
+    <p>Veuillez <a href="{os.getenv('FRONTEND_URL', 'https://kais-analytics.netlify.app')}" style="color: #2563eb; font-weight: bold;">cliquer ici pour vous rendre sur l'application</a> et utiliser la fonction "Mot de passe oublié" pour réinitialiser vos accès immédiatement.</p>
+    """
+    background_tasks.add_task(send_email_sync, user.email, "Kaïs Analytics - Nouvelle connexion détectée", login_html)
     
     return {
         "access_token": access_token, 
@@ -216,6 +235,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/update-password")
 def update_password(
     request: UpdatePasswordRequest, 
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
@@ -237,6 +257,18 @@ def update_password(
     db.add(password_notif)
     
     db.commit()
+    
+    # Send email notification
+    pwd_change_html = f"""
+    <h3>Modification de mot de passe</h3>
+    <p>Bonjour <b>{current_user.first_name}</b>,</p>
+    <p>Le mot de passe de votre compte Kaïs Analytics vient d'être modifié avec succès depuis vos paramètres.</p>
+    <p>Si vous êtes à l'origine de cette action, vous pouvez ignorer cet email.</p>
+    <p style="color: #ef4444; font-weight: bold;">Si ce n'est pas vous :</p>
+    <p>Veuillez utiliser la fonction "Mot de passe oublié" sur l'écran de connexion pour sécuriser votre compte immédiatement.</p>
+    """
+    background_tasks.add_task(send_email_sync, current_user.email, "Kaïs Analytics - Mot de passe modifié", pwd_change_html)
+    
     return {"message": "Mot de passe mis à jour avec succès."}
 
 @router.post("/forgot-password")
@@ -283,6 +315,7 @@ def forgot_password(
 @router.post("/reset-password")
 def reset_password(
     request: ResetPasswordRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     user = db.query(User).filter(User.email == request.email).first()
@@ -313,6 +346,16 @@ def reset_password(
     db.add(notif)
     
     db.commit()
+    
+    # Send email notification
+    pwd_reset_html = f"""
+    <h3>Réinitialisation de mot de passe</h3>
+    <p>Bonjour <b>{user.first_name}</b>,</p>
+    <p>Le mot de passe de votre compte Kaïs Analytics vient d'être réinitialisé avec succès via la procédure d'oubli de mot de passe.</p>
+    <p>Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+    """
+    background_tasks.add_task(send_email_sync, user.email, "Kaïs Analytics - Mot de passe réinitialisé", pwd_reset_html)
+    
     return {"message": "Mot de passe réinitialisé avec succès."}
 
 @router.put("/profile")
