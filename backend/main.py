@@ -377,13 +377,11 @@ def send_contact_email(email: str, subject: str, message: str, attachment_name: 
     html_content = f"""
     <html>
       <body>
-        <h3>Nouveau message de contact depuis l'application Kaïs</h3>
+        <h3>Nouveau message de contact depuis l'application Kaïs Analytics</h3>
         <p><strong>De :</strong> {email}</p>
         <p><strong>Sujet :</strong> {subject}</p>
-        <hr />
         <p><strong>Message :</strong></p>
         <p>{message.replace(chr(10), '<br>')}</p>
-        <hr />
     """
     if attachment_name:
         html_content += f"<p><em>Une pièce jointe a été fournie : {attachment_name} (Stockage local non implémenté)</em></p>"
@@ -391,7 +389,7 @@ def send_contact_email(email: str, subject: str, message: str, attachment_name: 
     html_content += "</body></html>"
     
     # En production, envoyer à target_admin_email
-    send_email_sync(target_admin_email, f"Contact App Kaïs : {subject}", html_content)
+    send_email_sync(target_admin_email, f"Contact Kaïs Analytics : {subject}", html_content)
 
 @app.post("/contact/")
 async def handle_contact(
