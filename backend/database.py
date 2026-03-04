@@ -6,7 +6,8 @@ from datetime import datetime
 
 # --- GESTION DES CHEMINS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.path.join(BASE_DIR, "..", "database")
+# Modification ici : On reste dans le dossier BASE_DIR pour éviter l'erreur de permission
+DB_DIR = os.path.join(BASE_DIR, "database")
 os.makedirs(DB_DIR, exist_ok=True)
 
 DB_PATH = os.path.join(DB_DIR, "credit_app.db")
