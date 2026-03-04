@@ -8,11 +8,12 @@ interface AnimatedModalProps {
      onClose: () => void;
      onConfirm?: () => void;
      title: string;
-     message: React.ReactNode;
+     message?: React.ReactNode;
      type?: ModalType;
      confirmText?: string;
      cancelText?: string;
      isLoading?: boolean;
+     children?: React.ReactNode;
 }
 
 export default function AnimatedModal({
@@ -24,7 +25,8 @@ export default function AnimatedModal({
      type = 'warning',
      confirmText = 'Confirmer',
      cancelText = 'Annuler',
-     isLoading = false
+     isLoading = false,
+     children
 }: AnimatedModalProps) {
      if (!isOpen) return null;
 
@@ -97,13 +99,17 @@ export default function AnimatedModal({
                               <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">
                                    {title}
                               </h3>
-                              <div className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-                                   {message}
-                              </div>
+                              {message && (
+                                   <div className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        {message}
+                                   </div>
+                              )}
                          </div>
 
+                         {children}
+
                          {/* Actions */}
-                         {type !== 'loading' && (
+                         {type !== 'loading' && !children && (
                               <div className="flex gap-3 justify-center w-full mt-8">
                                    {onClose && (
                                         <button
