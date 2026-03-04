@@ -213,7 +213,7 @@ def send_login_alert_async(user_email: str, first_name: str, last_name: str, ip_
     <p style="color: #ef4444; font-weight: bold; margin-top: 20px;">Si vous n'êtes pas à l'origine de cette connexion :</p>
     <p>Veuillez <a href="{os.getenv('FRONTEND_URL', 'https://kais-analytics.netlify.app')}" style="color: #2563eb; font-weight: bold;">cliquer ici pour vous rendre sur l'application</a> et utiliser la fonction "Mot de passe oublié" pour réinitialiser vos accès immédiatement.</p>
     """
-    from .email_service import send_email_sync
+    from email_service import send_email_sync
     send_email_sync(user_email, "Kaïs Analytics - Nouvelle connexion détectée", login_html)
 
 # --- ROUTES ---

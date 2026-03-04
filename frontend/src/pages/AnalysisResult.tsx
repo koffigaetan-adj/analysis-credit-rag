@@ -99,6 +99,7 @@ export default function AnalysisResult() {
   const [emailToSend, setEmailToSend] = useState('');
   const [customEmail, setCustomEmail] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isEmailSuccessOpen, setIsEmailSuccessOpen] = useState(false);
 
   // Set default email efficiently when possible
   useEffect(() => {
@@ -247,8 +248,9 @@ export default function AnalysisResult() {
         throw new Error("Erreur de l'envoi");
       }
 
-      alert('Rapport envoyé avec succès !');
+      setIsEmailSuccessOpen(true);
       setIsEmailModalOpen(false);
+      setCustomEmail('');
     } catch (error) {
       console.error('Erreur lors de l\'envoi du PDF:', error);
       alert('Une erreur est survenue lors de l\'envoi. Veuillez réessayer.');
@@ -761,6 +763,28 @@ export default function AnalysisResult() {
               </button>
             </div>
           </form>
+        </div>
+      </AnimatedModal>
+
+      {/* EMAIL SUCCESS MODAL */}
+      <AnimatedModal
+        isOpen={isEmailSuccessOpen}
+        onClose={() => setIsEmailSuccessOpen(false)}
+        title="Envoi Réussi"
+      >
+        <div className="p-6 text-center text-slate-700 dark:text-slate-300">
+          <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mb-6">
+            <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+          </div>
+          <p className="mb-8 font-medium">
+            Le rapport a été envoyé avec succès par email !
+          </p>
+          <button
+            onClick={() => setIsEmailSuccessOpen(false)}
+            className="w-full px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
+          >
+            Fermer
+          </button>
         </div>
       </AnimatedModal>
 
