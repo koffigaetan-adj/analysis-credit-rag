@@ -391,6 +391,23 @@ def send_contact_email(email: str, subject: str, message: str, attachment_name: 
     # En production, envoyer à target_admin_email
     send_email_sync(target_admin_email, f"Contact Kaïs Analytics : {subject}", html_content)
 
+    # Email de confirmation (Auto-reply) pour l'utilisateur
+    auto_reply_html = f"""
+    <html>
+      <body>
+        <h3>Bonjour,</h3>
+        <p>Nous vous confirmons la bonne réception de votre message depuis le centre d'aide de Kaïs Analytics :</p>
+        <p><em>"{subject}"</em></p>
+        <br>
+        <p>L'équipe support va analyser votre demande et reviendra vers vous très bientôt.</p>
+        <br>
+        <p>Cordialement,</p>
+        <p>L'équipe Kaïs Analytics</p>
+      </body>
+    </html>
+    """
+    send_email_sync(email, "Accusé de réception - Kaïs Analytics", auto_reply_html)
+
 @app.post("/contact/")
 async def handle_contact(
     background_tasks: BackgroundTasks,

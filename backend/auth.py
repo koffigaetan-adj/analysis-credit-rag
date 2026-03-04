@@ -304,7 +304,6 @@ def forgot_password(
         <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
         <br>
         <p>L'équipe Kaïs Analytics</p>
-        <img src="https://drive.google.com/file/d/1QW2Ohl0PJOpNGaMObmQ9S0x-cQIfMxoW/view?usp=sharing" alt="Logo Kaïs Analytics">
       </body>
     </html>
     """
@@ -526,7 +525,6 @@ def admin_create_user(
         <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
         <br>
         <p>L'équipe Kaïs Analytics</p>
-        <img src="https://drive.google.com/file/d/1QW2Ohl0PJOpNGaMObmQ9S0x-cQIfMxoW/view?usp=sharing" alt="Logo Kaïs Analytics">
       </body>
     </html>
     """
