@@ -11,7 +11,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
-FROM_NAME = os.getenv("FROM_NAME", "Kaïs Intelligence Analyst")
+FROM_NAME = os.getenv("FROM_NAME", "Kaïs Analytics")
 
 def send_email_sync(to_email: str, subject: str, html_content: str):
     """
