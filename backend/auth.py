@@ -10,7 +10,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import shutil
 import uuid
-from database import get_db, User, AccountRequest, Notification
+import random
+from database import get_db, User, AccountRequest, Notification, PasswordResetCode
 from email_service import send_email_sync
 
 # Paramètres Sécurité & JWT (à configurer via .env en prod)
@@ -31,6 +32,14 @@ class LoginRequest(BaseModel):
 
 class UpdatePasswordRequest(BaseModel):
     old_password: str
+    new_password: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
     new_password: str
 
 class UpdateProfileRequest(BaseModel):
@@ -230,6 +239,82 @@ def update_password(
     db.commit()
     return {"message": "Mot de passe mis à jour avec succès."}
 
+@router.post("/forgot-password")
+def forgot_password(
+    request: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        # Prevent email enumeration by returning success anyway
+        return {"message": "Si l'adresse email existe, un code de réinitialisation a été envoyé."}
+        
+    # Generate 6 digit code
+    code = f"{random.randint(0, 999999):06d}"
+    
+    # Save code to DB
+    reset_code = PasswordResetCode(
+        email=user.email,
+        code=code,
+        expires_at=datetime.utcnow() + timedelta(minutes=15)
+    )
+    db.add(reset_code)
+    db.commit()
+    
+    html_content = f"""
+    <html>
+      <body>
+        Bonjour <b>{user.first_name} {user.last_name}</b>,
+        <p>Vous avez demandé la réinitialisation de votre mot de passe sur Kaïs Analytics.</p>
+        <p>Voici votre code de confirmation, valable 15 minutes :</p>
+        <h2 style="color: #2563eb; letter-spacing: 5px; font-size: 24px;">{code}</h2>
+        <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+        <br>
+        <p>L'équipe Kaïs Analytics</p>
+        <img src="https://drive.google.com/file/d/1QW2Ohl0PJOpNGaMObmQ9S0x-cQIfMxoW/view?usp=sharing" alt="Logo Kaïs Analytics">
+      </body>
+    </html>
+    """
+    background_tasks.add_task(send_email_sync, user.email, "Kaïs Analytics - Code de réinitialisation", html_content)
+    
+    return {"message": "Si l'adresse email existe, un code de réinitialisation a été envoyé."}
+
+@router.post("/reset-password")
+def reset_password(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Requête invalide.")
+        
+    reset_entry = db.query(PasswordResetCode).filter(
+        PasswordResetCode.email == request.email,
+        PasswordResetCode.code == request.code,
+        PasswordResetCode.expires_at > datetime.utcnow()
+    ).order_by(PasswordResetCode.created_at.desc()).first()
+    
+    if not reset_entry:
+        raise HTTPException(status_code=400, detail="Code invalide ou expiré.")
+        
+    user.password_hash = get_password_hash(request.new_password)
+    user.is_first_login = False
+    
+    # Invalidate all previous codes
+    db.query(PasswordResetCode).filter(PasswordResetCode.email == request.email).delete()
+    
+    notif = Notification(
+        user_id=user.id,
+        title="Sécurité du compte",
+        message="Votre mot de passe a été réinitialisé avec succès.",
+        type="INFO"
+    )
+    db.add(notif)
+    
+    db.commit()
+    return {"message": "Mot de passe réinitialisé avec succès."}
+
 @router.put("/profile")
 def update_profile(
     request: UpdateProfileRequest,
@@ -388,20 +473,21 @@ def admin_create_user(
     html_content = f"""
     <html>
       <body>
-        <h3>Bonjour {request.first_name} {request.last_name},</h3>
-        <p>Vous avez été invité(e) à rejoindre l'espace d'analyse Kaïs en tant que <strong>{request.role}</strong>.</p>
-        <p>Voici vos identifiants provisoires :</p>
+        Bonjour <b>{request.first_name} {request.last_name}</b>,
+        <p>Vous avez été invité(e) à rejoindre l'application Kaïs Analytics.</p>
+        <p>Voici vos identifiants de connexion :</p>
         <ul>
           <li><strong>Email :</strong> {request.email}</li>
           <li><strong>Mot de passe :</strong> {request.password}</li>
         </ul>
         <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
         <br>
-        <p>L'équipe Kaïs</p>
+        <p>L'équipe Kaïs Analytics</p>
+        <img src="https://drive.google.com/file/d/1QW2Ohl0PJOpNGaMObmQ9S0x-cQIfMxoW/view?usp=sharing" alt="Logo Kaïs Analytics">
       </body>
     </html>
     """
-    background_tasks.add_task(send_email_sync, request.email, "Bienvenue chez Kaïs - Vos accès", html_content)
+    background_tasks.add_task(send_email_sync, request.email, "Bienvenue sur Kaïs Analytics - Vos accès", html_content)
 
     return {"message": "Utilisateur créé avec succès. Un email contenant les accès a été envoyé."}
 

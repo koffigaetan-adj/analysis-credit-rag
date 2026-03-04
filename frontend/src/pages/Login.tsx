@@ -148,24 +148,28 @@ export default function Login() {
   const [poste, setPoste] = useState('');
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Animation 3D au survol
- // const [, setTilt] = useState({ x: 0, y: 0 });
+  // const [, setTilt] = useState({ x: 0, y: 0 });
 
-/*   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    // Rotation max de +/- 30 degrés
-    setTilt({ x: -(y / rect.height) * 40, y: (x / rect.width) * 40 });
-  }; */
+  /*   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      // Rotation max de +/- 30 degrés
+      setTilt({ x: -(y / rect.height) * 40, y: (x / rect.width) * 40 });
+    }; */
 
-/*   const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
-  }; */
+  /*   const handleMouseLeave = () => {
+      setTilt({ x: 0, y: 0 });
+    }; */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,7 +178,36 @@ export default function Login() {
     setSuccessMessage(null);
 
     try {
-      if (isSignUp) {
+      if (isResetPassword) {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), code: resetCode.trim(), new_password: newPassword })
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Erreur lors de la réinitialisation");
+        }
+        setSuccessMessage("Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.");
+        setIsResetPassword(false);
+        setIsForgotPassword(false);
+        setPassword('');
+        setResetCode('');
+        setNewPassword('');
+      } else if (isForgotPassword) {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim() })
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Erreur lors de la demande");
+        }
+        setSuccessMessage("Si l'adresse email existe, un code à 6 chiffres a été envoyé.");
+        setIsForgotPassword(false);
+        setIsResetPassword(true);
+      } else if (isSignUp) {
         // Logique de création de compte
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/request-account`, {
           method: 'POST',
@@ -276,27 +309,29 @@ export default function Login() {
           <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[40px] shadow-2xl">
             <div className="mb-8 text-left">
               <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
-                {isSignUp ? "Créer un compte" : "Connexion"}
+                {isResetPassword ? "Nouveau MDP" : isForgotPassword ? "Mot de passe oublié" : isSignUp ? "Créer un compte" : "Connexion"}
               </h2>
               <p className="text-slate-400 text-sm font-medium">
-                {isSignUp ? "Demandez votre accès à Kaïs" : "Console d'audit professionnelle."}
+                {isResetPassword ? "Entrez le code reçu par email" : isForgotPassword ? "Recevez un code à 6 chiffres" : isSignUp ? "Demandez votre accès à Kaïs" : "Console d'audit professionnelle."}
               </p>
             </div>
 
-            <div className="flex mb-6 bg-white/5 p-1 rounded-xl">
-              <button
-                onClick={() => { setIsSignUp(false); setError(null); setSuccessMessage(null); }}
-                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${!isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
-              >
-                Se connecter
-              </button>
-              <button
-                onClick={() => { setIsSignUp(true); setError(null); setSuccessMessage(null); }}
-                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
-              >
-                S'inscrire
-              </button>
-            </div>
+            {(!isForgotPassword && !isResetPassword) && (
+              <div className="flex mb-6 bg-white/5 p-1 rounded-xl">
+                <button
+                  onClick={() => { setIsSignUp(false); setError(null); setSuccessMessage(null); }}
+                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${!isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
+                >
+                  Se connecter
+                </button>
+                <button
+                  onClick={() => { setIsSignUp(true); setError(null); setSuccessMessage(null); }}
+                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
+                >
+                  S'inscrire
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
@@ -310,7 +345,7 @@ export default function Login() {
                 </div>
               )}
 
-              {isSignUp && (
+              {isSignUp && !isForgotPassword && !isResetPassword && (
                 <>
                   <div className="flex gap-3">
                     <div className="space-y-2 flex-1">
@@ -373,15 +408,47 @@ export default function Login() {
                     placeholder="analyste@kais.com"
                     className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
                     required
+                    disabled={isResetPassword}
                   />
                 </div>
               </div>
 
-              {!isSignUp && (
+              {isResetPassword && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Code à 6 chiffres</label>
+                    <input
+                      type="text"
+                      value={resetCode}
+                      onChange={(e) => setResetCode(e.target.value)}
+                      placeholder="Ex: 123456"
+                      className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm text-center tracking-widest"
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nouveau mot de passe</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {(!isSignUp && !isForgotPassword && !isResetPassword) && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center px-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mot de passe</label>
-                    <a href="#" className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">Oublié ?</a>
+                    <button type="button" onClick={() => { setIsForgotPassword(true); setError(null); setSuccessMessage(null); }} className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter hover:text-blue-400 transition-colors">Oublié ?</button>
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -391,7 +458,7 @@ export default function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
-                      required={!isSignUp}
+                      required
                     />
                   </div>
                 </div>
@@ -402,8 +469,18 @@ export default function Login() {
                 disabled={isLoading}
                 className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
               >
-                {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Envoyer la demande" : "Accéder"} <ArrowRight className="w-4 h-4" /></>}
+                {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{isResetPassword ? "Valider le code" : isForgotPassword ? "Recevoir le code" : isSignUp ? "Envoyer la demande" : "Accéder"} <ArrowRight className="w-4 h-4" /></>}
               </button>
+
+              {(isForgotPassword || isResetPassword) && (
+                <button
+                  type="button"
+                  onClick={() => { setIsForgotPassword(false); setIsResetPassword(false); setError(null); setSuccessMessage(null); }}
+                  className="w-full text-slate-400 py-2 text-xs font-bold uppercase tracking-widest hover:text-white transition-all flex items-center justify-center mt-2"
+                >
+                  Retour à la connexion
+                </button>
+              )}
             </form>
           </div>
         </div>
