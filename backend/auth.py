@@ -749,7 +749,7 @@ def request_account(request: CreateAccountRequest, background_tasks: BackgroundT
         </ul>
         <p>Vous pouvez valider ou refuser cette demande depuis l'onglet <b>Équipe</b> de votre tableau de bord.</p>
         <div style="margin-top: 25px; text-align: center;">
-            <a href="https://kais-analytics.vercel.app/team" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+            <a href="https://kais-analytics.vercel.app/login" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
         </div>
         """
         for admin in super_admins:
@@ -838,7 +838,7 @@ def approve_request_endpoint(
         </ul>
         <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
         <div style="margin-top: 25px; text-align: center;">
-            <a href="https://kais-analytics.vercel.app" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+            <a href="https://kais-analytics.vercel.app/login" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
         </div>
         <br>
         <p>L'équipe Kaïs</p>

@@ -161,7 +161,7 @@ export default function AnalysisResult() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           title: "Analyse exportée",
@@ -358,7 +358,7 @@ export default function AnalysisResult() {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${resultData.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       if (response.ok) {
@@ -397,7 +397,7 @@ export default function AnalysisResult() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(payload)
       });

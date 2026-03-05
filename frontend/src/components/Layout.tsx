@@ -40,7 +40,7 @@ export default function Layout() {
         </div>
         <main className="p-4 md:p-8 print:p-0 flex-1 relative">
           <div className="relative z-20 print:w-full print:max-w-none print:m-0 print:p-0">
-            <Outlet />
+            {!isFirstLogin ? <Outlet /> : <div className="flex items-center justify-center min-h-[50vh] text-slate-400 font-medium">Veuillez mettre à jour votre mot de passe pour continuer...</div>}
           </div>
         </main>
       </div>

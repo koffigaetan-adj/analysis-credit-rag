@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   PieChart, Pie, Cell, XAxis, YAxis,
@@ -7,7 +6,6 @@ import {
 import {
   FileText, ArrowRight, Building2, Wallet,
   Plus, RefreshCcw, Activity, Zap, User,
-  BarChart,
   PieChartIcon
 } from 'lucide-react';
 
@@ -25,7 +23,7 @@ export default function Dashboard() {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/history/`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       const result = await response.json();
