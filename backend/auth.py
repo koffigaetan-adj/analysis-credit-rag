@@ -81,9 +81,12 @@ class CreateAccountRequest(BaseModel):
     poste: str = "Data Analyst"
 
 class ApproveAccountRequest(BaseModel):
-    establishment: str
-    role: str
+    role: str = "ANALYST"
+    establishment: Optional[str] = None
     password: str
+
+class RejectAccountRequest(BaseModel):
+    reason: str = "Votre demande ne correspond pas aux critères d'accès actuels."
 
 class CreateNotificationRequest(BaseModel):
     title: str
@@ -808,6 +811,44 @@ def approve_request_endpoint(
     background_tasks.add_task(send_email_sync, new_user.email, "Votre compte Kaïs est approuvé !", html_content)
 
     return {"message": "Demande approuvée. L'utilisateur a été créé et notifié."}
+
+@router.post("/account-requests/{request_id}/reject")
+def reject_request_endpoint(
+    request_id: int,
+    rejection: RejectAccountRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(check_role(["SUPER_ADMIN"]))
+):
+    acc_req = db.query(AccountRequest).filter(AccountRequest.id == request_id).first()
+    if not acc_req:
+        raise HTTPException(status_code=404, detail="Demande introuvable.")
+        
+    if acc_req.status != "PENDING":
+        raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée.")
+
+    # Marquer la demande comme refusée
+    acc_req.status = "REJECTED"
+    db.commit()
+    
+    # Envoyer un email d'explication au demandeur
+    html_content = f"""
+    <html>
+      <body>
+        <h3>Bonjour {acc_req.first_name} {acc_req.last_name},</h3>
+        <p>Suite à votre demande de création de compte sur <strong>Kaïs Analytics</strong>, nous vous informons que celle-ci n'a malheureusement pas pu être retenue.</p>
+        <div style="background-color: #f8fafc; padding: 15px 30px; border-left: 4px solid #ef4444; margin: 20px 0;">
+            <b>Motif :</b> {rejection.reason}
+        </div>
+        <p>Pour toute question ou demande de réévaluation, n'hésitez pas à répondre directement à ce mail.</p>
+        <br>
+        <p>L'équipe Kaïs</p>
+      </body>
+    </html>
+    """
+    background_tasks.add_task(send_email_sync, acc_req.email, "Kaïs Analytics - Mise à jour de votre demande", html_content)
+
+    return {"message": "Demande refusée. Le demandeur a été notifié par email."}
 
 
 @router.get("/notifications")

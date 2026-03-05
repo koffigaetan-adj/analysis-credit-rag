@@ -31,6 +31,8 @@ export default function Team() {
   const [deletingUser, setDeletingUser] = useState<TeamMember | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [approvingReq, setApprovingReq] = useState<any>(null);
+  const [rejectingReq, setRejectingReq] = useState<any>(null);
+  const [rejectReason, setRejectReason] = useState("Votre profil ne correspond pas aux critères d'accès actuels.");
 
   const [adminPassword, setAdminPassword] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
@@ -256,6 +258,32 @@ export default function Team() {
       await fetchUsers();
       await fetchRequests();
       setApprovingReq(null);
+    } catch (err: any) {
+      setModalError(err.message);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!rejectingReq) return;
+    setModalError(null);
+    setModalLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/account-requests/${rejectingReq.id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason: rejectReason })
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Erreur lors du refus");
+      }
+      await fetchRequests();
+      setRejectingReq(null);
     } catch (err: any) {
       setModalError(err.message);
     } finally {
@@ -494,16 +522,28 @@ export default function Team() {
                     <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{req.poste}</td>
                     <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">{new Date(req.created_at).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => {
-                          setApprovingReq(req);
-                          setApproveForm({ role: 'ANALYST', establishment: '', password: '' });
-                          setModalError(null);
-                        }}
-                        className="px-4 py-1.5 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors"
-                      >
-                        Approuver
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setRejectingReq(req);
+                            setRejectReason("Votre profil ne correspond pas aux critères d'accès actuels.");
+                            setModalError(null);
+                          }}
+                          className="px-3 py-1.5 bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors"
+                        >
+                          Refuser
+                        </button>
+                        <button
+                          onClick={() => {
+                            setApprovingReq(req);
+                            setApproveForm({ role: 'ANALYST', establishment: '', password: '' });
+                            setModalError(null);
+                          }}
+                          className="px-4 py-1.5 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors"
+                        >
+                          Approuver
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -915,6 +955,66 @@ export default function Team() {
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
               >
                 {modalLoading ? 'Approbation...' : 'Approuver la demande'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL : REFUS DEMANDE */}
+      {rejectingReq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-rose-100 dark:border-rose-900/30 flex justify-between items-center bg-rose-50/50 dark:bg-rose-900/10">
+              <h3 className="text-lg font-bold text-rose-600 dark:text-rose-500 flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Refuser la demande
+              </h3>
+              <button
+                onClick={() => setRejectingReq(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Vous êtes sur le point de rejeter la demande d'accès de <span className="font-bold text-slate-700 dark:text-slate-300">{rejectingReq.first_name} {rejectingReq.last_name}</span>.
+                Veuillez indiquer le motif du refus. Il lui sera envoyé par email.
+              </p>
+
+              {modalError && (
+                <div className="p-3 rounded-lg text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  {modalError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Motif du refus</label>
+                <textarea
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-rose-500/50 outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+              <button
+                onClick={() => setRejectingReq(null)}
+                className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                disabled={modalLoading}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleRejectRequest}
+                disabled={modalLoading || !rejectReason.trim()}
+                className="px-6 py-2 bg-rose-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-rose-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {modalLoading ? 'Traitement...' : 'Confirmer le refus'}
               </button>
             </div>
           </div>
