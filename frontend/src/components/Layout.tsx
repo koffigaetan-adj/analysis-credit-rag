@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { useAuth } from '../context/AuthContext';
 import { Outlet } from 'react-router-dom';
 import UpdatePasswordModal from './UpdatePasswordModal';
 
 export default function Layout() {
+  const { isFirstLogin } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 

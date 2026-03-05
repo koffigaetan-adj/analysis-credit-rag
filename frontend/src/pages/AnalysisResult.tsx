@@ -104,7 +104,7 @@ export default function AnalysisResult() {
   // Set default email efficiently when possible
   useEffect(() => {
     try {
-      const rawUser = sessionStorage.getItem('user');
+      const rawUser = localStorage.getItem('user');
       if (rawUser) {
         const ui = JSON.parse(rawUser);
         if (ui.email) {
@@ -233,7 +233,7 @@ export default function AnalysisResult() {
       formData.append('subject', `Rapport d'Analyse - ${clientInfo.fullName}`);
       formData.append('file', pdfBlob, opt.filename);
 
-      const token = sessionStorage.getItem('token');
+      const token = localStorage.getItem('token');
 
       // 3. Send to API
       const response = await fetch(`${import.meta.env.VITE_API_URL}/send-report/`, {

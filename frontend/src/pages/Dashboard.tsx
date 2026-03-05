@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   PieChart, Pie, Cell, XAxis, YAxis,
@@ -41,10 +42,10 @@ export default function Dashboard() {
 
   // --- CALCULS ---
   const totalDossiers = data.length;
-  const totalAmount = data.reduce((sum, app) => sum + Number(app.amount), 0);
-  const prosCount = data.filter(app => app.client_type === 'entreprise').length;
-  const partCount = data.filter(app => app.client_type === 'particulier').length;
-  const favorableCount = data.filter(app => app.decision === 'Favorable').length;
+  const totalAmount = data.reduce((sum: number, app: any) => sum + Number(app.amount), 0);
+  const prosCount = data.filter((app: any) => app.client_type === 'entreprise').length;
+  const partCount = data.filter((app: any) => app.client_type === 'particulier').length;
+  const favorableCount = data.filter((app: any) => app.decision === 'Favorable').length;
   const acceptanceRate = totalDossiers > 0 ? (favorableCount / totalDossiers) * 100 : 0;
 
   const pieData = [

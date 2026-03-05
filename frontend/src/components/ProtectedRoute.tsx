@@ -37,6 +37,9 @@ export default function ProtectedRoute() {
           return <Navigate to="/login" replace />;
      }
 
+     // IMPORTANT : On laisse passer l'utilisateur s'il est authentifié, 
+     // même si c'est son premier login. Le composant Layout s'occupera 
+     // d'afficher la modale de mot de passe et de bloquer le contenu.
      // On n'empêche plus l'accès complet, la modale d'UpdatePasswordModal 
      // qui sera placée dans Layout va s'occuper de bloquer l'interface.
      // On laisse passer l'Outlet pour que la structure se charge en dessous.
