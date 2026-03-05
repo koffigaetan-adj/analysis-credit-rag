@@ -87,6 +87,7 @@ class AccountRequest(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     poste = Column(String, default="Data Analyst")
     status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
+    rejection_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Notification(Base):

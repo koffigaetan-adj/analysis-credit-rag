@@ -678,18 +678,29 @@ def request_account(request: CreateAccountRequest, background_tasks: BackgroundT
     if existing_request:
         if existing_request.status == "PENDING":
             raise HTTPException(status_code=400, detail="Une demande avec cet email est déjà en attente.")
+        elif existing_request.status == "REJECTED":
+            # Autoriser la ré-application : on réinitialise la demande existante
+            existing_request.status = "PENDING"
+            existing_request.first_name = request.first_name
+            existing_request.last_name = request.last_name
+            existing_request.sexe = request.sexe
+            existing_request.poste = request.poste
+            existing_request.created_at = datetime.utcnow()
+            existing_request.rejection_reason = None # On efface l'ancien motif
+            db.commit()
+            new_request = existing_request
         else:
-            raise HTTPException(status_code=400, detail="Une demande avec cet email a déjà été traitée.")
-
-    new_request = AccountRequest(
-        first_name=request.first_name,
-        last_name=request.last_name,
-        sexe=request.sexe,
-        email=request.email,
-        poste=request.poste
-    )
-    db.add(new_request)
-    db.commit()
+            raise HTTPException(status_code=400, detail="Une demande avec cet email a déjà été approuvée.")
+    else:
+        new_request = AccountRequest(
+            first_name=request.first_name,
+            last_name=request.last_name,
+            sexe=request.sexe,
+            email=request.email,
+            poste=request.poste
+        )
+        db.add(new_request)
+        db.commit()
 
     # Créer une notification globale pour les SUPER_ADMIN
     admin_notif = Notification(
@@ -701,11 +712,23 @@ def request_account(request: CreateAccountRequest, background_tasks: BackgroundT
     db.add(admin_notif)
     db.commit()
 
-    # Envoyer un email d'alerte aux SUPER_ADMIN
+    # 1. Mail au demandeur : confirmation de transmission
+    requester_subject = "Kaïs Analytics - Demande d'accès transmise"
+    requester_html = f"""
+    <h3 style="color: #0f172a; margin-top: 0;">Demande bien transmise</h3>
+    <p>Bonjour {request.first_name},</p>
+    <p>Nous vous informons que votre demande de création de compte sur <b>Kaïs Analytics</b> a bien été transmise.</p>
+    <p>Celle-ci sera examinée prochainement par notre équipe d'administration. Vous recevrez un email dès que votre accès aura été validé.</p>
+    <br>
+    <p>L'équipe Kaïs Analytics</p>
+    """
+    background_tasks.add_task(send_email_sync, request.email, requester_subject, requester_html)
+
+    # 2. Mail aux SUPER_ADMIN : alerte demande
     super_admins = db.query(User).filter(User.role == "SUPER_ADMIN", User.is_active == True).all()
     if super_admins:
-        subject = "Nouvelle demande de compte Kaïs Analytics"
-        html_content = f"""
+        admin_subject = "Nouvelle demande de compte Kaïs Analytics"
+        admin_html = f"""
         <h3 style="color: #0f172a; margin-top: 0;">Nouvelle demande d'accès</h3>
         <p>Une nouvelle demande de création de compte a été soumise :</p>
         <ul style="background-color: #f8fafc; padding: 15px 30px; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -715,11 +738,11 @@ def request_account(request: CreateAccountRequest, background_tasks: BackgroundT
         </ul>
         <p>Vous pouvez valider ou refuser cette demande depuis l'onglet <b>Équipe</b> de votre tableau de bord.</p>
         <div style="margin-top: 25px; text-align: center;">
-            <a href="https://analysis-credit-rag-frontend.vercel.app/team" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à Kaïs</a>
+            <a href="https://kais-analytics.vercel.app/team" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
         </div>
         """
         for admin in super_admins:
-            background_tasks.add_task(send_email_sync, admin.email, subject, html_content)
+            background_tasks.add_task(send_email_sync, admin.email, admin_subject, admin_html)
 
     return {"message": "Votre demande de compte a été enregistrée. Elle sera validée par un administrateur."}
 
@@ -803,6 +826,9 @@ def approve_request_endpoint(
           <li><strong>Mot de passe temporaire :</strong> {approval.password}</li>
         </ul>
         <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
+        <div style="margin-top: 25px; text-align: center;">
+            <a href="https://kais-analytics.vercel.app" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+        </div>
         <br>
         <p>L'équipe Kaïs</p>
       </body>
@@ -829,6 +855,7 @@ def reject_request_endpoint(
 
     # Marquer la demande comme refusée
     acc_req.status = "REJECTED"
+    acc_req.rejection_reason = rejection.reason
     db.commit()
     
     # Envoyer un email d'explication au demandeur
