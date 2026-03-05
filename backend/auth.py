@@ -641,10 +641,13 @@ def admin_delete_user(
     if target_user.role == "SUPER_ADMIN" and current_admin.role != "SUPER_ADMIN":
          raise HTTPException(status_code=403, detail="Vous n'avez pas l'autorisation de supprimer un Super Administrateur.")
 
+    # Supprimer également les éventuelles demandes de compte associées à cet email
+    db.query(AccountRequest).filter(AccountRequest.email == target_user.email).delete()
+    
     db.delete(target_user)
     db.commit()
     
-    return {"message": "Utilisateur supprimé de manière définitive."}
+    return {"message": "Utilisateur et ses demandes associées supprimés de manière définitive."}
 
 @router.put("/users/{user_id}/toggle-status")
 def admin_toggle_user_status(
@@ -689,8 +692,16 @@ def request_account(request: CreateAccountRequest, background_tasks: BackgroundT
             existing_request.rejection_reason = None # On efface l'ancien motif
             db.commit()
             new_request = existing_request
+        elif existing_request.status == "APPROVED":
+            # Si la demande est 'APPROVED' mais que existing_user est None (vérifié plus haut),
+            # cela signifie que l'utilisateur a été supprimé manuellement de la table User
+            # mais que la demande est restée. On autorise alors la ré-application.
+            existing_request.status = "PENDING"
+            existing_request.created_at = datetime.utcnow()
+            db.commit()
+            new_request = existing_request
         else:
-            raise HTTPException(status_code=400, detail="Une demande avec cet email a déjà été approuvée.")
+            raise HTTPException(status_code=400, detail="Une demande avec cet email a déjà été traitée.")
     else:
         new_request = AccountRequest(
             first_name=request.first_name,
