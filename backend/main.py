@@ -40,8 +40,11 @@ def run_migrations():
 def on_startup():
     print("Exécution du startup...")
     run_migrations()
-    print("Exécution du seed automatique...")
-    seed_super_admin()
+    
+    # Le seed ne s'exécute que si ENABLE_SEED est à 'true' (par défaut non pour éviter les conflits)
+    if os.getenv("ENABLE_SEED", "false").lower() == "true":
+        print("Exécution du seed automatique...")
+        seed_super_admin()
 
 app.include_router(auth_router)
 
