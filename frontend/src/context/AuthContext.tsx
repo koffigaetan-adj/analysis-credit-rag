@@ -18,36 +18,54 @@ interface AuthContextType {
      logout: () => void;
      isAuthenticated: boolean;
      isFirstLogin: boolean;
+     isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const SESSION_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
      const [user, setUser] = useState<User | null>(null);
      const [token, setToken] = useState<string | null>(null);
      const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
+     const [isLoading, setIsLoading] = useState<boolean>(true);
 
      useEffect(() => {
-          // Restaurer la session à partir du sessionStorage
-          const storedToken = sessionStorage.getItem('token');
-          const storedUser = sessionStorage.getItem('user');
-          const storedFirstLogin = sessionStorage.getItem('isFirstLogin');
+          // Restaurer la session à partir du localStorage
+          const storedToken = localStorage.getItem('token');
+          const storedUser = localStorage.getItem('user');
+          const storedFirstLogin = localStorage.getItem('isFirstLogin');
+          const lastActivity = localStorage.getItem('lastActivity');
 
-          if (storedToken && storedUser) {
-               setToken(storedToken);
-               setUser(JSON.parse(storedUser));
-               setIsFirstLogin(storedFirstLogin === 'true');
+          if (storedToken && storedUser && lastActivity) {
+               const now = Date.now();
+               const inactiveTime = now - parseInt(lastActivity, 10);
+
+               if (inactiveTime < SESSION_LIMIT_MS) {
+                    setToken(storedToken);
+                    setUser(JSON.parse(storedUser));
+                    setIsFirstLogin(storedFirstLogin === 'true');
+                    // Update last activity on restore
+                    localStorage.setItem('lastActivity', now.toString());
+               } else {
+                    // Session expired
+                    logout();
+               }
           }
+          setIsLoading(false);
      }, []);
 
      const login = (newToken: string, newUser: User, firstLogin: boolean) => {
+          const now = Date.now().toString();
           setToken(newToken);
           setUser(newUser);
           setIsFirstLogin(firstLogin);
 
-          sessionStorage.setItem('token', newToken);
-          sessionStorage.setItem('user', JSON.stringify(newUser));
-          sessionStorage.setItem('isFirstLogin', firstLogin.toString());
+          localStorage.setItem('token', newToken);
+          localStorage.setItem('user', JSON.stringify(newUser));
+          localStorage.setItem('isFirstLogin', firstLogin.toString());
+          localStorage.setItem('lastActivity', now);
      };
 
      const logout = () => {
@@ -55,9 +73,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setIsFirstLogin(false);
 
-          sessionStorage.removeItem('token');
-          sessionStorage.removeItem('user');
-          sessionStorage.removeItem('isFirstLogin');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('isFirstLogin');
+          localStorage.removeItem('lastActivity');
      };
 
      return (
@@ -67,7 +86,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                login,
                logout,
                isAuthenticated: !!token,
-               isFirstLogin
+               isFirstLogin,
+               isLoading
           }}>
                {children}
           </AuthContext.Provider>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AlertTriangle, LogOut } from 'lucide-react';
 
-const INACTIVITY_LIMIT_MS = 10 * 60 * 1000;
+const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
 const WARNING_BEFORE_LOGOUT_MS = 30 * 1000;
 
 export default function SessionTimeout() {
@@ -44,6 +44,9 @@ export default function SessionTimeout() {
           setShowWarning(false);
 
           if (isAuthenticated) {
+               // Update lastActivity in localStorage
+               localStorage.setItem('lastActivity', Date.now().toString());
+
                timeoutRef.current = setTimeout(() => {
                     startWarning();
                }, INACTIVITY_LIMIT_MS - WARNING_BEFORE_LOGOUT_MS);

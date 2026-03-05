@@ -2,7 +2,12 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedRoute() {
-     const { isAuthenticated } = useAuth();
+     const { isAuthenticated, isLoading } = useAuth();
+
+     // Pendant que l'on vérifie si une session existe dans le localStorage
+     if (isLoading) {
+          return null; // Ou un spinner de chargement
+     }
 
      // Si l'utilisateur n'est pas connecté, le renvoyer vers le login
      if (!isAuthenticated) {
