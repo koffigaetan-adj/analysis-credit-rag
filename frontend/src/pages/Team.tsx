@@ -85,6 +85,7 @@ export default function Team() {
   useEffect(() => {
     if (location.state && location.state.activeTab === 'requests' && user?.role === 'SUPER_ADMIN') {
       setActiveTab('requests');
+      fetchRequests();
       // Pour éviter de re-déclencher si l'utilisateur rafraîchit
       window.history.replaceState({}, document.title);
     }

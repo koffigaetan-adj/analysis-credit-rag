@@ -665,7 +665,7 @@ def admin_toggle_user_status(
 # --- ACCOUNT REQUESTS & NOTIFICATIONS ---
 
 @router.post("/request-account")
-def request_account(request: CreateAccountRequest, db: Session = Depends(get_db)):
+def request_account(request: CreateAccountRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Vérification email
     existing_user = db.query(User).filter(User.email == request.email).first()
     if existing_user:
@@ -697,6 +697,26 @@ def request_account(request: CreateAccountRequest, db: Session = Depends(get_db)
     )
     db.add(admin_notif)
     db.commit()
+
+    # Envoyer un email d'alerte aux SUPER_ADMIN
+    super_admins = db.query(User).filter(User.role == "SUPER_ADMIN", User.is_active == True).all()
+    if super_admins:
+        subject = "Nouvelle demande de compte Kaïs Analytics"
+        html_content = f"""
+        <h3 style="color: #0f172a; margin-top: 0;">Nouvelle demande d'accès</h3>
+        <p>Une nouvelle demande de création de compte a été soumise :</p>
+        <ul style="background-color: #f8fafc; padding: 15px 30px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <li><b>Nom :</b> {request.first_name} {request.last_name}</li>
+            <li><b>Email :</b> {request.email}</li>
+            <li><b>Poste :</b> {request.poste}</li>
+        </ul>
+        <p>Vous pouvez valider ou refuser cette demande depuis l'onglet <b>Équipe</b> de votre tableau de bord.</p>
+        <div style="margin-top: 25px; text-align: center;">
+            <a href="https://analysis-credit-rag-frontend.vercel.app/team" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à Kaïs</a>
+        </div>
+        """
+        for admin in super_admins:
+            background_tasks.add_task(send_email_sync, admin.email, subject, html_content)
 
     return {"message": "Votre demande de compte a été enregistrée. Elle sera validée par un administrateur."}
 
