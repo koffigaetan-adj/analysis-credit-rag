@@ -21,8 +21,25 @@ from email_service import send_email_sync
 load_dotenv()
 app = FastAPI()
 
+def run_migrations():
+    """Vérifie et ajoute les colonnes manquantes si nécessaire (pour Supabase/Postgres)"""
+    from sqlalchemy import create_engine, text
+    from database import SQLALCHEMY_DATABASE_URL
+    print("Vérification des migrations de base de données...")
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    with engine.connect() as connection:
+        try:
+            # Tenter d'ajouter la colonne rejection_reason si elle manque
+            connection.execute(text("ALTER TABLE account_requests ADD COLUMN IF NOT EXISTS rejection_reason TEXT;"))
+            connection.commit()
+            print("Migration 'rejection_reason' vérifiée/appliquée.")
+        except Exception as e:
+            print(f"Note sur la migration : {e}")
+
 @app.on_event("startup")
 def on_startup():
+    print("Exécution du startup...")
+    run_migrations()
     print("Exécution du seed automatique...")
     seed_super_admin()
 
