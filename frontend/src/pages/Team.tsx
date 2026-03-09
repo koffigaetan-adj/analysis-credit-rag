@@ -1,4 +1,4 @@
-import { UserPlus, Mail, Shield, User, Trash2, Edit3, Search, X, Lock, Save } from 'lucide-react';
+import { UserPlus, Mail, Shield, User, Trash2, Edit3, Search, X, Lock, Save, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -304,25 +304,34 @@ export default function Team() {
   return (
     <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 space-y-6 animate-fade-in text-left">
       {/* HEADER SIMPLE & PRO */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
-            Liste de <span className="font-semibold text-slate-900 dark:text-white">l'équipe</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Gérez les accès et les collaborateurs de votre instance Kaïs</p>
-        </div>
+     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div>
+    <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
+      Liste de <span className="font-semibold text-slate-900 dark:text-white">l'équipe</span>
+    </h1>
+    <p className="text-slate-500 dark:text-slate-400 text-sm">Gérez les accès et les collaborateurs de votre instance Kaïs</p>
+  </div>
 
-        <button
-          onClick={() => {
-            setShowCreateModal(true);
-            setCreateForm({ prenom: '', nom: '', sexe: 'M', email: '', role: 'ANALYST', password: '', establishment: '' });
-            setModalError(null);
-          }}
-          className="px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95">
-          <UserPlus className="w-4 h-4" />
-          Inviter un membre
-        </button>
-      </div>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={fetchUsers}
+      className="p-3 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+    >
+      <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+    </button>
+
+    <button
+      onClick={() => {
+        setShowCreateModal(true);
+        setCreateForm({ prenom: '', nom: '', sexe: 'M', email: '', role: 'ANALYST', password: '', establishment: '' });
+        setModalError(null);
+      }}
+      className="px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95">
+      <UserPlus className="w-5 h-5" />
+      Inviter un membre
+    </button>
+  </div>
+</div>
 
       {user?.role === 'SUPER_ADMIN' && (
         <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-2">

@@ -81,11 +81,11 @@ export default function Dashboard() {
             onClick={fetchStats}
             className="p-3 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
           >
-            <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <Link
             to="/new"
-            className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-medium shadow-lg transition-all text-sm sm:text-base whitespace-nowrap"
+            className="px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Nouvelle Analyse
