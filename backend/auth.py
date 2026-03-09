@@ -227,7 +227,7 @@ def send_login_alert_async(user_email: str, first_name: str, last_name: str, ip_
       <li><strong>Date et Heure :</strong> {login_time}</li>
     </ul>
     <p style="color: #ef4444; font-weight: bold; margin-top: 20px;">Si vous n'êtes pas à l'origine de cette connexion :</p>
-    <p>Veuillez <a href="{os.getenv('FRONTEND_URL', 'https://kais-analytics.netlify.app')}" style="color: #2563eb; font-weight: bold;">cliquer ici pour vous rendre sur l'application</a> et utiliser la fonction "Mot de passe oublié" pour réinitialiser vos accès immédiatement.</p>
+    <p>Veuillez <a href="{os.getenv('FRONTEND_URL', 'https://kais-analytics.vercel.app')}" style="color: #2563eb; font-weight: bold;">cliquer ici pour vous rendre sur l'application</a> et utiliser la fonction "Mot de passe oublié" pour réinitialiser vos accès immédiatement.</p>
     """
     from email_service import send_email_sync
     send_email_sync(user_email, "Kaïs Analytics - Nouvelle connexion détectée", login_html)
@@ -478,37 +478,44 @@ async def upload_avatar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Sécuriser l'extension et le nom
     allowed_extensions = {".jpg", ".jpeg", ".png", ".webp"}
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in allowed_extensions:
-         raise HTTPException(status_code=400, detail="Format de fichier non supporté. Utilisez JPG, PNG ou WEBP.")
-    
-    # Créer un nom de fichier unique sécurisé
+        raise HTTPException(status_code=400, detail="Format non supporté. Utilisez JPG, PNG ou WEBP.")
+
+    from supabase import create_client
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    supabase = create_client(supabase_url, supabase_key)
+
     filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}{ext}"
-    os.makedirs("uploads/avatars", exist_ok=True)
-    file_path = os.path.join("uploads/avatars", filename)
+    file_bytes = await file.read()
 
-    # Sauvegarder sur le disque
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Supprimer l'ancien avatar si stocké sur Supabase
+    if current_user.avatar_url and "supabase" in current_user.avatar_url:
+        old_filename = current_user.avatar_url.split("/avatars/")[-1]
+        try:
+            supabase.storage.from_("avatars").remove([old_filename])
+        except:
+            pass
 
-    # Convertir en chemin relatif web pour l'accès (en supposant que main.py serve ce dossier statiquement)
-    avatar_url = f"/uploads/avatars/{filename}"
+    # Upload vers Supabase Storage
+    supabase.storage.from_("avatars").upload(
+        path=filename,
+        file=file_bytes,
+        file_options={"content-type": file.content_type}
+    )
 
-    # Supprimer l'ancien avatar s'il y en a un pour éviter la surcharge locale
-    if current_user.avatar_url and current_user.avatar_url.startswith("/uploads/"):
-        old_file_path = current_user.avatar_url.lstrip("/")
-        if os.path.exists(old_file_path):
-             os.remove(old_file_path)
+    # Récupérer l'URL publique
+    avatar_url = supabase.storage.from_("avatars").get_public_url(filename)
 
     current_user.avatar_url = avatar_url
     db.commit()
     db.refresh(current_user)
 
     return {
-         "message": "Avatar mis à jour",
-         "avatar_url": current_user.avatar_url
+        "message": "Avatar mis à jour",
+        "avatar_url": current_user.avatar_url
     }
 
 # --- ROUTES D'ADMINISTRATION (GESTION DES UTILISATEURS) ---
@@ -762,7 +769,7 @@ def request_account(request: CreateAccountRequest, background_tasks: BackgroundT
         </ul>
         <p>Vous pouvez valider ou refuser cette demande depuis l'onglet <b>Équipe</b> de votre tableau de bord.</p>
         <div style="margin-top: 25px; text-align: center;">
-            <a href="https://kais-analytics.vercel.app/login" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+            <a href="https://kais-analytics.vercel.app/login" style="background-color: #E73919; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
         </div>
         """
         for admin in super_admins:
@@ -851,7 +858,7 @@ def approve_request_endpoint(
         </ul>
         <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
         <div style="margin-top: 25px; text-align: center;">
-            <a href="https://kais-analytics.vercel.app/login" style="background-color: #2563eb; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+            <a href="https://kais-analytics.vercel.app/login" style="background-color: #E73919; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
         </div>
         <br>
         <p>L'équipe Kaïs</p>
