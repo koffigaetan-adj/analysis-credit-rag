@@ -95,3 +95,21 @@
     width: 100% !important;
   }
 }
+
+/* Hide Google Translate UI completely */
+body {
+  top: 0 !important;
+}
+
+.skiptranslate {
+  display: none !important;
+}
+
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf-ti6hGc {
+  display: none !important;
+}
+
+#goog-gt-tt {
+  display: none !important;
+}

@@ -1,4 +1,4 @@
-import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone } from 'lucide-react';
+import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone, Globe } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,18 @@ export default function Settings() {
   const [email, setEmail] = useState('');
   const [establishment, setEstablishment] = useState('Kof Company');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [currentLang, setCurrentLang] = useState('fr');
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value;
+    setCurrentLang(newLang);
+
+    const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+    if (gtCombo) {
+      gtCombo.value = newLang;
+      gtCombo.dispatchEvent(new Event('change'));
+    }
+  };
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -242,6 +254,18 @@ export default function Settings() {
           </div>
           <div className="md:col-span-2">
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="p-4 flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2"><Globe className="w-4 h-4 text-slate-400" /> Langue de l'interface</span>
+                <select
+                  value={currentLang}
+                  onChange={handleLanguageChange}
+                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-1.5 outline-none"
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </select>
+              </div>
               <div className="p-4 flex items-center justify-between">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Alertes d'IA</span>
                 <input type="checkbox" defaultChecked className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
