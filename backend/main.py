@@ -341,7 +341,7 @@ async def chat_endpoint(request: ChatRequest):
 async def finance_chat_endpoint(request: GlobalChatRequest):
     try:
         system_prompt = (
-            f"Tu es l'assistant IA de la plateforme Fluxia. Tu t'adresses à {request.userName}.\n"
+            f"Tu es l'assistant IA de la plateforme Kaïs Analytics. Tu t'adresses à {request.userName}.\n"
             "RÈGLE STRICTE : Tu dois UNIQUEMENT répondre aux questions liées à la banque, "
             "à la finance, au crédit, ou à l'analyse de risque financier. \n"
             "RÈGLE 2 : Si la question est une salutation basique, réponds poliment en saluant la personne par son prénom et en lui demandant comment tu peux l'aider avec ses finances.\n"
@@ -350,6 +350,7 @@ async def finance_chat_endpoint(request: GlobalChatRequest):
             "'Désolé, je suis paramétré pour répondre uniquement aux questions relevant du domaine financier, bancaire ou du crédit. "
             "Comment puis-je vous aider sur ces sujets ?'\n"
             "RÈGLE 4 : Sois professionnel, concis, et précis."
+            " Règle 3: Je ne te dis pas d'être trop scrticte jusqu'à refuser de répondre à des questions basiques comme des calculs, les nouvelles actualités dans le domaine bancaire, finance, et credit en France et en Europe et dans le monde entier."
         )
         
         prompt = f"Utilisateur ({request.userName}): {request.message}"
