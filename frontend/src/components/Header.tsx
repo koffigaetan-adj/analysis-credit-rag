@@ -155,7 +155,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
               <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden transition-all">
                 {user?.avatar_url ? (
-                  <img src={`${import.meta.env.VITE_API_URL}${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={`${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-slate-600 dark:text-slate-300 font-bold text-xs uppercase">
                     {getInitials(user?.first_name, user?.last_name)}
