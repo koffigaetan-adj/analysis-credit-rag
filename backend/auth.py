@@ -96,6 +96,19 @@ class CreateNotificationRequest(BaseModel):
 # --- FONCTIONS UTILITAIRES ---
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
+        # Utilise passlib de manière propre
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception as e:
+        print(f"Erreur de vérification password: {e}")
+        # Fallback manuel si le hash est au format brut bytes/string
+        try:
+            password_bytes = plain_password.encode('utf-8')
+            hashed_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
+            return bcrypt.checkpw(password_bytes, hashed_bytes)
+        except Exception as e2:
+            print(f"Erreur fallback bcrypt: {e2}")
+            return False
+    try:
         # Tente d'abord avec passlib (ancienne version)
         return pwd_context.verify(plain_password, hashed_password)
     except:

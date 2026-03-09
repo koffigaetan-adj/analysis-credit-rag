@@ -104,7 +104,7 @@ export default function Dashboard() {
         ].map((kpi, i) => (
           <div key={i} className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-50 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300 group">
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors bg-${kpi.color}-50 dark:bg-${kpi.color}-900/20 text-${kpi.color}-500 group-hover:bg-${kpi.color}-500 group-hover:text-white`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors bg-${kpi.color}-50 dark:bg-${kpi.color}-900/20 text-${kpi.color}-500`}>
                 <kpi.icon className="w-6 h-6" />
               </div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{kpi.label}</span>

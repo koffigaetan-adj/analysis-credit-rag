@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ShieldCheck, Zap, BarChart3, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, Zap, BarChart3, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // --- TYPES ---
@@ -15,7 +15,7 @@ interface Particle {
   spin: number;
 }
 
-// --- COMPOSANT BACKGROUND FULL SCREEN DENSE AVEC RÉSEAU ---
+// --- COMPOSANT BACKGROUND ---
 const InteractiveBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: -1000, y: -1000 });
@@ -38,7 +38,6 @@ const InteractiveBackground = () => {
 
     const initParticles = () => {
       particles = [];
-      // Densité élevée pour permettre les connexions réseau
       const particleCount = Math.floor((canvas.width * canvas.height) / 5000);
       for (let i = 0; i < particleCount; i++) {
         particles.push({
@@ -59,7 +58,6 @@ const InteractiveBackground = () => {
     };
 
     const animate = () => {
-      // Fond neutre très sombre (gris Kaïs)
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -69,7 +67,6 @@ const InteractiveBackground = () => {
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Interaction souris
         const dxMouse = mouseX - p.x;
         const dyMouse = mouseY - p.y;
         const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
@@ -81,17 +78,14 @@ const InteractiveBackground = () => {
           p.y -= (dyMouse / distMouse) * force * 3;
         }
 
-        // Physique
         p.x += p.vx;
         p.y += p.vy;
         p.angle += p.spin;
 
-        // Recyclage écran
         if (p.y < -20) p.y = canvas.height + 20;
         if (p.x < -20) p.x = canvas.width + 20;
         if (p.x > canvas.width + 20) p.x = -20;
 
-        // --- DESSIN DU RÉSEAU (Lignes entre points) ---
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
           const dx = p.x - p2.x;
@@ -109,7 +103,6 @@ const InteractiveBackground = () => {
           }
         }
 
-        // --- DESSIN DU POINT ---
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate((p.angle * Math.PI) / 180);
@@ -137,16 +130,51 @@ const InteractiveBackground = () => {
   return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />;
 };
 
+// --- CHAMP MOT DE PASSE AVEC ŒIL ---
+const PasswordInput = ({
+  value,
+  onChange,
+  placeholder = '••••••••',
+  required = false,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  required?: boolean;
+}) => {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="relative">
+      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+      <input
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
+        required={required}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+        tabIndex={-1}
+      >
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  // Redirection automatique si déjà connecté
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    }
+    if (isAuthenticated) navigate('/dashboard');
   }, [isAuthenticated, navigate]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -162,21 +190,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Animation 3D au survol
-  // const [, setTilt] = useState({ x: 0, y: 0 });
-
-  /*   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left - rect.width / 2;
-      const y = e.clientY - rect.top - rect.height / 2;
-      // Rotation max de +/- 30 degrés
-      setTilt({ x: -(y / rect.height) * 40, y: (x / rect.width) * 40 });
-    }; */
-
-  /*   const handleMouseLeave = () => {
-      setTilt({ x: 0, y: 0 });
-    }; */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +228,6 @@ export default function Login() {
         setIsForgotPassword(false);
         setIsResetPassword(true);
       } else if (isSignUp) {
-        // Logique de création de compte
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/request-account`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -227,28 +239,22 @@ export default function Login() {
             poste: poste.trim() || 'Data Analyst'
           })
         });
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.detail || "Erreur lors de la demande de création");
         }
-
         setSuccessMessage("Votre demande de compte a été enregistrée. Elle sera validée par un administrateur.");
-        setIsSignUp(false); // Retour à la connexion
-        // On pourrait vider les champs optionnellement
+        setIsSignUp(false);
       } else {
-        // Logique de connexion existante
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.detail || 'Erreur lors de la connexion');
         }
-
         const data = await response.json();
         login(data.access_token, data.user_info, data.is_first_login);
         navigate('/dashboard');
@@ -270,22 +276,14 @@ export default function Login() {
         {/* SECTION GAUCHE */}
         <div className="hidden lg:flex flex-1 items-center justify-center p-12">
           <div className="max-w-md text-left">
-            <div
-              className="mb-14 w-fit inline-block cursor-crosshair"
-              /* onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave} */
-              style={{ perspective: '1000px' }}
-            >
-
+            {/* Logo réduit */}
+            <div className="mb-10 w-fit inline-block" style={{ perspective: '1000px' }}>
               <img
                 src="/Logocomplet.svg"
                 alt="Kaïs Logo"
-                className="h-56 object-contain drop-shadow-[0_2000x_200px_rgba(230,57,25,0.2)] pointer-events-none"
+                className="h-36 object-contain drop-shadow-[0_20px_80px_rgba(230,57,25,0.2)] pointer-events-none"
               />
-
             </div>
-
-
 
             <p className="text-slate-400 text-lg mb-12 leading-relaxed">
               Analysez les dossiers de crédit pro avec une précision chirurgicale grâce à Kaïs.
@@ -313,12 +311,12 @@ export default function Login() {
 
         {/* SECTION DROITE */}
         <div className="flex-1 flex flex-col items-center justify-center p-8">
-          {/* Logo Mobile */}
-          <div className="lg:hidden mb-10 mt-8 flex justify-center w-full animate-fade-in">
+          {/* Logo Mobile — réduit aussi */}
+          <div className="lg:hidden mb-8 mt-8 flex justify-center w-full animate-fade-in">
             <img
               src="/Logocomplet.svg"
               alt="Kaïs Logo"
-              className="h-24 object-contain drop-shadow-[0_20px_50px_rgba(230,57,25,0.2)]"
+              className="h-16 object-contain drop-shadow-[0_20px_50px_rgba(230,57,25,0.2)]"
             />
           </div>
 
@@ -413,10 +411,11 @@ export default function Login() {
                 </>
               )}
 
+              {/* EMAIL */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   <input
                     type="email"
                     value={email}
@@ -429,6 +428,7 @@ export default function Login() {
                 </div>
               </div>
 
+              {/* RESET PASSWORD FIELDS */}
               {isResetPassword && (
                 <>
                   <div className="space-y-2">
@@ -445,38 +445,33 @@ export default function Login() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nouveau mot de passe</label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
-                        required
-                      />
-                    </div>
+                    <PasswordInput
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
                   </div>
                 </>
               )}
 
+              {/* MOT DE PASSE CONNEXION */}
               {(!isSignUp && !isForgotPassword && !isResetPassword) && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center px-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mot de passe</label>
-                    <button type="button" onClick={() => { setIsForgotPassword(true); setError(null); setSuccessMessage(null); }} className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter hover:text-blue-400 transition-colors">Oublié ?</button>
+                    <button
+                      type="button"
+                      onClick={() => { setIsForgotPassword(true); setError(null); setSuccessMessage(null); }}
+                      className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter hover:text-blue-400 transition-colors"
+                    >
+                      Oublié ?
+                    </button>
                   </div>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
-                      required
-                    />
-                  </div>
+                  <PasswordInput
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </div>
               )}
 
@@ -485,7 +480,10 @@ export default function Login() {
                 disabled={isLoading}
                 className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
               >
-                {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{isResetPassword ? "Valider le code" : isForgotPassword ? "Recevoir le code" : isSignUp ? "Envoyer la demande" : "Accéder"} <ArrowRight className="w-4 h-4" /></>}
+                {isLoading
+                  ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <>{isResetPassword ? "Valider le code" : isForgotPassword ? "Recevoir le code" : isSignUp ? "Envoyer la demande" : "Accéder"} <ArrowRight className="w-4 h-4" /></>
+                }
               </button>
 
               {(isForgotPassword || isResetPassword) && (
