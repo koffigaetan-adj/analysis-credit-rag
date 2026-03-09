@@ -31,9 +31,7 @@ export default function Settings() {
       setLastName(user.last_name || '');
       setEmail(user.email || '');
       setEstablishment(user.establishment || 'Kof Company');
-      if (user.avatar_url) {
-        setAvatarPreview(`${import.meta.env.VITE_API_URL}${user.avatar_url}`);
-      }
+      setAvatarPreview(user.avatar_url || null);
     }
   }, [user]);
 
@@ -51,11 +49,11 @@ export default function Settings() {
 
   const handleSaveProfile = async () => {
     setMessage(null);
-    // This check will now be handled by the modal before calling this function
-    // if (!passwordConfirm) {
-    //   setMessage({ type: 'error', text: 'Veuillez saisir votre mot de passe pour confirmer les modifications.' });
-    //   return;
-    // }
+
+    if (!user) {
+      setMessage({ type: 'error', text: 'Utilisateur non connecté.' });
+      return;
+    }
 
     setIsLoading(true);
 
@@ -71,7 +69,9 @@ export default function Settings() {
           last_name: lastName,
           email: email,
           establishment: establishment,
-          password: passwordConfirm // passwordConfirm will be set by the modal
+          sexe: user?.sexe || 'M',
+          poste: user?.poste || 'Data Analyst',
+          password: passwordConfirm
         })
       });
 
@@ -92,7 +92,6 @@ export default function Settings() {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
-            // Ne pas mettre de Content-Type avec FormData, le navigateur gère le boundary Multipart
           },
           body: formData
         });
@@ -105,7 +104,7 @@ export default function Settings() {
         updatedUser.avatar_url = avatarData.avatar_url;
       }
 
-      // Mettre à jour le contexte global 
+      // Mettre à jour le contexte global
       if (token) {
         login(token, updatedUser, false);
       }
@@ -116,7 +115,6 @@ export default function Settings() {
       setMessage(null);
       setShowSuccessModal(true);
 
-      // Auto-fermeture du success modal après 2.5s (optionnel)
       setTimeout(() => {
         setShowSuccessModal(false);
       }, 2500);
@@ -149,7 +147,7 @@ export default function Settings() {
 
       <div className="space-y-16">
 
-        {/* SECTION PROFIL : TEXTE À GAUCHE / INPUTS À DROITE */}
+        {/* SECTION PROFIL */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-1">
             <h2 className="text-sm font-bold uppercase tracking-widest text-slate-900 dark:text-slate-100">Profil</h2>
@@ -285,7 +283,6 @@ export default function Settings() {
               <button
                 onClick={() => setShowUpdatePasswordModal(true)}
                 className="flex items-center justify-between w-full text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                title="Sera redirigé vers l'écran de modification."
               >
                 Modifier maintenant <ChevronRight className="w-4 h-4" />
               </button>
@@ -295,7 +292,7 @@ export default function Settings() {
 
       </div>
 
-      {/* ACTION BAR : FLOTTANTE OU FIXE EN BAS */}
+      {/* ACTION BAR */}
       <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800 flex justify-end items-center gap-4">
         <button
           onClick={() => {
@@ -304,6 +301,8 @@ export default function Settings() {
               setLastName(user.last_name || '');
               setEmail(user.email || '');
               setEstablishment(user.establishment || 'Kof Company');
+              setAvatarPreview(user.avatar_url || null); // ✅ reset avatar
+              setSelectedFile(null);
             }
             setMessage(null);
           }}
