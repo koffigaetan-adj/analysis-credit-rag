@@ -196,7 +196,7 @@ export default function Dashboard() {
         <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-lg font-medium text-slate-800 dark:text-white">Analyses Récentes</h3>
           <Link to="/history" className="text-blue-500 text-sm font-medium hover:underline flex items-center gap-1">
-            Portfolio complet <ArrowRight className="w-4 h-4" />
+            Liste complète <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
         <div className="overflow-x-auto">
