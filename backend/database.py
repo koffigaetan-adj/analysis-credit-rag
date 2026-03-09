@@ -108,6 +108,15 @@ class PasswordResetCode(Base):
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=False) # Lié à l'utilisateur
+    title = Column(String, default="Nouvelle discussion")
+    messages = Column(JSON, default=list) # Liste de dicts: [{"role": "user", "content": "..."}]
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 # Création des tables
 Base.metadata.create_all(bind=engine)
 

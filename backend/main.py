@@ -81,6 +81,17 @@ class ChatRequest(BaseModel):
     client_type: str
     application_id: typing.Optional[int] = None
 
+class GlobalChatRequest(BaseModel):
+    message: str
+    userName: str
+    session_id: typing.Optional[str] = None # Pour rattacher le message à la bonne session
+
+class ChatSessionCreate(BaseModel):
+    title: typing.Optional[str] = "Nouvelle discussion"
+
+class ChatSessionUpdate(BaseModel):
+    title: str
+
 # --- 3. UTILITAIRES ---
 def extract_text_from_pdf(file_content: bytes) -> str:
     try:
@@ -320,26 +331,81 @@ def get_history(db: Session = Depends(database.get_db), current_user: database.U
         })
     return results
 
-class GlobalChatRequest(BaseModel):
-    message: str
-    userName: str
+@app.get("/chat/sessions/")
+def get_chat_sessions(db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
+    sessions = db.query(database.ChatSession).filter(database.ChatSession.user_id == current_user.id).order_by(database.ChatSession.updated_at.desc()).all()
+    return [{
+        "id": s.id,
+        "title": s.title,
+        "created_at": s.created_at,
+        "updated_at": s.updated_at,
+        "messages": s.messages if isinstance(s.messages, list) else json.loads(s.messages or "[]")
+    } for s in sessions]
 
-@app.post("/chat/")
-async def chat_endpoint(request: ChatRequest):
-    try:
-        prompt = f"Contexte : {request.context}\nQuestion : {request.message}\nRéponds de manière pro et courte."
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model=MODEL_NAME,
-            temperature=0.3
-        )
-        return {"response": response.choices[0].message.content}
-    except Exception as e:
-        return {"response": f"Erreur Chat: {str(e)}"}
+@app.post("/chat/sessions/")
+def create_chat_session(req: ChatSessionCreate, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
+    new_session = database.ChatSession(
+        user_id=current_user.id,
+        title=req.title,
+        messages=[]
+    )
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+    return {"id": new_session.id, "title": new_session.title, "messages": []}
+
+@app.delete("/chat/sessions/{session_id}")
+def delete_chat_session(session_id: str, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
+    session_record = db.query(database.ChatSession).filter(database.ChatSession.id == session_id, database.ChatSession.user_id == current_user.id).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    db.delete(session_record)
+    db.commit()
+    return {"message": "Session supprimée."}
+
+@app.put("/chat/sessions/{session_id}")
+def update_chat_session(session_id: str, req: ChatSessionUpdate, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
+    session_record = db.query(database.ChatSession).filter(database.ChatSession.id == session_id, database.ChatSession.user_id == current_user.id).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    session_record.title = req.title
+    db.commit()
+    return {"message": "Session mise à jour.", "title": req.title}
 
 @app.post("/chat/finance/")
-async def finance_chat_endpoint(request: GlobalChatRequest):
+async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
     try:
+        session_id = request.session_id
+        session_record = None
+        
+        # Trouver ou créer une session
+        if session_id:
+            session_record = db.query(database.ChatSession).filter(database.ChatSession.id == session_id, database.ChatSession.user_id == current_user.id).first()
+        
+        if not session_record:
+            # Créer une nouvelle session si non fournie ou introuvable
+            title = request.message[:30] + "..." if len(request.message) > 30 else request.message
+            session_record = database.ChatSession(
+                user_id=current_user.id,
+                title=title,
+                messages=[]
+            )
+            db.add(session_record)
+            db.commit()
+            db.refresh(session_record)
+            session_id = session_record.id
+
+        # Mettre à jour les messages avec la question de l'utilisateur
+        current_messages = session_record.messages if isinstance(session_record.messages, list) else json.loads(session_record.messages or "[]")
+        user_msg = {"role": "user", "content": request.message}
+        current_messages.append(user_msg)
+        
+        # Construire l'historique pour le prompt (limite aux 10 derniers)
+        history_context = ""
+        recent_messages = current_messages[-10:-1] # exclure le dernier message qu'on vient d'ajouter
+        for msg in recent_messages:
+            history_context += f"{'Utilisateur' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}\n"
+            
         system_prompt = (
             f"Tu es l'assistant IA de la plateforme Kaïs Analytics. Tu t'adresses à {request.userName}.\n"
             "RÈGLE STRICTE : Tu dois UNIQUEMENT répondre aux questions liées à la banque, "
@@ -349,8 +415,9 @@ async def finance_chat_endpoint(request: GlobalChatRequest):
             "tu DOIS REFUSER de répondre avec ce message exact ou une variante très proche : "
             "'Désolé, je suis paramétré pour répondre uniquement aux questions relevant du domaine financier, bancaire ou du crédit. "
             "Comment puis-je vous aider sur ces sujets ?'\n"
-            "RÈGLE 4 : Sois professionnel, concis, et précis."
-            " Règle 3: Je ne te dis pas d'être trop scrticte jusqu'à refuser de répondre à des questions basiques comme des calculs, les nouvelles actualités dans le domaine bancaire, finance, et credit en France et en Europe et dans le monde entier."
+            "RÈGLE 4 : Sois professionnel, concis, et précis.\n"
+            "Voici les messages précédents de la conversation pour le contexte (optionnel):\n"
+            f"{history_context}"
         )
         
         prompt = f"Utilisateur ({request.userName}): {request.message}"
@@ -363,8 +430,18 @@ async def finance_chat_endpoint(request: GlobalChatRequest):
             model=MODEL_NAME,
             temperature=0.3
         )
-        return {"response": response.choices[0].message.content}
+        
+        ai_response = response.choices[0].message.content
+        
+        # Enregistrer la réponse de l'IA
+        current_messages.append({"role": "assistant", "content": ai_response})
+        session_record.messages = current_messages
+        db.commit()
+
+        return {"response": ai_response, "session_id": session_id}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"response": f"Erreur Chat Finance: {str(e)}"}
 
 @app.delete("/applications/{app_id}")

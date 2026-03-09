@@ -413,7 +413,7 @@ export default function Team() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
                           {member.avatar_url ? (
-                            <img src={`${import.meta.env.VITE_API_URL}${member.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                            <img src={`${member.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-blue-500 font-bold text-xs uppercase">
                               {member.first_name[0]}{member.last_name[0]}
