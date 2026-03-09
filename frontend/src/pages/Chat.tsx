@@ -58,20 +58,18 @@ export default function Chat() {
      }, [token]);
 
      useEffect(() => {
-          // Si on change de session ou pas de session
-          if (currentSessionId) {
-               const session = sessions.find(s => s.id === currentSessionId);
-               if (session) {
-                    setMessages(session.messages);
-               }
-          } else if (messages.length === 0 && user?.first_name && !isTyping) {
-               // Message d'accueil par défaut si nouvelle session vide
-               setMessages([{
-                    role: 'assistant',
-                    content: `Bonjour **${user.first_name}** 👋 ! Je suis l'assistant autonome Kaïs.\n\nJe suis spécialisé en banque, finance et analyse de crédit. Comment puis-je vous accompagner aujourd'hui ?`
-               }]);
+     if (currentSessionId) {
+          const session = sessions.find(s => s.id === currentSessionId);
+          if (session && session.messages && session.messages.length > 0) {
+               setMessages(session.messages);
           }
-     }, [currentSessionId, sessions, user]);
+     } else if (!currentSessionId && messages.length === 0 && user?.first_name) {
+          setMessages([{
+               role: 'assistant',
+               content: `Bonjour **${user.first_name}** 👋 ! Je suis l'assistant autonome Kaïs.\n\nJe suis spécialisé en banque, finance et analyse de crédit. Comment puis-je vous accompagner aujourd'hui ?`
+          }]);
+     }
+}, [currentSessionId, user]);
 
      const scrollToBottom = () => {
           chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
