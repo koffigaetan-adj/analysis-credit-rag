@@ -190,8 +190,33 @@ export default function Chat() {
      };
 
      return (
-          <div className="max-w-7xl mx-auto h-[85vh] pt-10 px-6 animate-fade-in text-left">
-               <div className="w-full h-full flex bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+
+          <div className="max-w-7xl mx-auto h-[90vh] pb-6 pt-10 px-6 animate-fade-in text-left flex flex-col gap-6">
+
+               {/* HEADER EXTERIEUR */}
+               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
+                    <div>
+                         <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight">
+                              Assistant <span className="font-semibold text-slate-900 dark:text-white">IA</span>
+                         </h1>
+                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
+                              <Bot className="w-4 h-4 text-blue-500" />
+                              Discutez, analysez et explorez des concepts financiers.
+                         </p>
+                    </div>
+                    {/* Bouton mobile pour Nouvelle discussion */}
+                    <div className="lg:hidden flex">
+                         <button
+                              onClick={startNewChat}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-500 shadow-sm flex items-center gap-2"
+                         >
+                              <Plus className="w-5 h-5" />
+                              Nouvelle discussion
+                         </button>
+                    </div>
+               </div>
+
+               <div className="w-full flex-1 flex bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden min-h-0">
 
                     {/* SIDEBAR HISTORY */}
                     <div className="w-1/4 min-w-[260px] hidden lg:flex flex-col border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm">
@@ -275,28 +300,7 @@ export default function Chat() {
                     </div>
 
                     {/* MAIN CHAT AREA */}
-                    <div className="flex-1 flex flex-col h-full relative bg-white dark:bg-slate-900">
-
-                         {/* HEADER inside box */}
-                         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center z-10">
-                              <div>
-                                   <h1 className="text-xl md:text-2xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <Bot className="w-6 h-6 text-blue-600 dark:text-blue-500" />
-                                        Assistant Financier
-                                   </h1>
-                                   <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                                        {currentSessionId ? "Reprise d'une session précédente." : "Discutez, analysez et explorez des concepts financiers."}
-                                   </p>
-                              </div>
-                              <button
-                                   onClick={startNewChat}
-                                   className="lg:hidden p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-200 dark:border-slate-700 shadow-sm"
-                                   title="Nouvelle discussion"
-                              >
-                                   <Plus className="w-5 h-5" />
-                              </button>
-                         </div>
-
+                    <div className="flex-1 flex flex-col h-full relative bg-slate-50/50 dark:bg-slate-900/50">
                          {/* MESSAGES AREA */}
                          <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6">
                               {messages.map((msg, idx) => (
