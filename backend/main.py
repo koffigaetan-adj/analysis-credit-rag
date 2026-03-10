@@ -176,6 +176,7 @@ def build_interpretation_prompt(client_info: dict, extracted_text: str, score_da
     4. Ne donne JAMAIS une conclusion "parfaitement favorable" ou ne valide pas un projet si les ratios sont tendus, si c'est irréaliste ou surdimensionné.
     5. Propose des ajustements réalistes (montant plus faible, apport) ou conditions à respecter.
     6. Conclus avec un niveau de risque (faible/modéré/élevé), une recommandation claire (favorable, sous conditions, défavorable), et 2 ou 3 pistes d'amélioration concrètes.
+    7. Soit détaillé le plus possible dans tes explications.
     
     FORMAT JSON OBLIGATOIRE EN SORTIE :
     {{
@@ -432,6 +433,12 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
             "'Désolé, je suis paramétré pour répondre uniquement aux questions relevant du domaine financier, bancaire ou du crédit. "
             "Comment puis-je vous aider sur ces sujets ?'\n"
             "RÈGLE 4 : Sois professionnel, concis, et précis.\n"
+            "RÈGLE 5 : Sois détaillé le plus possible dans tes explications.\n"
+            "RÈGLE 6 : Sois poli et courtois.\n"
+            "RÈGLE 7 : Tu peux faire des calculs si demandé.\n"
+            "RÈGLE 8 : Tu peux faire des recherches sur internet si demandé.\n"
+            "RÈGLE 9 :  Tu dois donner des réponses dans  la lanqgue que la personne t'a écrit.\n"
+          
             "Voici les messages précédents de la conversation pour le contexte (optionnel):\n"
             f"{history_context}"
         )
