@@ -639,7 +639,7 @@ export default function AnalysisResult() {
       <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end print:hidden">
         {!isChatOpen ? (
           <button onClick={() => setIsChatOpen(true)} className="w-16 h-16 rounded-3xl bg-slate-900 dark:bg-blue-600 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all">
-            <img src="/src/images/logo_kais.svg" alt="Chat Kaïs" className="w-8 h-8 object-contain filter brightness-0 invert" />
+            <img src="/logo_kais.svg" alt="Chat Kaïs" className="w-8 h-8 object-contain filter brightness-0 invert" />
           </button>
         ) : (
           <div className="w-[400px] h-[550px] bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden animate-scale-in origin-bottom-right">

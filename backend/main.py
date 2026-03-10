@@ -372,6 +372,22 @@ def update_chat_session(session_id: str, req: ChatSessionUpdate, db: Session = D
     db.commit()
     return {"message": "Session mise à jour.", "title": req.title}
 
+@app.get("/chat/sessions/{session_id}")
+def get_chat_session(session_id: str, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
+    session_record = db.query(database.ChatSession).filter(
+        database.ChatSession.id == session_id,
+        database.ChatSession.user_id == current_user.id
+    ).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    return {
+        "id": session_record.id,
+        "title": session_record.title,
+        "created_at": session_record.created_at,
+        "updated_at": session_record.updated_at,
+        "messages": session_record.messages if isinstance(session_record.messages, list) else json.loads(session_record.messages or "[]")
+    }
+
 @app.post("/chat/finance/")
 async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
     try:
