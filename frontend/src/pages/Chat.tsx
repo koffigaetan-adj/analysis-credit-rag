@@ -350,9 +350,9 @@ export default function Chat() {
                                              <Sparkles className="w-5 h-5 animate-pulse" />
                                         </div>
                                         <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl rounded-tl-sm shadow-sm p-5 flex items-center gap-2">
-                                             <span className="relative inline-flex rounded-full h-3 w-3 bg-white animate-pulse [animation-delay:-0.3s]"></span>
-                                             <span className="relative inline-flex rounded-full h-3 w-3 bg-white animate-pulse [animation-delay:-0.15s]"></span>
-                                             <span className="relative inline-flex rounded-full h-3 w-3 bg-white animate-pulse"></span>
+                                             <span className="relative inline-flex rounded-full h-3 w-3 bg-[#CB2B11] animate-pulse [animation-delay:-0.3s]"></span>
+                                             <span className="relative inline-flex rounded-full h-3 w-3 bg-[#CB2B11] animate-pulse [animation-delay:-0.15s]"></span>
+                                             <span className="relative inline-flex rounded-full h-3 w-3 bg-[#CB2B11] animate-pulse"></span>
                                         </div>
                                    </div>
                               )}
