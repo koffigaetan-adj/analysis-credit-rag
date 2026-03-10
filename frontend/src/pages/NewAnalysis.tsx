@@ -260,7 +260,7 @@ export default function NewAnalysis() {
             </div>
           </div>
           <div className="mt-12 flex justify-end">
-            <button onClick={validateStep1} className="w-full sm:w-auto justify-center bg-slate-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
+            <button onClick={validateStep1} className="w-full sm:w-auto justify-center bg-slate-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl text-xs font-black  tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
               Suivant <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -303,7 +303,7 @@ export default function NewAnalysis() {
                       </div>
                     ))}
                     <div className="relative group">
-                      <input type="file" multiple accept="application/pdf,image/*" onChange={(e) => handleFileSelect(doc.id, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <input type="file" multiple accept="application/pdf,image/*" onChange={(e) => handleFileSelect(doc.id, e)} className="absolute inset-0 opacity-0 cursor-pointer" />     
                       <button className={`w-full py-2.5 border-2 border-dashed rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isProvided ? 'border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-950' : 'border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-white dark:bg-slate-950 group-hover:border-blue-300 dark:group-hover:border-blue-500 group-hover:text-blue-500'}`}>
                         {isProvided ? "+ Ajouter" : "Importer"}
                       </button>
@@ -315,10 +315,10 @@ export default function NewAnalysis() {
           </div>
 
           <div className="p-6 md:px-10 md:py-8 bg-slate-50/50 dark:bg-slate-950/50 border-t border-slate-50 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-4 transition-colors">
-            <button onClick={() => setStep(1)} className="justify-center sm:justify-start py-3 sm:py-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors">
+            <button onClick={() => setStep(1)} className="justify-center sm:justify-start py-3 sm:py-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black  tracking-widest flex items-center gap-2 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Retour
             </button>
-            <button onClick={handleAnalyze} disabled={loading} className={`justify-center px-10 py-4 w-full sm:w-auto rounded-2xl text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'bg-blue-600 dark:bg-blue-600 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
+            <button onClick={handleAnalyze} disabled={loading} className={`justify-center px-10 py-4 w-full sm:w-auto rounded-2xl text-xs font-black  tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'bg-blue-600 dark:bg-blue-600 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Analyser avec l'IA</>}
             </button>
           </div>

@@ -448,10 +448,15 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
         )
         
         ai_response = response.choices[0].message.content
+        from sqlalchemy.orm.attributes import flag_modified
         
         # Enregistrer la réponse de l'IA
         current_messages.append({"role": "assistant", "content": ai_response})
-        session_record.messages = current_messages
+        
+        # Forcer SQLAlchemy à détecter le changement du JSON
+        session_record.messages = list(current_messages)
+        flag_modified(session_record, "messages")
+        
         db.commit()
 
         return {"response": ai_response, "session_id": session_id}

@@ -639,12 +639,12 @@ export default function AnalysisResult() {
       <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end print:hidden">
         {!isChatOpen ? (
           <button onClick={() => setIsChatOpen(true)} className="w-16 h-16 rounded-3xl bg-slate-900 dark:bg-blue-600 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all">
-            <img src="/logo_kais.svg" alt="Chat Kaïs" className="w-8 h-8 object-contain filter brightness-0 invert" />
+            <img src="logo_kais.svg" alt="Chat Kaïs" className="w-8 h-8 object-contain filter brightness-0 invert" />
           </button>
         ) : (
           <div className="w-[400px] h-[550px] bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden animate-scale-in origin-bottom-right">
             <div className="px-6 py-4 bg-slate-900 dark:bg-slate-950 flex items-center justify-between text-white">
-              <div className="flex items-center gap-2 text-sm font-bold tracking-widest"><img src="/src/images/logo_kais.svg" alt="Kaïs" className="w-5 h-5 object-contain" />Kaïs</div>
+              <div className="flex items-center gap-2 text-sm font-bold tracking-widest"><img src="logo_kais.svg" alt="Kaïs" className="w-5 h-5 object-contain" />Kaïs</div>
               <button onClick={() => setIsChatOpen(false)}><X className="w-5 h-5 opacity-50 hover:opacity-100" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 dark:bg-slate-950">
