@@ -389,6 +389,41 @@ def get_chat_session(session_id: str, db: Session = Depends(database.get_db), cu
         "messages": session_record.messages if isinstance(session_record.messages, list) else json.loads(session_record.messages or "[]")
     }
 
+class ChatRequest(BaseModel):
+    message: str
+    client_type: str
+    context: str
+
+@app.post("/chat/")
+async def analyze_chat_endpoint(request: ChatRequest, current_user: database.User = Depends(get_current_user)):
+    try:
+        context_data = json.loads(request.context)
+        system_prompt = (
+            "Tu es l'assistant IA de la plateforme Kaïs Analytics.\n"
+            "Tu dois répondre aux questions de l'utilisateur concernant l'analyse financière en cours, la comptabilité et les mathématiques.\n"
+            "Utilise les données du contexte fourni (résultats de l'analyse, score, informations client) pour répondre de manière précise et professionnelle.\n"
+            "Tu es autorisé à faire des calculs mathématiques et à répondre à des questions de comptabilité.\n"
+            "Si la question n'est pas liée à la finance, l'analyse, la comptabilité ou les mathématiques, rappelle poliment ton rôle.\n"
+            "Sois détaillé le plus possible dans tes explications."
+        )
+        
+        user_prompt = (
+            f"CONTEXTE DE L'ANALYSE :\n{json.dumps(context_data, indent=2, ensure_ascii=False)}\n\n"
+            f"QUESTION DE L'UTILISATEUR :\n{request.message}"
+        )
+        
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            model=MODEL_NAME,
+            temperature=0.3
+        )
+        return {"response": response.choices[0].message.content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/chat/finance/")
 async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
     try:
@@ -426,18 +461,18 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
         system_prompt = (
             f"Tu es l'assistant IA de la plateforme Kaïs Analytics. Tu t'adresses à {request.userName}.\n"
             "RÈGLE STRICTE : Tu dois UNIQUEMENT répondre aux questions liées à la banque, "
-            "à la finance, au crédit, ou à l'analyse de risque financier. \n"
+            "à la finance, au crédit, à l'analyse de risque financier, à la comptabilité et aux mathématiques.\n"
             "RÈGLE 2 : Si la question est une salutation basique, réponds poliment en saluant la personne par son prénom et en lui demandant comment tu peux l'aider avec ses finances.\n"
-            "RÈGLE 3 : Si la question n'a rien à voir avec les domaines autorisés (banque, finance, crédit, analyse), "
+            "RÈGLE 3 : Si la question n'a rien à voir avec les domaines autorisés (banque, finance, crédit, analyse, comptabilité, mathématiques), "
             "tu DOIS REFUSER de répondre avec ce message exact ou une variante très proche : "
-            "'Désolé, je suis paramétré pour répondre uniquement aux questions relevant du domaine financier, bancaire ou du crédit. "
+            "'Désolé, je suis paramétré pour répondre uniquement aux questions relevant du domaine financier, bancaire, de la comptabilité ou des mathématiques. "
             "Comment puis-je vous aider sur ces sujets ?'\n"
             "RÈGLE 4 : Sois professionnel, concis, et précis.\n"
             "RÈGLE 5 : Sois détaillé le plus possible dans tes explications.\n"
             "RÈGLE 6 : Sois poli et courtois.\n"
-            "RÈGLE 7 : Tu peux faire des calculs si demandé.\n"
+            "RÈGLE 7 : Tu PEUX ET DOIS faire des calculs mathématiques si demandé. Tu excelles en calcul.\n"
             "RÈGLE 8 : Tu peux faire des recherches sur internet si demandé.\n"
-            "RÈGLE 9 :  Tu dois donner des réponses dans  la lanqgue que la personne t'a écrit.\n"
+            "RÈGLE 9 : Tu dois donner des réponses dans la langue que la personne t'a écrit.\n"
           
             "Voici les messages précédents de la conversation pour le contexte (optionnel):\n"
             f"{history_context}"

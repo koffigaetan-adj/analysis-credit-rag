@@ -37,9 +37,7 @@ export default function Layout() {
       </div>
 
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 z-10 print:ml-0 print:bg-white w-full ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <div className="print:hidden">
-          <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
-        </div>
+        <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
         <main className="p-4 md:p-8 print:p-0 flex-1 relative">
           <div className="relative z-20 print:w-full print:max-w-none print:m-0 print:p-0">
             {!isFirstLogin ? <Outlet /> : <div className="flex items-center justify-center min-h-[50vh] text-slate-400 font-medium">Veuillez mettre à jour votre mot de passe pour continuer...</div>}
