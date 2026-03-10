@@ -58,18 +58,23 @@ export default function Chat() {
      }, [token]);
 
      useEffect(() => {
-     if (currentSessionId) {
-          const session = sessions.find(s => s.id === currentSessionId);
-          if (session && session.messages && session.messages.length > 0) {
-               setMessages(session.messages);
+          if (currentSessionId) {
+               const session = sessions.find(s => s.id === currentSessionId);
+               if (session && session.messages && session.messages.length > 0) {
+                    setMessages(session.messages);
+               } else {
+                    setMessages([]);
+               }
+          } else {
+               // No active session selected, show default greeting only if not currently typing/waiting
+               if (messages.length === 0 && user?.first_name) {
+                    setMessages([{
+                         role: 'assistant',
+                         content: `Bonjour **${user.first_name}** 👋 ! Je suis l'assistant autonome Kaïs.\n\nJe suis spécialisé en banque, finance et analyse de crédit. Comment puis-je vous accompagner aujourd'hui ?`
+                    }]);
+               }
           }
-     } else if (!currentSessionId && messages.length === 0 && user?.first_name) {
-          setMessages([{
-               role: 'assistant',
-               content: `Bonjour **${user.first_name}** 👋 ! Je suis l'assistant autonome Kaïs.\n\nJe suis spécialisé en banque, finance et analyse de crédit. Comment puis-je vous accompagner aujourd'hui ?`
-          }]);
-     }
-}, [currentSessionId, user]);
+     }, [currentSessionId, sessions, user?.first_name]);
 
      const scrollToBottom = () => {
           chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
