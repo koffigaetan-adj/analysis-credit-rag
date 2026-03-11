@@ -336,7 +336,7 @@ export default function Settings() {
         </button>
         <button
           onClick={() => setShowPasswordModal(true)}
-          className="px-8 py-2.5 bg-slate-900 dark:bg-blue-600 text-white rounded-lg font-bold text-sm shadow-xl shadow-slate-200 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
+          className="px-8 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-xl shadow-slate-200 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
         >
           <Save className="w-4 h-4" /> Enregistrer les changements
         </button>

@@ -260,7 +260,7 @@ export default function NewAnalysis() {
             </div>
           </div>
           <div className="mt-12 flex justify-end">
-            <button onClick={validateStep1} className="w-full sm:w-auto justify-center bg-slate-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl text-xs font-black  tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
+            <button onClick={validateStep1} className="w-full sm:w-auto justify-center bg-blue-600 uppercase text-white px-10 py-4 rounded-2xl text-xs font-black  tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
               Suivant <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>

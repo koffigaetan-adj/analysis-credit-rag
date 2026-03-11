@@ -446,7 +446,7 @@ export default function AnalysisResult() {
           <div className="flex justify-between items-end">
             <div>
               <div className="flex justify-start mb-4">
-                <img src="/src/images/Logocompletv2.svg" alt="Kaïs" className="h-12 object-contain" />
+                <img src="/Logocompletv2.svg" alt="Kaïs" className="h-12 object-contain" />
               </div>
               <h1 className="text-4xl font-light text-slate-800 tracking-tight">Rapport d'Analyse <span className="font-semibold text-slate-900">Financière</span></h1>
             </div>

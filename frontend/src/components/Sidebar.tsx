@@ -168,13 +168,25 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
         <div className={`p-6 mb-4 flex items-center gap-3 ${isCollapsed ? 'lg:justify-center' : ''}`}>
           {/* Desktop réduit : icône seule */}
           <div className={`${isCollapsed ? 'hidden lg:flex' : 'hidden'} w-10 h-10 items-center justify-center shrink-0`}>
-            <img src="/logo_kais.svg" alt="Kaïs Logo" className="w-8 h-8 object-contain" />
+            <Link
+              to="/dashboard"
+              onClick={closeMobileSidebar}
+              className="transition-transform hover:scale-105 active:scale-95"
+            >
+              <img src="/logo_kais.svg" alt="Kaïs Logo" className="w-8 h-8 object-contain " />
+            </Link>
           </div>
           {/* Logo complet : desktop étendu + toujours sur mobile */}
           <div className={`animate-in fade-in duration-500 flex justify-left w-full pl-4
             ${isCollapsed ? 'lg:hidden' : ''}
           `}>
-            <img src="/Logocomplet.svg" alt="Kaïs Analytics" className="h-12 object-contain" />
+            <Link
+              to="/dashboard"
+              onClick={closeMobileSidebar}
+              className="transition-transform hover:scale-105 active:scale-95"
+            >
+              <img src="/Logocomplet.svg" alt="Kaïs Analytics" className="h-12 object-contain" />
+            </Link>
           </div>
         </div>
 
