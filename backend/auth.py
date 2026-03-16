@@ -968,3 +968,37 @@ def mark_notification_read(
     notif.is_read = True
     db.commit()
     return {"message": "Notification lue."}
+
+@router.delete("/notifications/{notification_id}")
+def delete_notification(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification introuvable.")
+        
+    if notif.user_id is not None and notif.user_id != current_user.id:
+        if current_user.role != "SUPER_ADMIN":
+            raise HTTPException(status_code=403, detail="Non autorisé.")
+            
+    db.delete(notif)
+    db.commit()
+    return {"message": "Notification supprimée."}
+
+@router.delete("/notifications")
+def clear_all_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role == "SUPER_ADMIN":
+        # Delete both personal and global notifications shown to Super Admin
+        db.query(Notification).filter(
+            (Notification.user_id == current_user.id) | (Notification.user_id == None)
+        ).delete(synchronize_session=False)
+    else:
+        db.query(Notification).filter(Notification.user_id == current_user.id).delete(synchronize_session=False)
+        
+    db.commit()
+    return {"message": "Toutes les notifications ont été supprimées."}
