@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
-import { Bell, ChevronDown, Menu } from 'lucide-react';
+import { Bell, ChevronDown, Menu, Trash2 } from 'lucide-react';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -63,9 +63,39 @@ export default function Header({ onMenuClick }: HeaderProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       fetchNotifications();
-      setShowNotifMenu(false);
+      // On ne ferme plus forcément le menu ici pour permettre d'autres actions
       if (type === 'ACCOUNT_REQUEST') {
-        navigate('/team', { state: { activeTab: 'requests' } }); // Navigate directly to requests tab
+        setShowNotifMenu(false);
+        navigate('/team', { state: { activeTab: 'requests' } });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const deleteNotification = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation(); // Évite de déclencher le markAsRead
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchNotifications();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchNotifications();
       }
     } catch (e) {
       console.error(e);
@@ -111,9 +141,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
             {/* DROPDOWN NOTIFICATIONS */}
             {showNotifMenu && (
               <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-200">
-                <div className="px-4 py-2 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Notifications</p>
-                  {unreadCount > 0 && <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">{unreadCount}</span>}
+                <div className="px-4 py-3 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Notifications</p>
+                    {unreadCount > 0 && <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">{unreadCount}</span>}
+                  </div>
+                  {notifications.length > 0 && (
+                    <button 
+                      onClick={clearAllNotifications}
+                      className="text-[10px] font-bold text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors"
+                    >
+                      Tout effacer
+                    </button>
+                  )}
                 </div>
 
                 {notifications.length === 0 ? (
@@ -121,16 +161,27 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 ) : (
                   <div className="flex flex-col">
                     {notifications.map(notif => (
-                      <button
+                      <div
                         key={notif.id}
                         onClick={() => markAsRead(notif.id, notif.type)}
-                        className={`text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-50 border-last-transparent dark:border-slate-800/50 ${notif.is_read ? 'opacity-60' : 'bg-blue-50/30'}`}
+                        className={`group/item relative text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-50 border-last-transparent dark:border-slate-800/50 cursor-pointer ${notif.is_read ? 'opacity-60' : 'bg-blue-50/30'}`}
                       >
-                        <p className={`text-sm ${notif.is_read ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100 font-bold'}`}>
-                          {notif.title}
-                        </p>
-                        <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.message}</p>
-                      </button>
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1">
+                            <p className={`text-sm ${notif.is_read ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100 font-bold'}`}>
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                          </div>
+                          <button
+                            onClick={(e) => deleteNotification(e, notif.id)}
+                            className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all opacity-0 group-hover/item:opacity-100"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
