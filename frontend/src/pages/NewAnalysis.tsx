@@ -18,25 +18,38 @@ const DOC_TYPES = {
   rib: { id: 'rib', label: "RIB" },
   releves: { id: 'releves', label: "3 derniers relevés bancaires" },
   amortissement: { id: 'amortissement', label: "Tableaux d'amortissement" },
+  compromis: { id: 'compromis', label: "Compromis de vente / Promesse" },
+  simulation_pret: { id: 'simulation_pret', label: "Simulation de prêt en cours" },
+  devis_travaux: { id: 'devis_travaux', label: "Devis travaux signé(s)" },
   kbis: { id: 'kbis', label: "Extrait KBIS (-3 mois)" },
   statuts: { id: 'statuts', label: "Statuts mis à jour" },
   bilan1: { id: 'bilan_n', label: "Bilan Complet (Année N)" },
   bilan2: { id: 'bilan_n1', label: "Bilan Complet (Année N-1)" },
   liasse: { id: 'liasse_fiscale', label: "Liasse Fiscale" },
-  releves_pro: { id: 'releves_pro', label: "3 derniers relevés bancaires PRO" }
+  releves_pro: { id: 'releves_pro', label: "3 derniers relevés bancaires PRO" },
+  business_plan: { id: 'business_plan', label: "Business Plan + Prévisionnel 3 ans" },
+  bail_commercial: { id: 'bail_commercial', label: "Bail commercial ou promesse" }
 };
 
 const CREDIT_TYPES_PARTICULIER = {
-  'personnel': { label: 'Prêt Personnel', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
-  'affecte': { label: 'Prêt Affecté', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
-  'renouvelable': { label: 'Crédit Renouvelable', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] }
+  'immobilier':      { label: 'Prêt Immobilier',       docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.amortissement, DOC_TYPES.compromis] },
+  'travaux':         { label: 'Prêt Travaux',          docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.devis_travaux] },
+  'affecte':         { label: 'Prêt Affecté (Auto...)', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
+  'personnel':       { label: 'Prêt Personnel',        docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
+  'rachat_credits':  { label: 'Rachat de Crédits',     docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.amortissement] },
+  'renouvelable':    { label: 'Crédit Renouvelable',   docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib] },
 };
 
 const CREDIT_TYPES_ENTREPRISE = {
-  'tresorerie': { label: 'Besoin de Trésorerie', docs: [DOC_TYPES.kbis, DOC_TYPES.statuts, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
-  'investissement': { label: 'Prêt Investissement', docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
-  'bail': { label: 'Crédit-Bail / Leasing', docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.releves_pro, DOC_TYPES.rib] }
+  'investissement':    { label: 'Prêt Investissement',          docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
+  'immobilier_pro':   { label: 'Immobilier Professionnel',     docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib, DOC_TYPES.bail_commercial] },
+  'creation_reprise': { label: 'Création / Reprise',          docs: [DOC_TYPES.kbis, DOC_TYPES.statuts, DOC_TYPES.business_plan, DOC_TYPES.rib, DOC_TYPES.releves_pro] },
+  'bail':             { label: 'Crédit-Bail / Leasing',       docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
+  'tresorerie':       { label: 'Besoin de Trésorerie',        docs: [DOC_TYPES.kbis, DOC_TYPES.statuts, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
 };
+
+// Types de projet où l'apport est pertinent
+const PROJET_AVEC_APPORT = ['immobilier', 'travaux', 'affecte', 'immobilier_pro', 'investissement', 'creation_reprise', 'bail'];
 
 type CategoryType = 'particulier' | 'entreprise';
 
@@ -52,6 +65,8 @@ export default function NewAnalysis() {
     amount: '',
     creditType: 'personnel',
     hasCredits: false,
+    hasApport: false,
+    apportAmount: '',
     companyName: ''
   });
 
@@ -136,8 +151,16 @@ export default function NewAnalysis() {
       formData.append('projectType', clientInfo.creditType);
       formData.append('email', clientInfo.email);
       formData.append('phone', clientInfo.phone);
+      // Apport personnel : 0 si non renseigné ou projet sans apport
+      const apportValue = (clientInfo.hasApport && clientInfo.apportAmount) ? clientInfo.apportAmount : '0';
+      formData.append('apport_personnel', apportValue);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/analyze_dashboard/`, { method: 'POST', body: formData });
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/analyze_dashboard/`, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData
+      });
       const result = await response.json();
       const config = activeCategory === 'particulier' ? CREDIT_TYPES_PARTICULIER : CREDIT_TYPES_ENTREPRISE;
 
@@ -255,6 +278,31 @@ export default function NewAnalysis() {
                       <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Inclure les tableaux d'amortissement en cours.</p>
                     </div>
                   </label>
+                )}
+                {PROJET_AVEC_APPORT.includes(clientInfo.creditType) && (
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-4 p-4 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100/50 dark:border-emerald-900/30 rounded-2xl cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                      <input type="checkbox" name="hasApport" checked={clientInfo.hasApport} onChange={handleInfoChange} className="w-5 h-5 text-emerald-600 dark:text-emerald-400 rounded-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-tight uppercase">Apport personnel disponible ?</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Un apport ≥ 20% du montant améliore significativement le dossier.</p>
+                      </div>
+                    </label>
+                    {clientInfo.hasApport && (
+                      <div className="relative">
+                        <Euro className="absolute right-5 top-4 text-emerald-400 dark:text-emerald-600 w-5 h-5" />
+                        <input
+                          type="number"
+                          name="apportAmount"
+                          value={clientInfo.apportAmount}
+                          onChange={handleInfoChange}
+                          placeholder="Ex : 20000"
+                          className="w-full px-5 py-3.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl focus:bg-white dark:focus:bg-slate-900 transition-all outline-none text-sm font-bold text-slate-800 dark:text-slate-100"
+                        />
+                        <label className="block text-[9px] font-bold text-emerald-600 dark:text-emerald-500 mt-1.5 ml-1 uppercase tracking-wider">Montant de l'apport (€)</label>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

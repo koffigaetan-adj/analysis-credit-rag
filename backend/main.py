@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import typing
 import io
@@ -29,7 +29,6 @@ def run_migrations():
     engine = create_engine(SQLALCHEMY_DATABASE_URL)
     with engine.connect() as connection:
         try:
-            # Tenter d'ajouter la colonne rejection_reason si elle manque
             connection.execute(text("ALTER TABLE account_requests ADD COLUMN IF NOT EXISTS rejection_reason TEXT;"))
             connection.commit()
             print("Migration 'rejection_reason' vérifiée/appliquée.")
@@ -40,8 +39,6 @@ def run_migrations():
 def on_startup():
     print("Exécution du startup...")
     run_migrations()
-    
-    # Le seed ne s'exécute que si ENABLE_SEED est à 'true' (par défaut non pour éviter les conflits)
     if os.getenv("ENABLE_SEED", "false").lower() == "true":
         print("Exécution du seed automatique...")
         seed_super_admin()
@@ -71,7 +68,6 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 client = Groq(api_key=GROQ_API_KEY)
 
-# Utilisation du modèle Llama 3 puissant et rapide pour l'extraction et l'analyse
 MODEL_NAME = "llama-3.3-70b-versatile"
 
 # --- 2. MODÈLES DE DONNÉES ---
@@ -84,7 +80,7 @@ class ChatRequest(BaseModel):
 class GlobalChatRequest(BaseModel):
     message: str
     userName: str
-    session_id: typing.Optional[str] = None # Pour rattacher le message à la bonne session
+    session_id: typing.Optional[str] = None
 
 class ChatSessionCreate(BaseModel):
     title: typing.Optional[str] = "Nouvelle discussion"
@@ -103,6 +99,7 @@ def extract_text_from_pdf(file_content: bytes) -> str:
         return "\n".join(text_parts) + "\n" if text_parts else ""
     except: return ""
 
+
 def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
     is_particulier = (client_info.get('clientType', '').lower() == 'particulier')
     
@@ -113,11 +110,22 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
         TEXTE BRUT : {extracted_text[0:40000]}
         
         Trouve ou estime les montants ANNUELS suivants en euros.
-        IMPORTANT: Renvoyer UNIQUEMENT des nombres entiers ou décimaux (floats) sans aucun texte ni symbole monétaire ni calcul (ex: 7766.2, 0). Les calculs arithmétiques comme "2500 * 3" sont INTERDITS, tu dois faire les mathématiques toi-même et envoyer le résultat final sous forme de type de donnée `Number` valide en JSON.
-        - revenus_annuels : Ensemble des salaires nets, primes ou pensions sur un an. (Si c'est mensuel, multiplie par 12).
-        - charges_annuelles : Loyer annuel, charges locatives, pensions versées (hors crédits).
-        - mensualites_credits : Le total mensuel des crédits en cours identifiés. 
-        - epargne_estimee : Le total de l'épargne ou placements disponibles (livrets, assurance vie...).
+        REGLE ABSOLUE N°1 — JSON STRICT : Les valeurs des champs numeriques DOIVENT etre des nombres uniquement. JAMAIS d'expressions mathematiques, JAMAIS de calculs, JAMAIS de formules dans le JSON.
+        MAUVAIS (INTERDIT) : "revenus_annuels": 2500 * 12 + 500     ← ceci provoque une erreur critique
+        BON (OBLIGATOIRE) : "revenus_annuels": 30500                 ← tu calcules d'abord dans ta tete, puis tu mets le resultat
+        Si tu dois multiplier, additionner ou soustraire des valeurs, fais-le AVANT d'ecrire le JSON et n'ecris QUE le resultat final.
+        REGLE ABSOLUE N°2 — TYPES : Pour les champs numeriques : uniquement float ou int. Pour les champs texte : uniquement string.
+        IMPORTANT: Renvoyer UNIQUEMENT des nombres entiers ou décimaux (floats) pour les champs numériques, sans texte ni symbole monétaire ni calcul. Pour les champs texte, utiliser une chaîne de caractères. Les calculs arithmétiques comme "2500 * 3" sont INTERDITS (fais le calcul toi-même).
+        
+        CHAMPS OBLIGATOIRES :
+        - revenus_annuels : Ensemble des salaires nets, primes ou pensions sur un an. (Si mensuel, MULTIPLIER par 12).
+        - charges_annuelles : Loyer annuel, charges locatives, pensions alimentaires versées (hors crédits en cours).
+        - mensualites_credits : Total MENSUEL de tous les crédits en cours (consommation, auto, immo). DOIT être un montant MENSUEL.
+        - epargne_estimee : Total de l'épargne ou placements disponibles (livrets, PEL, assurance vie...).
+        - apport_personnel : Montant disponible comme apport pour le projet (épargne dédiée, aide familiale). Si non mentionné, mettre 0.
+        - nb_personnes_charge : Nombre de personnes à charge (enfants, personnes dépendantes). Si non mentionné, mettre 0.
+        - situation_professionnelle : Type de contrat ou statut. Valeurs possibles : "CDI", "CDD", "Intérim", "Indépendant", "Gérant", "Fonctionnaire", "Retraité", "Sans emploi", "Inconnu".
+        
         Trouve également le nom exact figurant sur le document.
         FORMAT JSON OBLIGATOIRE :
         {{
@@ -125,87 +133,147 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
             "revenus_annuels": 36000,
             "charges_annuelles": 8400,
             "mensualites_credits": 500,
-            "epargne_estimee": 15000
+            "epargne_estimee": 15000,
+            "apport_personnel": 10000,
+            "nb_personnes_charge": 2,
+            "situation_professionnelle": "CDI"
         }}
         """
     else:
         return f"""
-        EXTRACTION DE DONNEES NUMERIQUES UNIQUEMENT.
+        EXTRACTION DE DONNEES NUMERIQUES UNIQUEMENT POUR UNE ENTREPRISE.
         Document de : {client_info.get('fullName')} | TYPE : {client_info.get('clientType')}
         TEXTE BRUT : {extracted_text[0:40000]}
         
         Trouve ou estime les montants suivants en euros pour le dernier exercice (N) et l'exercice précédent (N-1).
-        IMPORTANT: Renvoyer UNIQUEMENT des nombres entiers ou décimaux (floats) sans aucun texte ni symbole monétaire ni calcul (ex: 150000.5, 0). Les formules ou opérations arithmétiques sont INTERDITES, calcule la valeur toi-même si besoin et envoie le résultat final brut.
-        Trouve également le nom exact (Personne ou Entreprise) figurant sur le document.
+        REGLE ABSOLUE N°1 — JSON STRICT : Les valeurs numeriques DOIVENT etre des nombres uniquement. JAMAIS d'expressions mathematiques dans le JSON.
+        MAUVAIS (INTERDIT) : "revenue": 450000 + 50000     ← ceci provoque une erreur critique
+        BON (OBLIGATOIRE)  : "revenue": 500000             ← tu calcules d'abord dans ta tete, puis tu mets le resultat final
+        REGLE ABSOLUE N°2 — TYPES : Pour les champs numeriques : uniquement float ou int. Pour les champs texte : uniquement string.
+        IMPORTANT: Renvoyer UNIQUEMENT des nombres entiers ou décimaux (floats) pour les champs numériques. Les formules ou opérations arithmétiques sont INTERDITES.
+        
+        CHAMPS OBLIGATOIRES :
+        - revenue : Chiffre d'affaires HT de l'exercice N.
+        - revenue_n_minus_1 : Chiffre d'affaires HT de l'exercice N-1.
+        - ebitda : EBITDA (Excédent Brut d'Exploitation / EBE) de l'exercice N. Si non indiqué, estimer à partir du résultat d'exploitation.
+        - ebitda_n_minus_1 : EBITDA de l'exercice N-1.
+        - net_income : Résultat net de l'exercice N.
+        - net_income_n_minus_1 : Résultat net de l'exercice N-1.
+        - equity : Capitaux propres (fonds propres) totaux.
+        - total_debt : Total des dettes financières (court terme + long terme).
+        - cash_flow : Cash flow d'exploitation (capacité d'autofinancement / CAF). Si non indiqué, estimer à partir du résultat net + amortissements.
+        - working_capital : Besoin en fonds de roulement (BFR). Si non indiqué, mettre 0.
+        - anciennete_annees : Nombre d'années depuis la création de l'entreprise. Si inconnu, mettre 0.
+        - secteur_activite : Secteur d'activité principal (ex: "BTP", "Commerce de détail", "Restauration", "Tech/IT", "Industrie", "Services"). Mettre "Inconnu" si non identifié.
+        - garanties_proposees : Garanties mentionnées dans le document (ex: "Hypothèque", "Caution personnelle du gérant", "Nantissement"). Mettre "Aucune" si non mentionné.
+        
+        Trouve également le nom exact (Entreprise ou Dirigeant) figurant sur le document.
         FORMAT JSON OBLIGATOIRE :
         {{
             "extracted_name": "Nom Exact Trouvé",
-            "revenue": 150000,
-            "revenue_n_minus_1": 140000,
-            "ebitda": 25000,
-            "ebitda_n_minus_1": 20000,
-            "net_income": 20000,
-            "net_income_n_minus_1": 15000,
-            "equity": 50000,
-            "total_debt": 10000,
-            "cash_flow": 5000,
-            "working_capital": 2000
+            "revenue": 500000,
+            "revenue_n_minus_1": 450000,
+            "ebitda": 60000,
+            "ebitda_n_minus_1": 50000,
+            "net_income": 30000,
+            "net_income_n_minus_1": 25000,
+            "equity": 100000,
+            "total_debt": 80000,
+            "cash_flow": 45000,
+            "working_capital": 15000,
+            "anciennete_annees": 7,
+            "secteur_activite": "Commerce de détail",
+            "garanties_proposees": "Hypotheque"
         }}
         """
 
+
+# ✅ FONCTION CORRIGÉE — désormais bien définie comme fonction autonome
 def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict, ratios_data: dict) -> str:
     common_prompt = f"""
     RÔLE : Analyste crédit expérimenté dans une banque.
-    Tu dois évaluer la solidité financière et le niveau de risque d’un dossier de financement.
+    Tu dois évaluer la solidité financière et le niveau de risque d'un dossier de financement.
     
-    DOSSIER : {client_info.get('fullName')} | MONTANT DEMANDÉ : {client_info.get('amount')}€
+    DOSSIER : {client_info.get('fullName')} | MONTANT DEMANDÉ : {client_info.get('amount')}€ | TYPE : {client_info.get('clientType')} | PROJET : {client_info.get('projectType')}
     
-    Voici les résultats EXACTS calculés par notre moteur de risque (ne les modifie pas) :
-    - Score : {score_data['score']}/100
-    - Décision technique de base : {score_data['decision']}
+    Voici les résultats EXACTS calculés par notre moteur de risque déterministe (NE LES MODIFIE PAS, utilise-les comme base) :
+    - Score de risque : {score_data['score']}/100
+    - Décision technique : {score_data['decision']}
+    - Fiabilité de paiement : {score_data.get('payment_reliability', 'N/A')}
+    - Tendance du compte : {score_data.get('account_trend', 'N/A')}
     - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
     - Facteurs positifs identifiés : {score_data.get('technical_opportunities', [])}
     
-    CONTEXTE TEXTUEL BRUT EXTRAIT (Peut inclure patrimoine, garanties, historique) : 
+    CONTEXTE TEXTUEL BRUT EXTRAIT DU DOCUMENT (Peut inclure patrimoine, garanties, historique, commentaires) :
     {extracted_text[0:15000]}
     
     Ta mission :
-    1. Analyse les informations fournies (revenus, charges, dettes, patrimoine, historique, projet financé, montant demandé, etc.).
-    2. Vérifie la cohérence globale entre le niveau de revenus ou CA, la capacité de remboursement, le montant demandé et l'apport.
-    3. Signale clairement tout élément disproportionné ou irréaliste (ex: montant demandé énorme par rapport au CA/revenu).
-    4. Ne donne JAMAIS une conclusion "parfaitement favorable" ou ne valide pas un projet si les ratios sont tendus, si c'est irréaliste ou surdimensionné.
-    5. Propose des ajustements réalistes (montant plus faible, apport) ou conditions à respecter.
-    6. Conclus avec un niveau de risque (faible/modéré/élevé), une recommandation claire (favorable, sous conditions, défavorable), et 2 ou 3 pistes d'amélioration concrètes.
-    7. Soit détaillé le plus possible dans tes explications.
+    1. Analyse toutes les informations disponibles (revenus, charges, dettes, ratios, patrimoine, garanties, ancienneté, secteur, projet financé, montant demandé, apport).
+    2. Vérifie la cohérence globale entre la capacité de remboursement réelle et le montant demandé.
+    3. Signale clairement tout élément disproportionné, irréaliste ou manquant (ex: absence d'apport, dossier incomplet).
+    4. Ne valide JAMAIS un projet si les ratios sont tendus ou si le dossier est incomplet — nuance toujours ta réponse.
+    5. Propose des ajustements réalistes (montant plus faible, apport à constituer, garanties à apporter, conditions de remboursement).
+    6. Conclus avec : niveau de risque global (faible/modéré/élevé/très élevé), recommandation claire et 2-3 pistes d'amélioration concrètes.
+    7. Sois détaillé et professionnel dans tes explications.
     
     FORMAT JSON OBLIGATOIRE EN SORTIE :
     {{
-        "risks": ["Liste claire des points bloquants ou fragilités", "Risque 2", ...],
-        "opportunities": ["Points forts du dossier", "Ajustements proposés", ...],
+        "risks": ["Point bloquant ou fragilité 1", "Risque 2", ...],
+        "opportunities": ["Point fort 1", "Ajustement ou condition proposée", ...],
         "summary": "1-2 paragraphes d'analyse argumentée et nuancée.\\n\\nSynthèse :\\nNiveau de risque : ...\\nDécision : ...\\nRecommandations : ..."
     }}
     """
-    
+
     is_particulier = (client_info.get('clientType', '').lower() == 'particulier')
-    
+
     if is_particulier:
+        mensualites_annuelles = ratios_data.get('mensualites_annuelles', fin_data.get('mensualites_credits', 0) * 12)
         return f"""{common_prompt}
         
-        DONNÉES PARTICULIER CALCULEES :
-        - Revenus Annuels : {fin_data.get('revenus_annuels', 0)} €
-        - Charges Annuelles : {fin_data.get('charges_annuelles', 0)} €
-        - Mensualités Crédits en cours : {fin_data.get('mensualites_credits', 0)} € / mois
-        - Taux d'endettement calculé : {ratios_data.get('taux_endettement_personnel_percent', 0)} %
-        - Reste à vivre annuel : {ratios_data.get('reste_a_vivre_annuel', 0)} €
+        ══ DONNÉES PARTICULIER ══
+        Situation professionnelle     : {fin_data.get('situation_professionnelle', 'Inconnu')}
+        Revenus Annuels nets          : {fin_data.get('revenus_annuels', 0):,.0f} €
+        Charges Annuelles fixes       : {fin_data.get('charges_annuelles', 0):,.0f} € (loyer, pensions...)
+        Mensualités crédits (mensuel) : {fin_data.get('mensualites_credits', 0):,.0f} €/mois → {mensualites_annuelles:,.0f} €/an
+        Total charges annuelles       : {ratios_data.get('total_charges_annuelles', 0):,.0f} €
+        Personnes à charge            : {fin_data.get('nb_personnes_charge', 0)}
+        Épargne estimée               : {fin_data.get('epargne_estimee', 0):,.0f} €
+        Apport personnel              : {fin_data.get('apport_personnel', 0):,.0f} €
+        
+        ══ RATIOS CALCULÉS ══
+        Taux d'endettement            : {ratios_data.get('taux_endettement_personnel_percent', 0)} % (norme bancaire ≤ 35%)
+        Reste à vivre annuel brut     : {ratios_data.get('reste_a_vivre_annuel', 0):,.0f} €
+        Reste à vivre ajusté          : {ratios_data.get('reste_a_vivre_annuel_ajuste', 0):,.0f} € (après personnes à charge)
+        Capacité remboursement dispo  : {ratios_data.get('capacite_remboursement_mensuelle', 0):,.0f} €/mois
         """
     else:
         return f"""{common_prompt}
         
-        DONNÉES ENTREPRISE CALCULEES :
-        - Chiffre d'affaires : {fin_data.get('revenue', 0)} €
-        - Résultat Net : {fin_data.get('net_income', 0)} €
-        - Dettes Totales : {fin_data.get('total_debt', 0)} €
+        ══ DONNÉES ENTREPRISE ══
+        Secteur d'activité            : {fin_data.get('secteur_activite', 'Inconnu')}
+        Ancienneté                    : {fin_data.get('anciennete_annees', 0)} an(s)
+        Garanties proposées           : {fin_data.get('garanties_proposees', 'Aucune')}
+        
+        Chiffre d'affaires N          : {fin_data.get('revenue', 0):,.0f} €
+        Chiffre d'affaires N-1        : {fin_data.get('revenue_n_minus_1', 0):,.0f} €
+        EBITDA N                      : {fin_data.get('ebitda', 0):,.0f} €
+        EBITDA N-1                    : {fin_data.get('ebitda_n_minus_1', 0):,.0f} €
+        Résultat Net N                : {fin_data.get('net_income', 0):,.0f} €
+        Capitaux Propres              : {fin_data.get('equity', 0):,.0f} €
+        Dettes Totales                : {fin_data.get('total_debt', 0):,.0f} €
+        Cash Flow                     : {fin_data.get('cash_flow', 0):,.0f} €
+        
+        ══ RATIOS CALCULÉS ══
+        Marge Nette                   : {ratios_data.get('net_margin_percent', 0)} %
+        Marge EBITDA                  : {ratios_data.get('ebitda_margin_percent', 0)} %
+        Croissance CA (N vs N-1)      : {ratios_data.get('croissance_ca_percent', 0)} %
+        Croissance EBITDA             : {ratios_data.get('croissance_ebitda_percent', 0)} %
+        Endettement / Fonds Propres   : {ratios_data.get('debt_to_equity_percent', 0)} %
+        Levier EBITDA (Dettes/EBITDA) : {ratios_data.get('levier_ebitda', 0)}x  (sain si < 3x)
+        DSCR (Cash Flow / Annuités)   : {ratios_data.get('dscr', 0)}  (sain si > 1.2)
+        Fonds propres négatifs        : {'OUI — Risque critique' if ratios_data.get('equity_is_negative') else 'Non'}
         """
+
 
 # --- 4. ROUTES API ---
 
@@ -217,6 +285,7 @@ async def analyze_dashboard(
     projectType: str = Form(...),
     email: typing.Optional[str] = Form(None),
     phone: typing.Optional[str] = Form(None),
+    apport_personnel: typing.Optional[str] = Form(None),
     files: typing.List[UploadFile] = File(...),
     db: Session = Depends(database.get_db)
 ):
@@ -228,8 +297,6 @@ async def analyze_dashboard(
         if mime_type == "application/pdf":
             text = extract_text_from_pdf(file_bytes)
             full_extracted_text_parts.append(f"\n-- {file.filename} --\n{text}\n")
-        # Groq doesn't natively support image vision for Llama 3 like Gemini 1.5,
-        # so we focus purely on textual extraction from PDFs.
 
     full_extracted_text = "".join(full_extracted_text_parts)
 
@@ -241,7 +308,7 @@ async def analyze_dashboard(
     }, full_extracted_text)
     
     try:
-        # PHASE 1: Extraction with Groq
+        # PHASE 1: Extraction avec Groq
         response = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model=MODEL_NAME,
@@ -250,8 +317,15 @@ async def analyze_dashboard(
         )
         json_text = response.choices[0].message.content
         extracted_data = json.loads(json_text)
+
+        # Si l'apport a été saisi manuellement, il prend le dessus sur l'extraction LLM
+        if apport_personnel is not None:
+            try:
+                extracted_data["apport_personnel"] = float(str(apport_personnel).replace(" ", "").replace(",", "."))
+            except (ValueError, TypeError):
+                extracted_data["apport_personnel"] = 0.0
         
-        # PHASE 2: Deterministic Scoring
+        # PHASE 2: Scoring déterministe
         scoring_result = scoring_engine.analyze_financials(extracted_data, {
             "clientType": clientType,
             "amount": amount
@@ -261,7 +335,7 @@ async def analyze_dashboard(
         score_data = scoring_result["scoring"]
         ratios_data = scoring_result["ratios"]
             
-        # PHASE 3: Interpretation with Groq
+        # PHASE 3: Interprétation IA avec Groq
         interpretation_prompt = build_interpretation_prompt({
             "fullName": fullName, 
             "amount": amount, 
@@ -278,7 +352,7 @@ async def analyze_dashboard(
         final_json_text = interpretation_response.choices[0].message.content
         final_ia_data = json.loads(final_json_text)
         
-        # Assemblage Final pour le Frontend
+        # Assemblage final pour le Frontend
         final_response = {
             "score": score_data["score"],
             "decision": score_data["decision"],
@@ -299,12 +373,10 @@ async def analyze_dashboard(
 
 @app.get("/history/")
 def get_history(db: Session = Depends(database.get_db), current_user: database.User = Depends(get_current_user)):
-    # Tout le monde ne voit que ses propres dossiers, même les super admins
     apps = db.query(database.Application).filter(database.Application.user_id == current_user.id).order_by(database.Application.created_at.desc()).all()
 
     results = []
     for a in apps:
-        # On force la conversion du JSON stocké en String vers un objet Python
         def safe_json(data):
             if isinstance(data, (list, dict)): return data
             try: return json.loads(data or "{}")
@@ -323,8 +395,8 @@ def get_history(db: Session = Depends(database.get_db), current_user: database.U
             "amount": a.amount,
             "score": a.score,
             "decision": a.decision,
-            "ia_summary": a.ia_summary,   # Pour le backend/db
-            "summary": a.ia_summary,      # Pour le composant React (important !)
+            "ia_summary": a.ia_summary,
+            "summary": a.ia_summary,
             "risks": safe_list(a.risks),
             "opportunities": safe_list(a.opportunities),
             "financials": safe_json(a.financial_data),
@@ -430,12 +502,10 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
         session_id = request.session_id
         session_record = None
         
-        # Trouver ou créer une session
         if session_id:
             session_record = db.query(database.ChatSession).filter(database.ChatSession.id == session_id, database.ChatSession.user_id == current_user.id).first()
         
         if not session_record:
-            # Créer une nouvelle session si non fournie ou introuvable
             title = request.message[:30] + "..." if len(request.message) > 30 else request.message
             session_record = database.ChatSession(
                 user_id=current_user.id,
@@ -447,14 +517,12 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
             db.refresh(session_record)
             session_id = session_record.id
 
-        # Mettre à jour les messages avec la question de l'utilisateur
         current_messages = session_record.messages if isinstance(session_record.messages, list) else json.loads(session_record.messages or "[]")
         user_msg = {"role": "user", "content": request.message}
         current_messages.append(user_msg)
         
-        # Construire l'historique pour le prompt (limite aux 10 derniers)
         history_context = ""
-        recent_messages = current_messages[-10:-1] # exclure le dernier message qu'on vient d'ajouter
+        recent_messages = current_messages[-10:-1]
         for msg in recent_messages:
             history_context += f"{'Utilisateur' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}\n"
             
@@ -473,7 +541,6 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
             "RÈGLE 7 : Tu PEUX ET DOIS faire des calculs mathématiques si demandé. Tu excelles en calcul.\n"
             "RÈGLE 8 : Tu peux faire des recherches sur internet si demandé.\n"
             "RÈGLE 9 : Tu dois donner des réponses dans la langue que la personne t'a écrit.\n"
-          
             "Voici les messages précédents de la conversation pour le contexte (optionnel):\n"
             f"{history_context}"
         )
@@ -492,13 +559,9 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
         ai_response = response.choices[0].message.content
         from sqlalchemy.orm.attributes import flag_modified
         
-        # Enregistrer la réponse de l'IA
         current_messages.append({"role": "assistant", "content": ai_response})
-        
-        # Forcer SQLAlchemy à détecter le changement du JSON
         session_record.messages = list(current_messages)
         flag_modified(session_record, "messages")
-        
         db.commit()
 
         return {"response": ai_response, "session_id": session_id}
@@ -515,7 +578,6 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
     if current_user.role != "SUPER_ADMIN" and app_record.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Non autorisé")
         
-    # Notification de suppression
     delete_notif = database.Notification(
         user_id=current_user.id,
         title="Analyse supprimée",
@@ -523,14 +585,12 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
         type="INFO"
     )
     db.add(delete_notif)
-
     db.delete(app_record)
     db.commit()
     return {"message": "Supprimé"}
 
 def send_contact_email(email: str, subject: str, message: str, attachment_name: typing.Optional[str] = None):
-    # Envoi d'un vrai email via le service SMTP configuré
-    target_admin_email = os.getenv("FROM_EMAIL", "gaetan.eyes@gmail.com") # ou une autre adresse fixe gérant le support
+    target_admin_email = os.getenv("FROM_EMAIL", "gaetan.eyes@gmail.com")
     
     html_content = f"""
     <html>
@@ -542,14 +602,11 @@ def send_contact_email(email: str, subject: str, message: str, attachment_name: 
         <p>{message.replace(chr(10), '<br>')}</p>
     """
     if attachment_name:
-        html_content += f"<p><em>Une pièce jointe a été fournie : {attachment_name} (Stockage local non implémenté)</em></p>"
-    
+        html_content += f"<p><em>Une pièce jointe a été fournie : {attachment_name}</em></p>"
     html_content += "</body></html>"
     
-    # En production, envoyer à target_admin_email
     send_email_sync(target_admin_email, f"Contact Kaïs Analytics : {subject}", html_content)
 
-    # Email de confirmation (Auto-reply) pour l'utilisateur
     auto_reply_html = f"""
     <html>
       <body>
@@ -578,9 +635,6 @@ async def handle_contact(
     attachment_name = None
     if file:
         attachment_name = file.filename
-        # In a real app, save the file to disk/S3 or attach its bytes directly to the email
-        # file_bytes = await file.read()
-    
     background_tasks.add_task(send_contact_email, email, subject, message, attachment_name)
     return {"message": "Demande envoyée avec succès."}
 
@@ -619,7 +673,6 @@ def save_application(req: SaveAppRequest, db: Session = Depends(database.get_db)
         )
         db.add(new_app)
         
-        # Notification d'enregistrement
         save_notif = database.Notification(
             user_id=current_user.id,
             title="Analyse enregistrée",
@@ -627,7 +680,6 @@ def save_application(req: SaveAppRequest, db: Session = Depends(database.get_db)
             type="INFO"
         )
         db.add(save_notif)
-        
         db.commit()
         db.refresh(new_app)
         return {"id": new_app.id, "message": "Enregistré avec succès"}
@@ -642,9 +694,7 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
         from email.mime.text import MIMEText
         from email.mime.image import MIMEImage
         import smtplib
-        import os
 
-        # Verify SMTP Config
         if not os.getenv("SMTP_SERVER") or not os.getenv("SMTP_USERNAME") or not os.getenv("SMTP_PASSWORD"):
             print("⚠️ [EMAIL SIMULATION] Configuration SMTP manquante.")
             print(f"Rapport PDF '{attachment_name}' serait envoyé à {email}")

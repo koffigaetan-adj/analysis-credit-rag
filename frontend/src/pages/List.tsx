@@ -78,14 +78,22 @@ export default function Applications() {
   const getStatusBadge = (decision: string) => {
     const baseClass = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-colors border";
     switch (decision) {
+      case 'Très Favorable':
+        return <span className={`${baseClass} bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800`}><CheckCircle2 className="w-3 h-3" /> Très Favorable</span>;
       case 'Favorable':
-        return <span className={`${baseClass} bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800`}><CheckCircle2 className="w-3 h-3" /> Favorable</span>;
+        return <span className={`${baseClass} bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800`}><CheckCircle2 className="w-3 h-3" /> Favorable</span>;
+      case 'Vigilance Modérée':
+        return <span className={`${baseClass} bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800`}><AlertTriangle className="w-3 h-3" /> Vigilance Modérée</span>;
+      case 'Vigilance Renforcée':
+        return <span className={`${baseClass} bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800`}><AlertTriangle className="w-3 h-3" /> Vigilance Renforcée</span>;
       case 'Défavorable':
         return <span className={`${baseClass} bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800`}><XCircle className="w-3 h-3" /> Défavorable</span>;
       case 'Vigilance':
         return <span className={`${baseClass} bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800`}><AlertTriangle className="w-3 h-3" /> Vigilance</span>;
+      case 'Erreur':
+        return <span className={`${baseClass} bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800`}><AlertTriangle className="w-3 h-3" /> Erreur</span>;
       default:
-        return <span className={`${baseClass} bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800`}><Clock className="w-3 h-3" /> Analyse</span>;
+        return <span className={`${baseClass} bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800`}><Clock className="w-3 h-3" /> {decision || "Analyse"}</span>;
     }
   };
 

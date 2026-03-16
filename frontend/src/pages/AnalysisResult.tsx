@@ -20,35 +20,60 @@ interface ClientInfo {
 }
 
 interface Financials {
-  // Nouveaux champs déterministes
+  // Champs déterministes entreprise
   revenue?: number;
+  revenue_n_minus_1?: number;
   net_income?: number;
+  net_income_n_minus_1?: number;
   equity?: number;
   total_debt?: number;
   cash_flow?: number;
   working_capital?: number;
+  ebitda?: number;
+  ebitda_n_minus_1?: number;
+  anciennete_annees?: number;
+  secteur_activite?: string;
+  garanties_proposees?: string;
+
+  // Ratios calculés entreprise (depuis scoring_engine → ratios)
   net_margin_percent?: number;
+  ebitda_margin_percent?: number;
+  croissance_ca_percent?: number;
+  croissance_ebitda_percent?: number;
   debt_to_equity_percent?: number;
+  levier_ebitda?: number;          // ✅ champ correct renvoyé par le backend
+  dscr?: number;
+  equity_is_negative?: boolean;
+
+  // Anciens champs legacy
+  debt_to_ebitda?: number;         // alias fallback
   debt_to_revenue_percent?: number;
+  turnover?: number;
+  net_profit?: number;
+
+  // Champs particulier
+  revenus_annuels?: number;
+  charges_annuelles?: number;
+  mensualites_credits?: number;
+  epargne_estimee?: number;
+  apport_personnel?: number;
+  nb_personnes_charge?: number;
+  situation_professionnelle?: string;
+
+  // Ratios calculés particulier
   taux_endettement_personnel_percent?: number;
   reste_a_vivre_annuel?: number;
+  reste_a_vivre_annuel_ajuste?: number;
+  total_charges_annuelles?: number;
+  capacite_remboursement_mensuelle?: number;
+  mensualites_annuelles?: number;
 
-  // Anciens champs
+  // Anciens champs legacy particulier
   monthly_income?: number;
   monthly_expenses?: number;
   debt_ratio?: number;
   rest_to_live?: number;
   savings_capacity?: number;
-  turnover?: number;
-  net_profit?: number;
-  ebitda?: number;
-  debt_to_ebitda?: number;
-
-  // Groq Extract fallback fields Particulier
-  revenus_annuels?: number;
-  charges_annuelles?: number;
-  mensualites_credits?: number;
-  epargne_estimee?: number;
 }
 
 interface ResultData {
@@ -93,7 +118,6 @@ export default function AnalysisResult() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // State for Email Modal
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailSelection, setEmailSelection] = useState<'me' | 'other'>('me');
   const [emailToSend, setEmailToSend] = useState('');
@@ -101,7 +125,6 @@ export default function AnalysisResult() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isEmailSuccessOpen, setIsEmailSuccessOpen] = useState(false);
 
-  // Set default email efficiently when possible
   useEffect(() => {
     try {
       const rawUser = localStorage.getItem('user');
@@ -121,11 +144,9 @@ export default function AnalysisResult() {
     }
   }, []);
 
-  // Détection dynamique du mode sombre pour les graphiques
   const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
-    // Forcer le thème clair pour l'impression du rapport documentaire
     const handleBeforePrint = () => {
       if (document.documentElement.classList.contains('dark')) {
         document.documentElement.classList.remove('dark');
@@ -156,7 +177,6 @@ export default function AnalysisResult() {
 
   const handleExport = async () => {
     try {
-      // Envoi d'une notification d'exportation
       await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications`, {
         method: 'POST',
         headers: {
@@ -183,11 +203,9 @@ export default function AnalysisResult() {
     setIsSendingEmail(true);
 
     try {
-      // 1. Generate PDF dynamically (similar to handleExport but returning Blob)
       const element = printRef.current || document.getElementById('section-to-print');
       if (!element) throw new Error("Element non trouvé");
 
-      // Temporarily remove dark mode for PDF generation if active
       const wasDark = document.documentElement.classList.contains('dark');
       if (wasDark) document.documentElement.classList.remove('dark');
 
@@ -200,7 +218,6 @@ export default function AnalysisResult() {
           useCORS: true,
           logging: false,
           onclone: (clonedDoc: HTMLDocument) => {
-            // Force Tailwind's @media print rules to apply on the cloned screen document
             const style = clonedDoc.createElement('style');
             let printRules = '';
             Array.from(document.styleSheets).forEach(sheet => {
@@ -227,7 +244,6 @@ export default function AnalysisResult() {
 
       if (wasDark) document.documentElement.classList.add('dark');
 
-      // 2. Prepare Form Data
       const formData = new FormData();
       formData.append('email', finalEmail);
       formData.append('subject', `Rapport d'Analyse - ${clientInfo.fullName}`);
@@ -235,18 +251,13 @@ export default function AnalysisResult() {
 
       const token = localStorage.getItem('token');
 
-      // 3. Send to API
       const response = await fetch(`${import.meta.env.VITE_API_URL}/send-report/`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
 
-      if (!response.ok) {
-        throw new Error("Erreur de l'envoi");
-      }
+      if (!response.ok) throw new Error("Erreur de l'envoi");
 
       setIsEmailSuccessOpen(true);
       setIsEmailModalOpen(false);
@@ -294,25 +305,31 @@ export default function AnalysisResult() {
   const reliability = resultData.payment_reliability || "Moyen";
   const trend = resultData.account_trend || "Stable";
 
-  // Configuration visuelle des graphiques adaptée au mode
   const plotlyFont = {
     family: 'Inter, sans-serif',
     size: 11,
     color: isDarkMode ? '#94a3b8' : '#64748b'
   };
 
+  // ✅ JAUGE CORRIGÉE — utilise levier_ebitda (champ réel du backend)
   const getGaugeConfig = () => {
     let val = 0;
-    let r_max = 100;
-    let suffix = "%";
+    let r_max = 8;
+    let suffix = "x";
 
     if (isCompany) {
-      if (fins.debt_to_equity_percent !== undefined) {
+      // Priorité : levier_ebitda (Dettes/EBITDA), fallback sur debt_to_equity_percent
+      if (fins.levier_ebitda !== undefined && fins.levier_ebitda !== null) {
+        val = fins.levier_ebitda;
+        r_max = 8;
+        suffix = "x";
+      } else if (fins.debt_to_equity_percent !== undefined) {
         val = fins.debt_to_equity_percent;
-        r_max = 200; // max 200% pour l'endettement sur capitaux propres
+        r_max = 200;
         suffix = "%";
-      } else {
-        val = fins.debt_to_ebitda || 0;
+      } else if (fins.debt_to_ebitda !== undefined) {
+        // fallback legacy
+        val = fins.debt_to_ebitda;
         r_max = 8;
         suffix = "x";
       }
@@ -348,18 +365,61 @@ export default function AnalysisResult() {
     };
   };
 
-  const handleDelete = () => {
-    setDeleteModalOpen(true);
+  // ✅ LABEL JAUGE CORRIGÉ
+  const getGaugeLabel = () => {
+    if (!isCompany) return "Taux d'endettement";
+    if (fins.levier_ebitda !== undefined && fins.levier_ebitda !== null) return "Levier EBITDA (Dette/EBE)";
+    if (fins.debt_to_equity_percent !== undefined) return "Dette / Fonds Propres";
+    return "Levier EBITDA (Dette/EBE)";
   };
+
+  // ✅ VALEUR AFFICHÉE SOUS LA JAUGE CORRIGÉE
+  const getGaugeValue = () => {
+    if (!isCompany) return `${fins.taux_endettement_personnel_percent ?? fins.debt_ratio ?? 0}%`;
+    if (fins.levier_ebitda !== undefined && fins.levier_ebitda !== null) return `${fins.levier_ebitda}x`;
+    if (fins.debt_to_equity_percent !== undefined) return `${fins.debt_to_equity_percent}%`;
+    return `0x`;
+  };
+
+  // ✅ WATERFALL CORRIGÉ — utilise les bons champs entreprise
+  const getWaterfallData = () => {
+    if (isCompany) {
+      const ca = fins.revenue ?? fins.turnover ?? 0;
+      const rn = fins.net_income ?? fins.net_profit ?? 0;
+      const charges = -(ca - rn);
+      return {
+        x: ["C.A.", "Charges", "R. Net"],
+        y: [ca, charges, rn],
+        text: [ca, charges, rn].map(v => `${Math.round(v).toLocaleString()}€`)
+      };
+    } else {
+      const revenus_m = fins.revenus_annuels !== undefined
+        ? fins.revenus_annuels / 12
+        : (fins.monthly_income ?? 0);
+      const charges_m = fins.charges_annuelles !== undefined
+        ? (fins.charges_annuelles / 12 + (fins.mensualites_credits ?? 0))
+        : (fins.monthly_expenses ?? 0);
+      const rav_m = fins.reste_a_vivre_annuel !== undefined
+        ? fins.reste_a_vivre_annuel / 12
+        : (fins.rest_to_live ?? revenus_m - charges_m);
+      return {
+        x: ["Revenus", "Charges", "Reste à vivre"],
+        y: [revenus_m, -charges_m, rav_m],
+        text: [revenus_m, -charges_m, rav_m].map(v => `${Math.round(v).toLocaleString()}€`)
+      };
+    }
+  };
+
+  const waterfallData = getWaterfallData();
+
+  const handleDelete = () => setDeleteModalOpen(true);
 
   const executeDelete = async () => {
     setIsDeleting(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${resultData.id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
         setDeleteModalOpen(false);
@@ -421,27 +481,53 @@ export default function AnalysisResult() {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/chat/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg.content, client_type: clientType, context: JSON.stringify({ analyse: resultData, client: clientInfo }) }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          message: userMsg.content,
+          client_type: clientType,
+          context: JSON.stringify({ analyse: resultData, client: clientInfo })
+        }),
       });
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.response || "Erreur serveur." }]);
-    } catch { setMessages(prev => [...prev, { role: 'assistant', content: "Erreur réseau." }]); } finally { setIsTyping(false); }
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: "Erreur réseau." }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const getDecisionStyle = (dec: string) => {
-    if (dec === 'Favorable') return { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-800 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800', icon: <CheckCircle className="w-8 h-8 text-emerald-500" /> };
-    if (dec === 'Vigilance') return { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-800 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', icon: <AlertTriangle className="w-8 h-8 text-amber-500" /> };
+    if (dec === 'Très Favorable') return { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-800 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800', icon: <CheckCircle className="w-8 h-8 text-emerald-500" /> };
+    if (dec === 'Favorable') return { bg: 'bg-green-50 dark:bg-green-950/30', text: 'text-green-800 dark:text-green-400', border: 'border-green-200 dark:border-green-800', icon: <CheckCircle className="w-8 h-8 text-green-500" /> };
+    if (dec === 'Vigilance Modérée') return { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-800 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', icon: <AlertTriangle className="w-8 h-8 text-amber-500" /> };
+    if (dec === 'Vigilance Renforcée') return { bg: 'bg-orange-50 dark:bg-orange-950/30', text: 'text-orange-800 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800', icon: <AlertTriangle className="w-8 h-8 text-orange-500" /> };
     return { bg: 'bg-red-50 dark:bg-red-950/30', text: 'text-red-800 dark:text-red-400', border: 'border-red-200 dark:border-red-800', icon: <XCircle className="w-8 h-8 text-red-500" /> };
   };
 
   const decisionStyle = getDecisionStyle(decision);
 
+  // ✅ RADAR CORRIGÉ — utilise levier_ebitda au lieu de debt_to_ebitda
+  const getRadarData = () => {
+    const solidite = Math.min(100, Math.max(0,
+      fins.equity_is_negative ? 0 : (fins.levier_ebitda !== undefined ? Math.max(0, 100 - (fins.levier_ebitda / 8) * 100) : 50)
+    ));
+    const margeNette = Math.min(100, Math.max(0, (fins.net_margin_percent ?? 0) * 4));
+    const margeEbitda = Math.min(100, Math.max(0, (fins.ebitda_margin_percent ?? 0) * 4));
+    const dscr = Math.min(100, Math.max(0, ((fins.dscr ?? 0) / 3) * 100));
+    const croissance = Math.min(100, Math.max(0, 50 + (fins.croissance_ca_percent ?? 0) * 2));
+    const maturite = Math.min(100, Math.max(0, fins.anciennete_annees ? Math.min(fins.anciennete_annees * 8, 100) : 50));
+    return [solidite, margeNette, margeEbitda, dscr, croissance, maturite];
+  };
+
   return (
     <div className="max-w-7xl mx-auto pb-20 px-6 mt-10 animate-fade-in text-left font-sans print:p-0 print:m-0 print:max-w-none">
-      <div id="section-to-print" className="space-y-10 print:space-y-8 print:w-full">
+      <div id="section-to-print" ref={printRef} className="space-y-10 print:space-y-8 print:w-full">
 
-        {/* --- EN-TÊTE D'IMPRESSION (VISIBLE ONLY ON PRINT) --- */}
+        {/* EN-TÊTE IMPRESSION */}
         <div className="hidden print:block border-b-2 border-slate-200 pb-6 mb-8 pt-4">
           <div className="flex justify-between items-end">
             <div>
@@ -457,7 +543,6 @@ export default function AnalysisResult() {
               </p>
             </div>
           </div>
-
           <div className="mt-8 grid grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2"><User className="w-4 h-4" /> Dossier / Entité</p>
@@ -485,7 +570,6 @@ export default function AnalysisResult() {
             <button
               onClick={() => setIsEmailModalOpen(true)}
               className="px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all flex items-center gap-2"
-              title="Envoyer par email"
             >
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline text-sm font-medium">Envoyer</span>
@@ -534,8 +618,9 @@ export default function AnalysisResult() {
           </div>
         </div>
 
-        {/* GRAPHIQUES RECONSTRUITS */}
+        {/* GRAPHIQUES */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-1 print:gap-8 print:break-inside-avoid">
+          {/* Jauge */}
           <div className="bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors">
             <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8 print:mb-6">Structure Financière</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[250px]">
@@ -547,22 +632,28 @@ export default function AnalysisResult() {
                 config={{ displayModeBar: false }}
               />
               <div className="flex flex-col justify-center space-y-4">
+                {/* ✅ Label et valeur dynamiques selon le type */}
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800 transition-colors">
                   <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? "Dette / Fonds Propres" : "Dette / EBE") : "Taux d'endettement"}
+                    {getGaugeLabel()}
                   </p>
                   <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-                    {isCompany ? (fins.debt_to_equity_percent !== undefined ? `${fins.debt_to_equity_percent}%` : `${fins.debt_to_ebitda || 0}x`) : `${fins.taux_endettement_personnel_percent ?? fins.debt_ratio ?? 0}%`}
+                    {getGaugeValue()}
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800 transition-colors">
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{isCompany ? "Capitaux Propres" : "Épargne estimée"}</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{((isCompany ? fins.equity : (fins.epargne_estimee ?? fins.savings_capacity)) || 0).toLocaleString()} €</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                    {isCompany ? "Capitaux Propres" : "Épargne estimée"}
+                  </p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                    {((isCompany ? fins.equity : (fins.epargne_estimee ?? fins.savings_capacity)) || 0).toLocaleString()} €
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Waterfall */}
           <div className="bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors print:break-inside-avoid">
             <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8 print:mb-6">Analyse des Flux</h3>
             <div className="h-[250px] print:h-[280px]">
@@ -570,21 +661,9 @@ export default function AnalysisResult() {
                 data={[{
                   type: "waterfall",
                   measure: ["relative", "relative", "total"],
-                  x: isCompany ? ["C.A.", "Charges", "R. Net"] : ["Revenus", "Charges", "Reste à vivre"],
-                  y: isCompany
-                    ? [fins.revenue ?? fins.turnover ?? 0, -(((fins.revenue ?? fins.turnover) || 0) - ((fins.net_income ?? fins.net_profit) || 0)), fins.net_income ?? fins.net_profit ?? 0]
-                    : [
-                      (fins.revenus_annuels !== undefined) ? (fins.revenus_annuels / 12) : (fins.revenue ? (fins.revenue / 12) : (fins.monthly_income ?? 0)),
-                      -((fins.charges_annuelles !== undefined) ? (fins.charges_annuelles / 12 + (fins.mensualites_credits ?? 0)) : (fins.revenue ? ((fins.revenue - (fins.net_income || 0)) / 12) : (fins.monthly_expenses ?? 0))),
-                      (fins.reste_a_vivre_annuel !== undefined) ? (fins.reste_a_vivre_annuel / 12) : ((fins.net_income ? (fins.net_income / 12) : (fins.rest_to_live ?? 0)))
-                    ],
-                  text: isCompany
-                    ? [fins.revenue ?? fins.turnover ?? 0, -(((fins.revenue ?? fins.turnover) || 0) - ((fins.net_income ?? fins.net_profit) || 0)), fins.net_income ?? fins.net_profit ?? 0].map(v => `${Math.round(v).toLocaleString()}€`)
-                    : [
-                      (fins.revenus_annuels !== undefined) ? (fins.revenus_annuels / 12) : (fins.revenue ? (fins.revenue / 12) : (fins.monthly_income ?? 0)),
-                      -((fins.charges_annuelles !== undefined) ? (fins.charges_annuelles / 12 + (fins.mensualites_credits ?? 0)) : (fins.revenue ? ((fins.revenue - (fins.net_income || 0)) / 12) : (fins.monthly_expenses ?? 0))),
-                      (fins.reste_a_vivre_annuel !== undefined) ? (fins.reste_a_vivre_annuel / 12) : ((fins.net_income ? (fins.net_income / 12) : (fins.rest_to_live ?? 0)))
-                    ].map(v => `${Math.round(v).toLocaleString()}€`),
+                  x: waterfallData.x,
+                  y: waterfallData.y,
+                  text: waterfallData.text,
                   textposition: "outside",
                   connector: { line: { color: "rgba(100, 116, 139, 0.2)" } },
                   decreasing: { marker: { color: "#ef4444", line: { color: "#ef4444", width: 2 } } },
@@ -606,6 +685,125 @@ export default function AnalysisResult() {
               />
             </div>
           </div>
+        </div>
+
+        {/* RADAR / KPIs SOLVABILITÉ */}
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm p-8 transition-colors print:break-inside-avoid">
+          {isCompany ? (
+            <>
+              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Radar des Ratios Clés</h3>
+              <div className="h-[320px]">
+                <Plot
+                  data={[{
+                    type: 'scatterpolar',
+                    r: getRadarData(),
+                    theta: ['Solidité\nFinancière', 'Marge\nNette', 'Marge\nEBITDA', 'Couverture\nDette (DSCR)', 'Croissance\nCA', 'Maturité\nEntreprise'],
+                    fill: 'toself',
+                    fillcolor: isDarkMode ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.10)',
+                    line: { color: '#3b82f6', width: 2 },
+                    name: 'Profil de risque',
+                  } as any]}
+                  layout={{
+                    autosize: true,
+                    margin: { l: 60, r: 60, t: 20, b: 20 },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: plotlyFont,
+                    polar: {
+                      bgcolor: 'rgba(0,0,0,0)',
+                      radialaxis: { visible: true, range: [0, 100], gridcolor: isDarkMode ? '#1e293b' : '#f1f5f9', tickfont: { size: 9, color: isDarkMode ? '#475569' : '#94a3b8' } },
+                      angularaxis: { gridcolor: isDarkMode ? '#1e293b' : '#f1f5f9', linecolor: isDarkMode ? '#1e293b' : '#e2e8f0', tickfont: { size: 9, color: isDarkMode ? '#64748b' : '#64748b' } },
+                    },
+                    showlegend: false,
+                  } as any}
+                  style={{ width: '100%', height: '100%' }}
+                  useResizeHandler
+                  config={{ displayModeBar: false }}
+                />
+              </div>
+              <p className="text-[9px] text-slate-400 dark:text-slate-600 text-center mt-2 uppercase tracking-wider">Score normalisé sur 100 — plus la surface est large, meilleur est le profil</p>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Indicateurs Clés — Solvabilité</h3>
+              <div className="space-y-5">
+                {/* Taux d'endettement */}
+                {(() => {
+                  const val = fins.taux_endettement_personnel_percent ?? 0;
+                  const pct = Math.min(val, 70);
+                  const color = val > 50 ? 'bg-red-500' : val > 35 ? 'bg-orange-400' : val > 25 ? 'bg-amber-400' : 'bg-emerald-500';
+                  return (
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Taux d'endettement</span>
+                        <span className={`text-sm font-black ${val > 35 ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{val}% <span className="text-[9px] font-medium text-slate-400">/ seuil 35%</span></span>
+                      </div>
+                      <div className="relative h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${(pct / 70) * 100}%` }} />
+                        <div className="absolute top-0 h-full w-0.5 bg-slate-400 dark:bg-slate-600" style={{ left: `${(35 / 70) * 100}%` }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Reste à vivre */}
+                {(() => {
+                  const rav = fins.reste_a_vivre_annuel_ajuste ?? fins.reste_a_vivre_annuel ?? 0;
+                  const seuil = 12000 + (fins.nb_personnes_charge ?? 0) * 6000;
+                  const confort = 24000 + (fins.nb_personnes_charge ?? 0) * 6000;
+                  const pct = Math.min((rav / confort) * 100, 100);
+                  const color = rav < seuil ? 'bg-red-500' : rav < confort ? 'bg-amber-400' : 'bg-emerald-500';
+                  return (
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Reste à vivre (ajusté)</span>
+                        <span className={`text-sm font-black ${rav < seuil ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{Math.round(rav / 12).toLocaleString()}€/mois <span className="text-[9px] font-medium text-slate-400">/ min {Math.round(seuil / 12).toLocaleString()}€</span></span>
+                      </div>
+                      <div className="relative h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${Math.max(pct, 4)}%` }} />
+                        <div className="absolute top-0 h-full w-0.5 bg-slate-400 dark:bg-slate-600" style={{ left: `${(seuil / confort) * 100}%` }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Capacité de remboursement */}
+                {(() => {
+                  const cap = fins.capacite_remboursement_mensuelle ?? 0;
+                  const pct = Math.min(Math.max(cap / 2000 * 100, 0), 100);
+                  const color = cap <= 0 ? 'bg-red-500' : cap < 200 ? 'bg-orange-400' : cap < 500 ? 'bg-amber-400' : 'bg-emerald-500';
+                  return (
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Capacité de remboursement dispo.</span>
+                        <span className={`text-sm font-black ${cap <= 0 ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{Math.round(cap).toLocaleString()}€/mois</span>
+                      </div>
+                      <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${Math.max(pct, cap > 0 ? 4 : 0)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Épargne */}
+                {(() => {
+                  const epargne = fins.epargne_estimee ?? 0;
+                  const amount = fins.revenus_annuels ?? 1;
+                  const mois = epargne / (amount / 12);
+                  const pct = Math.min((mois / 12) * 100, 100);
+                  const color = mois < 1 ? 'bg-red-500' : mois < 3 ? 'bg-amber-400' : 'bg-emerald-500';
+                  return (
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Épargne disponible</span>
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-300">{Math.round(epargne).toLocaleString()}€ <span className="text-[9px] font-medium text-slate-400">≈ {mois.toFixed(1)} mois de revenus</span></span>
+                      </div>
+                      <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${Math.max(pct, epargne > 0 ? 4 : 0)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
         </div>
 
         {/* SYNTHÈSE ET RISQUES */}
@@ -680,7 +878,7 @@ export default function AnalysisResult() {
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         title="Supprimer l'analyse"
-        message={`Êtes-vous sûr de vouloir supprimer définitivement l'analyse de ${clientInfo.fullName || 'ce dossier'} ? Cette action est irréversible et supprimera tout l'historique lié.`}
+        message={`Êtes-vous sûr de vouloir supprimer définitivement l'analyse de ${clientInfo.fullName || 'ce dossier'} ? Cette action est irréversible.`}
         type="danger"
         confirmText={isDeleting ? "Suppression..." : "Oui, supprimer"}
         onConfirm={executeDelete}
@@ -688,86 +886,34 @@ export default function AnalysisResult() {
       />
 
       {/* EMAIL MODAL */}
-      <AnimatedModal
-        isOpen={isEmailModalOpen}
-        onClose={() => setIsEmailModalOpen(false)}
-        title="Envoyer le rapport par email"
-      >
+      <AnimatedModal isOpen={isEmailModalOpen} onClose={() => setIsEmailModalOpen(false)} title="Envoyer le rapport par email">
         <div className="p-6 text-slate-700 dark:text-slate-300">
-          <p className="mb-6 text-sm">
-            Vous pouvez envoyer ce rapport PDF directement par email.
-          </p>
-
+          <p className="mb-6 text-sm">Vous pouvez envoyer ce rapport PDF directement par email.</p>
           <form onSubmit={handleSendEmail} className="space-y-6">
             <div className="space-y-3">
               {emailToSend && (
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="emailTarget"
-                    checked={emailSelection === 'me'}
-                    onChange={() => setEmailSelection('me')}
-                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                  />
+                  <input type="radio" name="emailTarget" checked={emailSelection === 'me'} onChange={() => setEmailSelection('me')} className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium">L'envoyer à mon adresse</span>
                 </label>
               )}
               {emailSelection === 'me' && emailToSend && (
-                <p className="text-xs text-slate-500 ml-7 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
-                  L'email sera envoyé à : <strong>{emailToSend}</strong>
-                </p>
+                <p className="text-xs text-slate-500 ml-7 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">L'email sera envoyé à : <strong>{emailToSend}</strong></p>
               )}
-
               <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="emailTarget"
-                  checked={emailSelection === 'other'}
-                  onChange={() => setEmailSelection('other')}
-                  className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                />
+                <input type="radio" name="emailTarget" checked={emailSelection === 'other'} onChange={() => setEmailSelection('other')} className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-medium">L'envoyer à une autre adresse</span>
               </label>
-
               {emailSelection === 'other' && (
                 <div className="ml-7 mt-3 animate-fade-in">
-                  <input
-                    type="email"
-                    value={customEmail}
-                    onChange={(e) => setCustomEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
-                    placeholder="Ex. client@entreprise.com"
-                  />
+                  <input type="email" value={customEmail} onChange={(e) => setCustomEmail(e.target.value)} required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors" placeholder="Ex. client@entreprise.com" />
                 </div>
               )}
             </div>
-
             <div className="flex justify-end gap-3 mt-8">
-              <button
-                type="button"
-                onClick={() => setIsEmailModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors"
-                disabled={isSendingEmail}
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                disabled={isSendingEmail || (emailSelection === 'me' ? !emailToSend : !customEmail.trim())}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSendingEmail ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Envoi en cours...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Envoyer
-                  </>
-                )}
+              <button type="button" onClick={() => setIsEmailModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors" disabled={isSendingEmail}>Annuler</button>
+              <button type="submit" disabled={isSendingEmail || (emailSelection === 'me' ? !emailToSend : !customEmail.trim())} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                {isSendingEmail ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>Envoi en cours...</>) : (<><Send className="w-4 h-4" />Envoyer</>)}
               </button>
             </div>
           </form>
@@ -775,27 +921,15 @@ export default function AnalysisResult() {
       </AnimatedModal>
 
       {/* EMAIL SUCCESS MODAL */}
-      <AnimatedModal
-        isOpen={isEmailSuccessOpen}
-        onClose={() => setIsEmailSuccessOpen(false)}
-        title="Envoi Réussi"
-      >
+      <AnimatedModal isOpen={isEmailSuccessOpen} onClose={() => setIsEmailSuccessOpen(false)} title="Envoi Réussi">
         <div className="p-6 text-center text-slate-700 dark:text-slate-300">
           <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mb-6">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
-          <p className="mb-8 font-medium">
-            Le rapport a été envoyé avec succès par email !
-          </p>
-          <button
-            onClick={() => setIsEmailSuccessOpen(false)}
-            className="w-full px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
-          >
-            Fermer
-          </button>
+          <p className="mb-8 font-medium">Le rapport a été envoyé avec succès par email !</p>
+          <button onClick={() => setIsEmailSuccessOpen(false)} className="w-full px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors">Fermer</button>
         </div>
       </AnimatedModal>
-
     </div>
   );
 }

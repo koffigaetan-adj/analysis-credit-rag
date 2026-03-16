@@ -9,8 +9,7 @@ dist/
 .eslintcache
 
 # Environnement (SÉCURITÉ)
-.env
-.env.local
-
+.env*
+!.env.example
 # IDE
 .vscode/

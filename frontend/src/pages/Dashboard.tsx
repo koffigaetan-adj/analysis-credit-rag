@@ -45,7 +45,7 @@ export default function Dashboard() {
   const totalAmount = data.reduce((sum: number, app: any) => sum + Number(app.amount), 0);
   const prosCount = data.filter((app: any) => app.client_type === 'entreprise').length;
   const partCount = data.filter((app: any) => app.client_type === 'particulier').length;
-  const favorableCount = data.filter((app: any) => app.decision === 'Favorable').length;
+  const favorableCount = data.filter((app: any) => app.decision === 'Très Favorable' || app.decision === 'Favorable').length;
   const acceptanceRate = totalDossiers > 0 ? (favorableCount / totalDossiers) * 100 : 0;
 
   const pieData = [
