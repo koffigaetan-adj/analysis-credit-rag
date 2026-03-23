@@ -2,7 +2,6 @@ import os
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from langchain_community.vectorstores import SupabaseVectorStore
 from supabase import create_client
 from dotenv import load_dotenv
 
@@ -11,6 +10,13 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+
+def _get_supabase_client():
+    """Crée et retourne un client Supabase authentifié."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise ValueError("SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY sont requis.")
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
 def _get_embeddings() -> HuggingFaceEndpointEmbeddings:
@@ -22,17 +28,6 @@ def _get_embeddings() -> HuggingFaceEndpointEmbeddings:
         model="sentence-transformers/all-MiniLM-L6-v2",
         huggingfacehub_api_token=hf_api_key,
     )
-
-
-
-
-def _get_supabase_client():
-    """Crée et retourne un client Supabase authentifié."""
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        raise ValueError(
-            "Variables d'environnement manquantes : SUPABASE_URL et SUPABASE_SERVICE_KEY sont requis."
-        )
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
 def _load_documents(file_path: str):
@@ -50,8 +45,7 @@ def _load_documents(file_path: str):
 def process_bank_rules(file_path: str) -> bool:
     """
     Ingère la politique de crédit dans Supabase pgvector.
-    Supprime les anciens chunks avant de ré-indexer pour éviter les doublons.
-    Supporte PDF et TXT.
+    Utilise des appels directs au client Supabase (sans SupabaseVectorStore).
     """
     print(f"--- Début de l'indexation : {file_path} ---")
     supabase_client = _get_supabase_client()
@@ -63,77 +57,69 @@ def process_bank_rules(file_path: str) -> bool:
 
     print(f"Suppression des anciens chunks et re-indexation de {len(texts)} chunks dans Supabase...")
 
-    # Supprimer les anciens enregistrements avant de ré-indexer
+    # Supprimer tous les enregistrements existants
     try:
-        supabase_client.table("documents").delete().neq("id", 0).execute()
+        # Utilise un filtre qui matche tous les UUIDs
+        supabase_client.table("documents").delete().neq(
+            "id", "00000000-0000-0000-0000-000000000000"
+        ).execute()
         print("Anciens chunks supprimés.")
     except Exception as e:
-        print(f"Avertissement lors de la suppression : {e}")
+        print(f"Avertissement suppression : {e}")
 
-    SupabaseVectorStore.from_documents(
-        documents=texts,
-        embedding=embeddings,
-        client=supabase_client,
-        table_name="documents",
-        query_name="match_documents",
-    )
+    # Générer les embeddings pour tous les chunks
+    text_strings = [doc.page_content for doc in texts]
+    print(f"Génération des embeddings pour {len(text_strings)} chunks...")
+    text_embeddings = embeddings.embed_documents(text_strings)
 
-    print("--- Politique de crédit indexée dans Supabase pgvector ---")
+    # Insertion directe dans Supabase
+    rows = []
+    for doc, embedding in zip(texts, text_embeddings):
+        rows.append({
+            "content": doc.page_content,
+            "metadata": doc.metadata,
+            "embedding": embedding,
+        })
+
+    supabase_client.table("documents").insert(rows).execute()
+    print(f"--- {len(rows)} chunks indexés dans Supabase pgvector ---")
     return True
 
 
 def retrieve_relevant_rules(query: str, k: int = 5) -> str:
     """
-    Retrouve les chunks de politique de crédit les plus pertinents
-    via Supabase pgvector (similarity search).
+    Retrouve les chunks les plus pertinents via la fonction RPC match_documents.
+    Appel direct au client Supabase (compatible supabase-py 2.x).
     """
     try:
         supabase_client = _get_supabase_client()
         embeddings = _get_embeddings()
-        vectorstore = SupabaseVectorStore(
-            client=supabase_client,
-            embedding=embeddings,
-            table_name="documents",
-            query_name="match_documents",
-        )
-        docs = vectorstore.similarity_search(query, k=k)
-        if not docs:
+
+        query_embedding = embeddings.embed_query(query)
+
+        result = supabase_client.rpc(
+            "match_documents",
+            {
+                "query_embedding": query_embedding,
+                "match_count": k,
+                "filter": {},
+            },
+        ).execute()
+
+        if not result.data:
             return ""
-        return "\n\n".join([f"[Règle {i+1}]\n{d.page_content}" for i, d in enumerate(docs)])
+
+        return "\n\n".join(
+            [f"[Règle {i+1}]\n{row['content']}" for i, row in enumerate(result.data)]
+        )
     except Exception as e:
         print(f"Erreur RAG retrieval : {e}")
         return ""
 
 
-def ask_bank_knowledge(query: str, k: int = 4) -> str:
-    """
-    Interroge la base Supabase et retourne une réponse basée sur
-    les règles internes de la banque (appel direct Groq).
-    """
-    context = retrieve_relevant_rules(query, k=k)
-    if not context:
-        return "Aucune règle pertinente trouvée dans la base de connaissances."
-
-    from groq import Groq
-    groq_client = Groq(api_key=GROQ_API_KEY)
-    prompt = (
-        f"Tu es un expert en politique de crédit bancaire.\n"
-        f"En te basant uniquement sur les règles suivantes extraites de la politique interne de la banque :\n\n"
-        f"{context}\n\n"
-        f"Réponds à la question suivante de façon précise et concise :\n{query}"
-    )
-    response = groq_client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama-3.3-70b-versatile",
-        temperature=0.05
-    )
-    return response.choices[0].message.content
-
-
 def is_knowledge_base_ready() -> bool:
     """
     Vérifie si la table 'documents' dans Supabase contient des données.
-    Utilisé au démarrage pour éviter une re-indexation inutile.
     """
     try:
         supabase_client = _get_supabase_client()
