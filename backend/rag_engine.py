@@ -1,7 +1,7 @@
 import os
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_groq import ChatGroq
 from langchain_community.vectorstores import SupabaseVectorStore
 from langchain.chains import RetrievalQA
@@ -13,9 +13,13 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+HF_API_KEY = os.getenv("HF_API_KEY", "")
 
-# Embedding local (HuggingFace) — aucun coût API, 384 dimensions
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# Embedding via HuggingFace Inference API — aucun téléchargement PyTorch, appel HTTP simple
+embeddings = HuggingFaceInferenceAPIEmbeddings(
+    api_key=HF_API_KEY,
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
 
 def _get_supabase_client():
