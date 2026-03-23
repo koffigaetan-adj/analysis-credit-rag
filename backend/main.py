@@ -1,8 +1,8 @@
-﻿import os
+import os
 import json
 import typing
 import io
-import database 
+import database
 from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from seed import seed_super_admin
 import scoring_engine
+import rag_engine
 from fastapi import HTTPException
 from auth import router as auth_router, get_current_user
 from email_service import send_email_sync
@@ -42,6 +43,17 @@ def on_startup():
     if os.getenv("ENABLE_SEED", "false").lower() == "true":
         print("Exécution du seed automatique...")
         seed_super_admin()
+    # Auto-indexation de la politique de crédit si la base ChromaDB est vide
+    policy_file = os.path.join(os.path.dirname(__file__), "politique_credit_banque.txt")
+    if os.path.exists(policy_file) and not rag_engine.is_knowledge_base_ready():
+        print("Indexation de la politique de crédit dans ChromaDB...")
+        try:
+            rag_engine.process_bank_rules(policy_file)
+            print("Politique de crédit indexée avec succès.")
+        except Exception as e:
+            print(f"Erreur lors de l'indexation de la politique : {e}")
+    else:
+        print("Base ChromaDB déjà initialisée ou fichier politique absent — indexation ignorée.")
 
 app.include_router(auth_router)
 
@@ -188,8 +200,27 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
         """
 
 
-# ✅ FONCTION CORRIGÉE — désormais bien définie comme fonction autonome
 def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict, ratios_data: dict) -> str:
+    # Récupération des règles bancaires internes pertinentes via RAG
+    rag_query = (
+        f"critères crédit {client_info.get('clientType', 'entreprise')} "
+        f"taux endettement DSCR garanties secteur montant {client_info.get('amount')}€"
+    )
+    bank_rules_context = ""
+    try:
+        bank_rules_context = rag_engine.retrieve_relevant_rules(rag_query, k=5)
+    except Exception as e:
+        print(f"Avertissement RAG : {e}")
+
+    rag_section = ""
+    if bank_rules_context:
+        rag_section = f"""
+    ══ POLITIQUE DE CRÉDIT INTERNE — RÈGLES DE LA BANQUE (via base documentaire RAG) ══
+    Les règles suivantes sont extraites de la politique de crédit officielle de Kaïs Bank.
+    Tu DOIS les appliquer et les mentionner explicitement si un critère est violé ou satisfait.
+    {bank_rules_context}
+    """
+
     common_prompt = f"""
     RÔLE : Analyste crédit expérimenté dans une banque.
     Tu dois évaluer la solidité financière et le niveau de risque d'un dossier de financement.
@@ -203,18 +234,19 @@ def build_interpretation_prompt(client_info: dict, extracted_text: str, score_da
     - Tendance du compte : {score_data.get('account_trend', 'N/A')}
     - Facteurs de risque identifiés : {score_data.get('technical_risks', [])}
     - Facteurs positifs identifiés : {score_data.get('technical_opportunities', [])}
-    
-    CONTEXTE TEXTUEL BRUT EXTRAIT DU DOCUMENT (Peut inclure patrimoine, garanties, historique, commentaires) :
-    {extracted_text[0:15000]}
+    {rag_section}
+    CONTEXTE TEXTUEL BRUT EXTRAIT DU DOCUMENT (patrimoine, garanties, historique, commentaires) :
+    {extracted_text[0:12000]}
     
     Ta mission :
     1. Analyse toutes les informations disponibles (revenus, charges, dettes, ratios, patrimoine, garanties, ancienneté, secteur, projet financé, montant demandé, apport).
-    2. Vérifie la cohérence globale entre la capacité de remboursement réelle et le montant demandé.
-    3. Signale clairement tout élément disproportionné, irréaliste ou manquant (ex: absence d'apport, dossier incomplet).
-    4. Ne valide JAMAIS un projet si les ratios sont tendus ou si le dossier est incomplet — nuance toujours ta réponse.
-    5. Propose des ajustements réalistes (montant plus faible, apport à constituer, garanties à apporter, conditions de remboursement).
-    6. Conclus avec : niveau de risque global (faible/modéré/élevé/très élevé), recommandation claire et 2-3 pistes d'amélioration concrètes.
-    7. Sois détaillé et professionnel dans tes explications.
+    2. Vérifie la conformité du dossier avec les règles internes de la politique de crédit de la banque (citées ci-dessus).
+    3. Vérifie la cohérence globale entre la capacité de remboursement réelle et le montant demandé.
+    4. Signale clairement tout élément disproportionné, irréaliste ou manquant (ex: absence d'apport, dossier incomplet).
+    5. Ne valide JAMAIS un projet si les ratios sont tendus ou si le dossier est non conforme aux règles internes.
+    6. Propose des ajustements réalistes (montant plus faible, apport à constituer, garanties à apporter).
+    7. Conclus avec : niveau de risque global (faible/modéré/élevé/très élevé), recommandation claire et 2-3 pistes d'amélioration concrètes.
+    8. Sois détaillé et professionnel dans tes explications.
     
     FORMAT JSON OBLIGATOIRE EN SORTIE :
     {{
@@ -528,20 +560,12 @@ async def finance_chat_endpoint(request: GlobalChatRequest, db: Session = Depend
             
         system_prompt = (
             f"Tu es l'assistant IA de la plateforme Kaïs Analytics. Tu t'adresses à {request.userName}.\n"
-            "RÈGLE STRICTE : Tu dois UNIQUEMENT répondre aux questions liées à la banque, "
-            "à la finance, au crédit, à l'analyse de risque financier, à la comptabilité et aux mathématiques.\n"
-            "RÈGLE 2 : Si la question est une salutation basique, réponds poliment en saluant la personne par son prénom et en lui demandant comment tu peux l'aider avec ses finances.\n"
-            "RÈGLE 3 : Si la question n'a rien à voir avec les domaines autorisés (banque, finance, crédit, analyse, comptabilité, mathématiques), "
-            "tu DOIS REFUSER de répondre avec ce message exact ou une variante très proche : "
-            "'Désolé, je suis paramétré pour répondre uniquement aux questions relevant du domaine financier, bancaire, de la comptabilité ou des mathématiques. "
-            "Comment puis-je vous aider sur ces sujets ?'\n"
-            "RÈGLE 4 : Sois professionnel, concis, et précis.\n"
-            "RÈGLE 5 : Sois détaillé le plus possible dans tes explications.\n"
-            "RÈGLE 6 : Sois poli et courtois.\n"
-            "RÈGLE 7 : Tu PEUX ET DOIS faire des calculs mathématiques si demandé. Tu excelles en calcul.\n"
-            "RÈGLE 8 : Tu peux faire des recherches sur internet si demandé.\n"
-            "RÈGLE 9 : Tu dois donner des réponses dans la langue que la personne t'a écrit.\n"
-            "Voici les messages précédents de la conversation pour le contexte (optionnel):\n"
+            "DOMAINE : Tu réponds UNIQUEMENT aux questions liées à la banque, la finance, le crédit, l'analyse de risque financier, la comptabilité et les mathématiques.\n"
+            "STYLE : Sois professionnel, direct et précis. Ne commence PAS tes réponses par une formule de salutation (Bonjour, Salut, etc.) — la conversation est déjà engagée. Ne termine PAS tes réponses par des formules comme \"N'hésitez pas\", \"Est-ce que je peux vous aider autrement ?\", \"Y a-t-il autre chose ?\" etc. Réponds simplement à la question, c'est tout.\n"
+            "HORS DOMAINE : Si la question n'est pas liée aux domaines autorisés, réponds uniquement : \"Je suis spécialisé en finance et crédit. Comment puis-je vous aider ?\"\n"
+            "CALCULS : Tu peux et dois effectuer des calculs mathématiques si demandé.\n"
+            "LANGUE : Réponds dans la langue utilisée par l'utilisateur.\n"
+            "HISTORIQUE de la conversation :\n"
             f"{history_context}"
         )
         
@@ -766,6 +790,24 @@ async def send_report_route(
         return {"message": "Rapport envoyé avec succès."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/index-policy/")
+def admin_index_policy(current_user: database.User = Depends(get_current_user)):
+    """
+    Endpoint admin pour re-indexer manuellement la politique de crédit dans ChromaDB.
+    Utile après une mise à jour du fichier politique_credit_banque.txt.
+    """
+    if current_user.role != "SUPER_ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé au super administrateur.")
+    policy_file = os.path.join(os.path.dirname(__file__), "politique_credit_banque.txt")
+    if not os.path.exists(policy_file):
+        raise HTTPException(status_code=404, detail="Fichier de politique de crédit introuvable.")
+    try:
+        rag_engine.process_bank_rules(policy_file)
+        return {"message": "Politique de crédit re-indexée avec succès dans ChromaDB."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'indexation : {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn

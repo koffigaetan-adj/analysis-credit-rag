@@ -1,0 +1,157 @@
+POLITIQUE DE CRÉDIT — KAÏS BANK (Document interne confidentiel)
+Version 2.1 — Mise à jour : Mars 2024
+Usage exclusif des analystes crédit
+
+══════════════════════════════════════════════════════
+CHAPITRE 1 — PRINCIPES GÉNÉRAUX ET PÉRIMÈTRE D'APPLICATION
+══════════════════════════════════════════════════════
+
+1.1 Objet
+La présente politique de crédit définit les règles, seuils et critères d'acceptation ou de refus des demandes de financement soumises à Kaïs Bank. Elle s'applique à tous les dossiers instruits par les analystes crédit, qu'il s'agisse de personnes physiques (particuliers) ou de personnes morales (entreprises).
+
+1.2 Engagement responsable
+Kaïs Bank s'engage à respecter les principes de prêt responsable : proportion entre le montant accordé et la capacité de remboursement réelle du demandeur, transparence des conditions et absence de pratiques abusives.
+
+══════════════════════════════════════════════════════
+CHAPITRE 2 — CRITÈRES D'ÉLIGIBILITÉ POUR LES PARTICULIERS
+══════════════════════════════════════════════════════
+
+2.1 Revenus minimum requis
+- Revenu net mensuel minimum : 1 500 €/mois (personne seule)
+- Pour un foyer : 2 200 €/mois nets combinés
+
+2.2 Taux d'endettement
+- Taux maximum accepté : 33 % des revenus nets (seuil interne Kaïs Bank, plus strict que la norme HCSF de 35 %)
+- Au-delà de 35 % : refus systématique, sauf dérogation motivée par un apport personnel supérieur à 30 %
+- Au-delà de 50 % : refus automatique sans dérogation possible
+
+2.3 Situation professionnelle
+- CDI, fonctionnaire, retraité : profil éligible standard
+- CDD, intérimaire : éligible sous conditions (ancienneté minimale 12 mois dans le poste + CDD renouvelé au moins une fois)
+- Indépendant / Auto-entrepreneur : 3 derniers bilans requis, revenu stable ou en croissance
+- Sans emploi / Chômage : refus automatique, sauf si revenus de remplacement couvrent le taux d'endettement cible
+
+2.4 Apport personnel
+- Recommandé : minimum 10 % du montant financé
+- Obligatoire pour un montant > 150 000 € : apport minimum de 20 %
+- Absence totale d'apport : score pénalisé de 10 points, nécessite accord du responsable crédit senior
+
+2.5 Plafonds de financement
+- Crédit consommation : maximum 75 000 €
+- Crédit immobilier : maximum 500 000 € (sous réserve des ratios)
+- Regroupement de crédits : maximum 80 % de la valeur du bien en garantie
+
+2.6 Durée maximale
+- Crédit consommation : 84 mois (7 ans)
+- Crédit immobilier : 300 mois (25 ans)
+- Au-delà de 25 ans : refus systématique
+
+══════════════════════════════════════════════════════
+CHAPITRE 3 — CRITÈRES D'ÉLIGIBILITÉ POUR LES ENTREPRISES
+══════════════════════════════════════════════════════
+
+3.1 Ancienneté minimale
+- Entreprise créée il y a moins de 2 ans : refus automatique (risque startup trop élevé)
+- Entre 2 et 3 ans : dossier étudié sous conditions strictes (caution personnelle du dirigeant obligatoire)
+- 3 ans et plus : dossier standard
+
+3.2 Rentabilité
+- Résultat net négatif sur le dernier exercice : refus automatique, sauf si justification structurelle documentée (investissements lourds en phase de croissance)
+- Marge nette minimum cible : 3 % du chiffre d'affaires
+- Marge EBITDA minimum conseillée : 8 % du chiffre d'affaires
+
+3.3 Endettement
+- Ratio Dettes / Fonds Propres (Debt-to-Equity) maximum : 150 %
+- Fonds propres négatifs : refus automatique
+- Levier EBITDA (Dettes Totales / EBITDA) maximum toléré : 4,0x
+  - Au-delà de 6x : refus automatique
+
+3.4 DSCR (Debt Service Coverage Ratio)
+- DSCR minimum absolu : 1,20 (le cash flow doit couvrir a minima 120 % des annuités de dette)
+- DSCR < 1,0 : refus automatique
+- DSCR cible recommandé : > 1,5 pour les financements supérieurs à 200 000 €
+
+3.5 Montant demandé vs Chiffre d'Affaires
+- Financement demandé > 2x le CA annuel : refus sauf garanties exceptionnelles
+- Financement demandé > 5x le CA annuel : refus automatique
+
+3.6 Plafonds de financement entreprise
+- TPE (CA < 500 000 €) : maximum 250 000 €
+- PME (CA entre 500 000 € et 5 M€) : maximum 1 500 000 €
+- ETI / Grandes entreprises : au cas par cas, comité de crédit obligatoire
+
+══════════════════════════════════════════════════════
+CHAPITRE 4 — SECTEURS D'ACTIVITÉ
+══════════════════════════════════════════════════════
+
+4.1 Secteurs exclus (refus systématique)
+- Jeux d'argent et paris sportifs
+- Cryptomonnaies et actifs spéculatifs non réglementés
+- Armement et industrie militaire privée
+- Activités à fort impact environnemental sans plan de transition certifié (extraction minière non réglementée)
+- Industries du tabac et de la cigarette électronique sans agrément
+
+4.2 Secteurs à vigilance renforcée (conditions supplémentaires)
+- BTP et construction : exiger un plan de charge sur 12 mois minimum
+- Restauration / Hôtellerie : exiger 3 exercices complets, analyse de la saisonnalité
+- Commerce de détail : analyse concurrentielle de la zone de chalandise recommandée
+- Agriculture : prise en compte des subventions PAC dans les revenus
+
+4.3 Secteurs favorisés (bonification de score interne)
+- Technologies et numérique (avec contrats clients justifiés)
+- Santé et services à la personne
+- Énergies renouvelables et transition écologique certifiée
+- Agroalimentaire avec certification qualité
+
+══════════════════════════════════════════════════════
+CHAPITRE 5 — GARANTIES ET SÛRETÉS
+══════════════════════════════════════════════════════
+
+5.1 Types de garanties acceptées
+- Hypothèque de premier rang : garantie préférée pour l'immobilier
+- Caution d'un organisme agréé (Crédit Logement, CAMCA...)
+- Nantissement de fonds de commerce : à évaluer au cas par cas
+- Caution personnelle du dirigeant : systématiquement exigée pour les entreprises de moins de 5 ans
+- Gage sur véhicule ou matériel : pour les crédits d'équipement
+
+5.2 Montants et obligations
+- Financement > 100 000 € (particulier) : garantie réelle obligatoire (hypothèque ou caution organisme)
+- Financement > 200 000 € (entreprise) : au moins deux types de garanties requis
+- Valeur des garanties : doit couvrir au minimum 110 % du montant financé
+
+══════════════════════════════════════════════════════
+CHAPITRE 6 — NIVEAUX DE DÉCISION
+══════════════════════════════════════════════════════
+
+6.1 Grille de délégation
+- Score ≥ 85 / Décision "Très Favorable" : accord direct de l'analyste crédit
+- Score 70-84 / Décision "Favorable" : accord analyste crédit, avec notification responsable d'agence
+- Score 55-69 / Décision "Vigilance Modérée" : accord sous conditions, nécessite visa du responsable crédit
+- Score 40-54 / Décision "Vigilance Renforcée" : dossier soumis au comité de crédit
+- Score < 40 / Décision "Défavorable" : refus, lettre de refus motivée obligatoire
+
+6.2 Dérogations possibles
+- Une dérogation peut être accordée par le Directeur Crédit si : le score est entre 45 et 54, les garanties sont supérieures à 150 % du montant, et le client est un client existant avec moins de 2 incidents de paiement en 5 ans.
+- Toute dérogation doit être documentée dans le dossier et justifiée par écrit.
+
+══════════════════════════════════════════════════════
+CHAPITRE 7 — DOCUMENTS REQUIS
+══════════════════════════════════════════════════════
+
+7.1 Particulier
+- 3 derniers bulletins de salaire (ou avis d'imposition pour indépendants)
+- 3 derniers relevés de compte bancaire
+- Justificatif d'identité valide
+- Justificatif de domicile (- de 3 mois)
+- Compromis de vente ou devis (pour le projet financé)
+
+7.2 Entreprise
+- 3 derniers bilans comptables complets (bilan + compte de résultat + annexes)
+- Relevés bancaires professionnels des 6 derniers mois
+- K-bis de moins de 3 mois
+- Statuts de la société
+- Business plan avec prévisionnel si entreprise < 3 ans
+
+══════════════════════════════════════════════════════
+FIN DU DOCUMENT
+══════════════════════════════════════════════════════

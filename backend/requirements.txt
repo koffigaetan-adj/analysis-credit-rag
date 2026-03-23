@@ -10,7 +10,9 @@ psycopg2-binary
 langchain
 langchain-community
 langchain-text-splitters
-chromadb                   
+langchain-groq
+vecs
+sentence-transformers
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt==4.0.1
