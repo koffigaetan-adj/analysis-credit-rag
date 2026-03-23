@@ -12,6 +12,8 @@ langchain-community
 langchain-text-splitters
 vecs
 huggingface-hub
+langchain-huggingface
+
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt==4.0.1

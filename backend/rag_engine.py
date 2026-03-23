@@ -1,11 +1,8 @@
 import os
-import time
-import requests
-from typing import List
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_community.vectorstores import SupabaseVectorStore
-from langchain_core.embeddings import Embeddings
 from supabase import create_client
 from dotenv import load_dotenv
 
@@ -15,55 +12,17 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
-HF_MODEL_URL = "https://router.huggingface.co/hf-inference/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
 
-
-
-class RobustHFEmbeddings(Embeddings):
-    """
-    Classe d'embedding HuggingFace robuste :
-    - Passe wait_for_model=True pour éviter les retours 'error' sur free tier
-    - Retry automatique si le modèle est encore en chargement
-    """
-
-    def __init__(self, api_key: str, max_retries: int = 5, wait_seconds: int = 20):
-        self.api_key = api_key
-        self.max_retries = max_retries
-        self.wait_seconds = wait_seconds
-        self.headers = {"Authorization": f"Bearer {api_key}"}
-
-    def _embed(self, texts: List[str]) -> List[List[float]]:
-        payload = {"inputs": texts, "options": {"wait_for_model": True}}
-        for attempt in range(self.max_retries):
-            response = requests.post(HF_MODEL_URL, headers=self.headers, json=payload, timeout=60)
-            if response.status_code == 200:
-                result = response.json()
-                # Vérification : le résultat doit être une liste de vecteurs
-                if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list):
-                    return result
-            print(f"[RAG] Embedding attempt {attempt + 1}/{self.max_retries} — status={response.status_code}, retrying in {self.wait_seconds}s...")
-            time.sleep(self.wait_seconds)
-        raise RuntimeError(f"HuggingFace API unavailable after {self.max_retries} attempts. Last response: {response.text[:200]}")
-
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        # Traiter par batch de 32 pour éviter les timeouts
-        all_embeddings = []
-        for i in range(0, len(texts), 32):
-            batch = texts[i:i + 32]
-            all_embeddings.extend(self._embed(batch))
-        return all_embeddings
-
-    def embed_query(self, text: str) -> List[float]:
-        result = self._embed([text])
-        return result[0]
-
-
-def _get_embeddings() -> RobustHFEmbeddings:
-    """Retourne une instance de RobustHFEmbeddings avec la clé API HuggingFace."""
+def _get_embeddings() -> HuggingFaceEndpointEmbeddings:
+    """Retourne les embeddings via le package officiel langchain-huggingface."""
     hf_api_key = os.getenv("HF_API_KEY", "")
     if not hf_api_key:
         raise ValueError("Variable d'environnement HF_API_KEY manquante.")
-    return RobustHFEmbeddings(api_key=hf_api_key)
+    return HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        huggingfacehub_api_token=hf_api_key,
+    )
+
 
 
 
