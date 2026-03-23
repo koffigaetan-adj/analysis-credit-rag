@@ -38,22 +38,40 @@ def run_migrations():
 
 @app.on_event("startup")
 def on_startup():
-    print("Exécution du startup...")
+    print("=== STARTUP Kais Analytics ===")
     run_migrations()
     if os.getenv("ENABLE_SEED", "false").lower() == "true":
-        print("Exécution du seed automatique...")
+        print("Execution du seed automatique...")
         seed_super_admin()
-    # Auto-indexation de la politique de crédit si la base ChromaDB est vide
+
+    # Diagnostic des variables d'environnement RAG
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    hf_key = os.getenv("HF_API_KEY", "")
+
+    print(f"[RAG] SUPABASE_URL  : {'OK defini' if supabase_url else 'MANQUANT'}")
+    print(f"[RAG] SUPABASE_KEY  : {'OK defini' if supabase_key else 'MANQUANT'}")
+    print(f"[RAG] HF_API_KEY    : {'OK defini' if hf_key else 'MANQUANT'}")
+
     policy_file = os.path.join(os.path.dirname(__file__), "politique_credit_banque.txt")
-    if os.path.exists(policy_file) and not rag_engine.is_knowledge_base_ready():
-        print("Indexation de la politique de crédit dans ChromaDB...")
+    print(f"[RAG] Fichier politique : {'TROUVE -> ' + policy_file if os.path.exists(policy_file) else 'INTROUVABLE -> ' + policy_file}")
+
+    if not os.path.exists(policy_file):
+        print("[RAG] Indexation ignoree : fichier politique absent du workspace.")
+    elif not supabase_url or not supabase_key or not hf_key:
+        print("[RAG] Indexation ignoree : variables d'environnement manquantes.")
+    else:
+        print("[RAG] Lancement de l'indexation dans Supabase pgvector...")
         try:
             rag_engine.process_bank_rules(policy_file)
-            print("Politique de crédit indexée avec succès.")
+            print("[RAG] Politique de credit indexee avec succes.")
         except Exception as e:
-            print(f"Erreur lors de l'indexation de la politique : {e}")
-    else:
-        print("Base ChromaDB déjà initialisée ou fichier politique absent — indexation ignorée.")
+            import traceback
+            print(f"[RAG] ERREUR lors de l'indexation : {e}")
+            traceback.print_exc()
+
+    print("=== STARTUP termine ===")
+
 
 app.include_router(auth_router)
 
