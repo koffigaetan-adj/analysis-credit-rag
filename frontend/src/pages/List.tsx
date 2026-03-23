@@ -53,7 +53,8 @@ export default function Applications() {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${appToDelete.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+
         }
       });
       if (response.ok) {

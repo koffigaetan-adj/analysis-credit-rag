@@ -59,10 +59,7 @@ def process_bank_rules(file_path: str) -> bool:
 
     # Supprimer tous les enregistrements existants
     try:
-        # Utilise un filtre qui matche tous les UUIDs
-        supabase_client.table("documents").delete().neq(
-            "id", "00000000-0000-0000-0000-000000000000"
-        ).execute()
+        supabase_client.table("documents").delete().gt("id", 0).execute()
         print("Anciens chunks supprimés.")
     except Exception as e:
         print(f"Avertissement suppression : {e}")
