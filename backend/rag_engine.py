@@ -2,9 +2,7 @@ import os
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
-from langchain_groq import ChatGroq
 from langchain_community.vectorstores import SupabaseVectorStore
-from langchain.chains import RetrievalQA
 from supabase import create_client
 from dotenv import load_dotenv
 
@@ -102,31 +100,27 @@ def retrieve_relevant_rules(query: str, k: int = 5) -> str:
 
 def ask_bank_knowledge(query: str, k: int = 4) -> str:
     """
-    Interroge la base Supabase et retourne une réponse LLM
-    basée sur les règles internes de la banque.
+    Interroge la base Supabase et retourne une réponse basée sur
+    les règles internes de la banque (appel direct Groq).
     """
-    supabase_client = _get_supabase_client()
-    vectorstore = SupabaseVectorStore(
-        client=supabase_client,
-        embedding=embeddings,
-        table_name="documents",
-        query_name="match_documents",
-    )
+    context = retrieve_relevant_rules(query, k=k)
+    if not context:
+        return "Aucune règle pertinente trouvée dans la base de connaissances."
 
-    llm = ChatGroq(
-        groq_api_key=GROQ_API_KEY,
-        model_name="llama-3.3-70b-versatile",
+    from groq import Groq
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    prompt = (
+        f"Tu es un expert en politique de crédit bancaire.\n"
+        f"En te basant uniquement sur les règles suivantes extraites de la politique interne de la banque :\n\n"
+        f"{context}\n\n"
+        f"Réponds à la question suivante de façon précise et concise :\n{query}"
+    )
+    response = groq_client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.3-70b-versatile",
         temperature=0.05
     )
-
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=vectorstore.as_retriever(search_kwargs={"k": k})
-    )
-
-    result = qa_chain.invoke({"query": query})
-    return result["result"]
+    return response.choices[0].message.content
 
 
 def is_knowledge_base_ready() -> bool:
