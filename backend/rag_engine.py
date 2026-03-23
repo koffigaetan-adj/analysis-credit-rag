@@ -11,13 +11,17 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-HF_API_KEY = os.getenv("HF_API_KEY", "")
 
-# Embedding via HuggingFace Inference API — aucun téléchargement PyTorch, appel HTTP simple
-embeddings = HuggingFaceInferenceAPIEmbeddings(
-    api_key=HF_API_KEY,
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+
+def _get_embeddings():
+    """Crée les embeddings à la demande (lazy) pour lire HF_API_KEY au bon moment."""
+    hf_api_key = os.getenv("HF_API_KEY", "")
+    if not hf_api_key:
+        raise ValueError("Variable d'environnement HF_API_KEY manquante.")
+    return HuggingFaceInferenceAPIEmbeddings(
+        api_key=hf_api_key,
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
 
 
 def _get_supabase_client():
@@ -49,6 +53,7 @@ def process_bank_rules(file_path: str) -> bool:
     """
     print(f"--- Début de l'indexation : {file_path} ---")
     supabase_client = _get_supabase_client()
+    embeddings = _get_embeddings()
 
     documents = _load_documents(file_path)
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
@@ -79,10 +84,10 @@ def retrieve_relevant_rules(query: str, k: int = 5) -> str:
     """
     Retrouve les chunks de politique de crédit les plus pertinents
     via Supabase pgvector (similarity search).
-    Retourne une chaîne de texte formatée pour injection dans le prompt.
     """
     try:
         supabase_client = _get_supabase_client()
+        embeddings = _get_embeddings()
         vectorstore = SupabaseVectorStore(
             client=supabase_client,
             embedding=embeddings,
