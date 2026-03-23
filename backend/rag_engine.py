@@ -55,14 +55,13 @@ def process_bank_rules(file_path: str) -> bool:
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(documents)
 
-    print(f"Suppression des anciens chunks et re-indexation de {len(texts)} chunks dans Supabase...")
-
     # Supprimer tous les enregistrements existants
     try:
-        supabase_client.table("documents").delete().gt("id", 0).execute()
+        print(f"Suppression des anciens chunks et re-indexation de {len(texts)} chunks dans Supabase...")
+        res = supabase_client.table("documents").delete().neq("content", "").execute()
         print("Anciens chunks supprimés.")
     except Exception as e:
-        print(f"Avertissement suppression : {e}")
+        print(f"Erreur lors de la suppression des anciens chunks : {e}")
 
     # Générer les embeddings pour tous les chunks
     text_strings = [doc.page_content for doc in texts]

@@ -520,13 +520,29 @@ class ChatRequest(BaseModel):
 async def analyze_chat_endpoint(request: ChatRequest, current_user: database.User = Depends(get_current_user)):
     try:
         context_data = json.loads(request.context)
+        
+        # RAG Lookup
+        rag_context = ""
+        try:
+            rag_docs = rag_engine.retrieve_relevant_rules(request.message, k=3)
+            if rag_docs:
+                rag_context = "\n".join([d.page_content for d in rag_docs])
+        except Exception as e:
+            print(f"Erreur RAG chat: {e}")
+            
+        rag_instruction = ""
+        if rag_context:
+            rag_instruction = f"\n\nPOLITIQUE DE CRÉDIT (RAG) :\n{rag_context}\n"
+
         system_prompt = (
             "Tu es l'assistant IA de la plateforme Kaïs Analytics.\n"
-            "Tu dois répondre aux questions de l'utilisateur concernant l'analyse financière en cours, la comptabilité et les mathématiques.\n"
-            "Utilise les données du contexte fourni (résultats de l'analyse, score, informations client) pour répondre de manière précise et professionnelle.\n"
+            "Tu dois répondre aux questions de l'utilisateur concernant l'analyse financière en cours, la politique de crédit de la banque, la comptabilité et les mathématiques.\n"
+            "Utilise les données du contexte fourni (résultats de l'analyse, score, informations client) ET la politique de crédit si pertinente pour répondre de manière précise et professionnelle.\n"
             "Tu es autorisé à faire des calculs mathématiques et à répondre à des questions de comptabilité.\n"
-            "Si la question n'est pas liée à la finance, l'analyse, la comptabilité ou les mathématiques, rappelle poliment ton rôle.\n"
+            "CONGÉ / FIN DE SESSION : Si l'utilisateur dit qu'il a terminé, bonne journée, à bientôt, c'est bon pour aujourd'hui, merci au revoir, etc. — réponds simplement de façon naturelle et chaleureuse en 1 courte phrase.\n"
+            "HORS DOMAINE : Si la question n'est VRAIMENT pas liée à la finance, l'analyse, la politique de crédit, la comptabilité ou les mathématiques, rappelle poliment ton rôle. Mais sois indulgent sur les fautes de frappe du genre 'POLIQTE'. Essaye de comprendre l'intention de l'utilisateur.\n"
             "Sois détaillé le plus possible dans tes explications."
+            f"{rag_instruction}"
         )
         
         user_prompt = (
