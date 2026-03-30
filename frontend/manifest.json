@@ -1,0 +1,18 @@
+{
+  "name": "Kaïs Analytics",
+  "short_name": "Kaïs",
+  "description": "Plateforme intelligente d'analyse crédit.",
+  "start_url": "./logo_kais.svg",
+  "display": "standalone",
+  "background_color": "#141417",
+  "theme_color": "#141417",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./logo_kais.svg",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
