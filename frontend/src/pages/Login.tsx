@@ -320,7 +320,7 @@ export default function Login() {
             />
           </div>
 
-          <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[40px] shadow-2xl">
+          <div className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-12 rounded-[40px] shadow-2xl">
             <div className="mb-8 text-left">
               <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
                 {isResetPassword ? "Nouveau MDP" : isForgotPassword ? "Mot de passe oublié" : isSignUp ? "Créer un compte" : "Connexion"}
@@ -331,16 +331,24 @@ export default function Login() {
             </div>
 
             {(!isForgotPassword && !isResetPassword) && (
-              <div className="flex mb-6 bg-white/5 p-1 rounded-xl">
+              <div className="relative flex mb-8 bg-white/5 p-1.5 rounded-2xl overflow-hidden">
+                {/* Pill animée */}
+                <div 
+                  className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-blue-600/20 border border-blue-500/30 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                    isSignUp ? 'translate-x-[calc(100%+6px)]' : 'translate-x-0'
+                  }`} 
+                />
                 <button
+                  type="button"
                   onClick={() => { setIsSignUp(false); setError(null); setSuccessMessage(null); }}
-                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${!isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
+                  className={`relative z-10 flex-1 py-3.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors duration-300 ${!isSignUp ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}
                 >
                   Se connecter
                 </button>
                 <button
+                  type="button"
                   onClick={() => { setIsSignUp(true); setError(null); setSuccessMessage(null); }}
-                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${isSignUp ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-white'}`}
+                  className={`relative z-10 flex-1 py-3.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-colors duration-300 ${isSignUp ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}
                 >
                   S'inscrire
                 </button>

@@ -219,23 +219,35 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
 
 
 def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict, ratios_data: dict) -> str:
-    # Récupération des règles bancaires internes pertinentes via RAG
-    rag_query = (
-        f"critères crédit {client_info.get('clientType', 'entreprise')} "
-        f"taux endettement DSCR garanties secteur montant {client_info.get('amount')}€"
-    )
+    # ── RAG multi-angles : requêtes ciblées selon le contexte du dossier ───
+    amount_float = 0.0
+    try:
+        amount_float = float(str(client_info.get('amount', 0)).replace(" ", "").replace(",", "."))
+    except (ValueError, TypeError):
+        pass
+
+    secteur = fin_data.get("secteur_activite", "Inconnu") if fin_data else "Inconnu"
+    current_score = score_data.get("score", 0)
+
     bank_rules_context = ""
     try:
-        bank_rules_context = rag_engine.retrieve_relevant_rules(rag_query, k=5)
+        bank_rules_context = rag_engine.retrieve_rules_for_analysis(
+            client_type=client_info.get('clientType', 'entreprise'),
+            amount=amount_float,
+            secteur=secteur,
+            score=current_score,
+            ratios=ratios_data,
+        )
     except Exception as e:
-        print(f"Avertissement RAG : {e}")
+        print(f"Avertissement RAG multi-angles : {e}")
 
     rag_section = ""
     if bank_rules_context:
         rag_section = f"""
     ══ POLITIQUE DE CRÉDIT INTERNE — RÈGLES DE LA BANQUE (via base documentaire RAG) ══
     Les règles suivantes sont extraites de la politique de crédit officielle de Kaïs Bank.
-    Tu DOIS les appliquer et les mentionner explicitement si un critère est violé ou satisfait.
+    Elles sont organisées par thème (critères client, secteur, garanties, décision).
+    Tu DOIS les appliquer et citer explicitement chaque règle violée ou respectée.
     {bank_rules_context}
     """
 

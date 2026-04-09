@@ -1,5 +1,5 @@
 POLITIQUE DE CRÉDIT — KAÏS BANK (Document interne confidentiel)
-Version 2.1 — Mise à jour : Mars 2024
+Version 2.2 — Mise à jour : Avril 2026
 Usage exclusif des analystes crédit
 
 ══════════════════════════════════════════════════════
@@ -12,6 +12,9 @@ La présente politique de crédit définit les règles, seuils et critères d'ac
 1.2 Engagement responsable
 Kaïs Bank s'engage à respecter les principes de prêt responsable : proportion entre le montant accordé et la capacité de remboursement réelle du demandeur, transparence des conditions et absence de pratiques abusives.
 
+1.3 Mise à jour et révision
+La politique est révisée annuellement ou à la suite de modifications réglementaires (HCSF, Bâle III/IV). Les analystes doivent toujours se référer à la version en vigueur.
+
 ══════════════════════════════════════════════════════
 CHAPITRE 2 — CRITÈRES D'ÉLIGIBILITÉ POUR LES PARTICULIERS
 ══════════════════════════════════════════════════════
@@ -19,139 +22,250 @@ CHAPITRE 2 — CRITÈRES D'ÉLIGIBILITÉ POUR LES PARTICULIERS
 2.1 Revenus minimum requis
 - Revenu net mensuel minimum : 1 500 €/mois (personne seule)
 - Pour un foyer : 2 200 €/mois nets combinés
+- Les revenus variables (primes, commissions) ne sont retenus qu'à 70 % de leur montant annuel moyen sur 3 ans
+- Les revenus fonciers nets sont retenus à 70 % pour tenir compte des vacances locatives
+- Les allocations familiales et aides sociales ne sont pas retenues comme revenue stable
 
 2.2 Taux d'endettement
 - Taux maximum accepté : 33 % des revenus nets (seuil interne Kaïs Bank, plus strict que la norme HCSF de 35 %)
+- Entre 33 % et 35 % : dossier accepté sous réserve d'un apport personnel ≥ 20 % et d'un avis favorable du responsable crédit
 - Au-delà de 35 % : refus systématique, sauf dérogation motivée par un apport personnel supérieur à 30 %
 - Au-delà de 50 % : refus automatique sans dérogation possible
+- Le calcul du taux d'endettement intègre TOUS les crédits en cours (consommation, immobilier, revolving)
 
 2.3 Situation professionnelle
-- CDI, fonctionnaire, retraité : profil éligible standard
-- CDD, intérimaire : éligible sous conditions (ancienneté minimale 12 mois dans le poste + CDD renouvelé au moins une fois)
-- Indépendant / Auto-entrepreneur : 3 derniers bilans requis, revenu stable ou en croissance
+- CDI, fonctionnaire, retraité : profil éligible standard, aucune condition particulière
+- CDD, intérimaire : éligible sous conditions (ancienneté minimale 12 mois dans le poste + CDD renouvelé au moins une fois + attestation employeur)
+- Indépendant / Auto-entrepreneur : 3 derniers bilans requis, revenu stable ou en croissance, pas de baisse > 20 % sur les 2 dernières années
+- Gérant de société : traitement similaire à l'indépendant. La rémunération de gérance doit être régulière et documentée sur 3 exercices.
 - Sans emploi / Chômage : refus automatique, sauf si revenus de remplacement couvrent le taux d'endettement cible
+- Période d'essai : refus automatique, délai de 3 mois après confirmation de poste requis
+- Préretraite ou mise en disponibilité : traitement au cas par cas avec justificatifs
 
 2.4 Apport personnel
 - Recommandé : minimum 10 % du montant financé
 - Obligatoire pour un montant > 150 000 € : apport minimum de 20 %
 - Absence totale d'apport : score pénalisé de 10 points, nécessite accord du responsable crédit senior
+- L'apport doit être justifié (épargne personnelle, donation, vente d'un bien). Un apport financé par un autre crédit est refusé.
+- L'apport doit être disponible avant la signature de l'offre de prêt
 
-2.5 Plafonds de financement
+2.5 Plafonds de financement particulier
 - Crédit consommation : maximum 75 000 €
-- Crédit immobilier : maximum 500 000 € (sous réserve des ratios)
+- Crédit immobilier résidence principale : maximum 500 000 € (sous réserve des ratios)
+- Crédit immobilier investissement locatif : maximum 300 000 € (taux d'endettement calculé sans les loyers futurs)
 - Regroupement de crédits : maximum 80 % de la valeur du bien en garantie
+- Rachat de crédits : le nouvel endettement ne doit pas dépasser 35 % des revenus
 
 2.6 Durée maximale
 - Crédit consommation : 84 mois (7 ans)
-- Crédit immobilier : 300 mois (25 ans)
-- Au-delà de 25 ans : refus systématique
+- Crédit immobilier : 300 mois (25 ans) — 27 ans maximum avec différé d'amortissement de 24 mois
+- Au-delà de 25 ans : refus systématique sauf pour primo-accédants avec dérogation du Directeur Crédit
+- Regroupement de crédits : limité à la durée résiduelle la plus longue des crédits regroupés + 5 ans
+
+2.7 Âge et assurance emprunteur
+- Limite d'âge à l'échéance : 75 ans pour un crédit immobilier standard
+- Au-delà de 70 ans à la souscription : questionnaire médical obligatoire et accord du pool assurance
+- L'assurance décès-invalidité (ADI) est obligatoire pour tout crédit immobilier > 50 000 €
 
 ══════════════════════════════════════════════════════
 CHAPITRE 3 — CRITÈRES D'ÉLIGIBILITÉ POUR LES ENTREPRISES
 ══════════════════════════════════════════════════════
 
 3.1 Ancienneté minimale
-- Entreprise créée il y a moins de 2 ans : refus automatique (risque startup trop élevé)
-- Entre 2 et 3 ans : dossier étudié sous conditions strictes (caution personnelle du dirigeant obligatoire)
+- Entreprise créée il y a moins de 2 ans : refus automatique (risque startup trop élevé), sauf si le dirigeant apporte une caution personnelle à hauteur de 150 % du montant et justifie d'une expérience sectorielle > 5 ans
+- Entre 2 et 3 ans : dossier étudié sous conditions strictes (caution personnelle du dirigeant obligatoire + business plan + prévisionnel sur 3 ans)
 - 3 ans et plus : dossier standard
+- La date de création retenue est celle du K-bis (Kbis), pas celle du démarrage d'activité effective
 
 3.2 Rentabilité
-- Résultat net négatif sur le dernier exercice : refus automatique, sauf si justification structurelle documentée (investissements lourds en phase de croissance)
+- Résultat net négatif sur le dernier exercice : refus automatique, sauf si justification structurelle documentée (investissements lourds en phase de croissance, amortissements exceptionnels)
+- Deux exercices déficitaires consécutifs : refus automatique sans dérogation possible
 - Marge nette minimum cible : 3 % du chiffre d'affaires
 - Marge EBITDA minimum conseillée : 8 % du chiffre d'affaires
+- En dessous de 5 % de marge EBITDA : vigilance renforcée, conditions supplémentaires (garanties, apport)
 
 3.3 Endettement
 - Ratio Dettes / Fonds Propres (Debt-to-Equity) maximum : 150 %
-- Fonds propres négatifs : refus automatique
+- Entre 100 % et 150 % : accepté sous conditions (garanties supplémentaires, DSCR ≥ 1.5)
+- Au-delà de 150 % : refus sauf garanties réelles de premier rang couvrant 120 % du montant
+- Fonds propres négatifs : refus automatique, aucune dérogation possible
 - Levier EBITDA (Dettes Totales / EBITDA) maximum toléré : 4,0x
+  - Entre 4x et 6x : refus sauf garanties exceptionnelles et DSCR > 1.5
   - Au-delà de 6x : refus automatique
 
 3.4 DSCR (Debt Service Coverage Ratio)
 - DSCR minimum absolu : 1,20 (le cash flow doit couvrir a minima 120 % des annuités de dette)
-- DSCR < 1,0 : refus automatique
+- DSCR < 1,0 : refus automatique, le cash flow ne couvre pas les remboursements existants
+- DSCR entre 1,0 et 1,2 : refus, sauf si le dirigeant apporte une caution personnelle solide et que le DSCR prévisionnel est ≥ 1,4
 - DSCR cible recommandé : > 1,5 pour les financements supérieurs à 200 000 €
+- DSCR > 2,0 : profil très favorable, conditions préférentielles possibles
 
-3.5 Montant demandé vs Chiffre d'Affaires
-- Financement demandé > 2x le CA annuel : refus sauf garanties exceptionnelles
-- Financement demandé > 5x le CA annuel : refus automatique
+3.5 Montant demandé versus Chiffre d'Affaires
+- Financement demandé > 2x le CA annuel : refus sauf garanties exceptionnelles et accord du comité de crédit
+- Financement demandé > 5x le CA annuel : refus automatique sans exception
+- Financement < 30 % du CA : considéré comme raisonnable, bonification de score
+- Financement entre 30 % et 80 % du CA : acceptable selon les autres ratios
 
 3.6 Plafonds de financement entreprise
-- TPE (CA < 500 000 €) : maximum 250 000 €
+- TPE (CA < 500 000 €) : maximum 250 000 € par dossier, montant cumulé plafonné à 400 000 € sur 3 ans
 - PME (CA entre 500 000 € et 5 M€) : maximum 1 500 000 €
-- ETI / Grandes entreprises : au cas par cas, comité de crédit obligatoire
+- ETI / Grandes entreprises (CA > 5 M€) : au cas par cas, comité de crédit obligatoire, rapport d'audit exigé
+- Toute demande > 500 000 € doit être soumise à un comité de crédit quel que soit le profil
+
+3.7 Besoin en Fonds de Roulement (BFR)
+- Un BFR très élevé (> 25 % du CA) est un signal d'alerte
+- Le financement du BFR doit être justifié par le cycle d'exploitation (délais clients, stocks)
+- Les lignes de crédit revolving pour le BFR sont limitées à 15 % du CA annuel
 
 ══════════════════════════════════════════════════════
 CHAPITRE 4 — SECTEURS D'ACTIVITÉ
 ══════════════════════════════════════════════════════
 
 4.1 Secteurs exclus (refus systématique)
-- Jeux d'argent et paris sportifs
-- Cryptomonnaies et actifs spéculatifs non réglementés
+- Jeux d'argent, casinos, paris sportifs en ligne
+- Cryptomonnaies et actifs spéculatifs non réglementés (trading, NFT, DeFi)
 - Armement et industrie militaire privée
-- Activités à fort impact environnemental sans plan de transition certifié (extraction minière non réglementée)
-- Industries du tabac et de la cigarette électronique sans agrément
+- Activités à fort impact environnemental sans plan de transition certifié (extraction minière non réglementée, industrie pétrolière sans RSE documentée)
+- Industries du tabac et de la cigarette électronique sans agrément sanitaire
+- Activités illégales ou réglementées sans licence valide
 
 4.2 Secteurs à vigilance renforcée (conditions supplémentaires)
-- BTP et construction : exiger un plan de charge sur 12 mois minimum
-- Restauration / Hôtellerie : exiger 3 exercices complets, analyse de la saisonnalité
-- Commerce de détail : analyse concurrentielle de la zone de chalandise recommandée
-- Agriculture : prise en compte des subventions PAC dans les revenus
+- BTP et construction : exiger un plan de charge sur 12 mois minimum, carnet de commandes justifié, analyse de la sous-traitance. DSCR minimum 1.5 exigé.
+- Restauration / Hôtellerie : exiger 3 exercices complets, analyse détaillée de la saisonnalité, vérification des licences. EBITDA ≥ 10 % exigé.
+- Commerce de détail : analyse concurrentielle de la zone de chalandise recommandée. Vigilance sur l'impact du e-commerce. Marge brute > 30 % exigée.
+- Agriculture : prise en compte des subventions PAC dans les revenus. Analyse des risques climatiques. Assurance récolte exigée pour les montants > 100 000 €.
+- Transport / Logistique : analyse du carnet de commandes, vérification des licences de transport, impact carburant.
+- Immobilier / Promotion : visa du comité de crédit obligatoire. Permis de construire validé requis. Pré-commercialisation ≥ 30 % avant déblocage.
 
 4.3 Secteurs favorisés (bonification de score interne)
-- Technologies et numérique (avec contrats clients justifiés)
-- Santé et services à la personne
-- Énergies renouvelables et transition écologique certifiée
-- Agroalimentaire avec certification qualité
+- Technologies et numérique (avec contrats clients signés, récurrence des revenus SaaS) : bonification de 5 points
+- Santé et services à la personne (EHPAD, cliniques, pharmacies agréées) : bonification de 5 points
+- Énergies renouvelables et transition écologique certifiée (solaire, éolien, pompe à chaleur) : bonification de 8 points
+- Agroalimentaire avec certification qualité (Bio, IP, Label Rouge) : bonification de 3 points
+- Formation professionnelle agréée QUALIOPI : bonification de 3 points
 
 ══════════════════════════════════════════════════════
 CHAPITRE 5 — GARANTIES ET SÛRETÉS
 ══════════════════════════════════════════════════════
 
 5.1 Types de garanties acceptées
-- Hypothèque de premier rang : garantie préférée pour l'immobilier
-- Caution d'un organisme agréé (Crédit Logement, CAMCA...)
-- Nantissement de fonds de commerce : à évaluer au cas par cas
-- Caution personnelle du dirigeant : systématiquement exigée pour les entreprises de moins de 5 ans
-- Gage sur véhicule ou matériel : pour les crédits d'équipement
+- Hypothèque de premier rang : garantie préférée pour l'immobilier. Valeur retenue : 80 % de la valeur d'expertise.
+- Hypothèque de second rang : valeur retenue à 50 % de la valeur résiduelle nette.
+- Caution d'un organisme agréé (Crédit Logement, CAMCA, Société de Caution Mutuelle) : équivalent hypothèque.
+- Nantissement de fonds de commerce : à évaluer au cas par cas, valeur retenue à 60 %.
+- Caution personnelle du dirigeant : systématiquement exigée pour les entreprises de moins de 5 ans. Valeur retenue selon patrimoine net justifié.
+- Gage sur véhicule ou matériel neuf : pour les crédits d'équipement. Valeur retenue à 80 % du neuf, décote de 10 % par an.
+- Nantissement de parts sociales ou d'actions : valeur retenue à 70 % de la valeur comptable des parts.
+- Délégation d'assurance-vie : valeur de rachat retenue à 90 %.
 
-5.2 Montants et obligations
-- Financement > 100 000 € (particulier) : garantie réelle obligatoire (hypothèque ou caution organisme)
-- Financement > 200 000 € (entreprise) : au moins deux types de garanties requis
-- Valeur des garanties : doit couvrir au minimum 110 % du montant financé
+5.2 Montants et obligations selon le niveau de financement
+- Financement < 50 000 € : garantie personnelle suffisante (caution simple).
+- Financement entre 50 000 € et 100 000 € (particulier) : garantie réelle conseillée fortement.
+- Financement > 100 000 € (particulier) : garantie réelle obligatoire (hypothèque ou caution organisme agréé).
+- Financement > 200 000 € (entreprise) : au moins deux types de garanties requis, dont une garantie réelle.
+- Financement > 500 000 € : rapport d'évaluation indépendant des garanties obligatoire (expert agréé).
+- Valeur totale des garanties : doit couvrir au minimum 110 % du montant financé.
+
+5.3 Évaluation et revalorisation
+- L'évaluation des garanties immobilières doit être réalisée par un expert agréé pour tout montant > 150 000 €.
+- Une réévaluation annuelle peut être demandée pour les dossiers en Vigilance Renforcée.
+- Les garanties mobilières (véhicules, matériel) font l'objet d'une décote annuelle documentée.
 
 ══════════════════════════════════════════════════════
-CHAPITRE 6 — NIVEAUX DE DÉCISION
+CHAPITRE 6 — NIVEAUX DE DÉCISION ET DÉLÉGATION
 ══════════════════════════════════════════════════════
 
-6.1 Grille de délégation
-- Score ≥ 85 / Décision "Très Favorable" : accord direct de l'analyste crédit
-- Score 70-84 / Décision "Favorable" : accord analyste crédit, avec notification responsable d'agence
-- Score 55-69 / Décision "Vigilance Modérée" : accord sous conditions, nécessite visa du responsable crédit
-- Score 40-54 / Décision "Vigilance Renforcée" : dossier soumis au comité de crédit
-- Score < 40 / Décision "Défavorable" : refus, lettre de refus motivée obligatoire
+6.1 Grille de délégation de pouvoir
+- Score ≥ 85 / Décision "Très Favorable" : accord direct de l'analyste crédit, notification automatique au responsable d'agence
+- Score 70-84 / Décision "Favorable" : accord de l'analyste crédit, avec notification au responsable d'agence
+- Score 55-69 / Décision "Vigilance Modérée" : accord sous conditions, nécessite visa du responsable crédit (délai 48h)
+- Score 40-54 / Décision "Vigilance Renforcée" : dossier soumis au comité de crédit (délai 5 jours ouvrés)
+- Score < 40 / Décision "Défavorable" : refus, lettre de refus motivée obligatoire, envoi sous 10 jours ouvrés
 
 6.2 Dérogations possibles
-- Une dérogation peut être accordée par le Directeur Crédit si : le score est entre 45 et 54, les garanties sont supérieures à 150 % du montant, et le client est un client existant avec moins de 2 incidents de paiement en 5 ans.
-- Toute dérogation doit être documentée dans le dossier et justifiée par écrit.
+- Une dérogation peut être accordée par le Directeur Crédit si :
+  * Le score est entre 45 et 54
+  * Les garanties sont supérieures à 150 % du montant demandé
+  * Le client est un client existant avec moins de 2 incidents de paiement sur les 5 dernières années
+  * La durée du crédit est réduite d'au moins 20 % par rapport à la durée standard demandée
+- Toute dérogation doit être documentée dans le dossier et justifiée par écrit avec la signature du Directeur Crédit.
+- Maximum 2 dérogations accordées par analyste par mois.
+
+6.3 Conditions suspensives fréquentes
+- Justification de l'apport personnel avant déblocage
+- Preuve d'assurance emprunteur validée
+- Mainlevée des sûretés préexistantes
+- Obtention du permis de construire (crédit immobilier)
+- Remise du K-bis de moins de 3 mois (entreprise)
 
 ══════════════════════════════════════════════════════
 CHAPITRE 7 — DOCUMENTS REQUIS
 ══════════════════════════════════════════════════════
 
-7.1 Particulier
-- 3 derniers bulletins de salaire (ou avis d'imposition pour indépendants)
-- 3 derniers relevés de compte bancaire
-- Justificatif d'identité valide
-- Justificatif de domicile (- de 3 mois)
-- Compromis de vente ou devis (pour le projet financé)
+7.1 Pièces obligatoires pour un particulier
+- 3 derniers bulletins de salaire (ou avis d'imposition N et N-1 pour les indépendants)
+- 3 derniers relevés de compte bancaire (tous comptes courants)
+- Justificatif d'identité valide (CNI ou passeport en cours de validité)
+- Justificatif de domicile de moins de 3 mois
+- Compromis de vente ou devis pour le projet financé
+- Tableau d'amortissement des crédits en cours
+- Livret de famille si personnes à charge
 
-7.2 Entreprise
-- 3 derniers bilans comptables complets (bilan + compte de résultat + annexes)
+7.2 Pièces obligatoires pour une entreprise
+- 3 derniers bilans comptables complets (bilan + compte de résultat + annexes), certifiés par un expert-comptable
 - Relevés bancaires professionnels des 6 derniers mois
 - K-bis de moins de 3 mois
-- Statuts de la société
-- Business plan avec prévisionnel si entreprise < 3 ans
+- Statuts de la société à jour
+- Documents d'identité du ou des dirigeants
+- Business plan avec prévisionnel sur 3 ans si entreprise < 3 ans d'existence
+- Liste des principaux clients et fournisseurs avec % du CA
+- Attestation de régularité fiscale et sociale (URSSAF, impôts) de moins de 3 mois
+
+7.3 Documents complémentaires selon le projet
+- Crédit immobilier : titre de propriété du bien mis en garantie, dernier avis de taxe foncière
+- Crédit d'équipement : devis ou facture du matériel, justificatif de la nécessité professionnelle
+- BTP : plan de charge sur 12 mois, carnet de commandes en cours
+- Agri : attestation PAC, plan d'assolement, contrats de vente avec coopératives
 
 ══════════════════════════════════════════════════════
-FIN DU DOCUMENT
+CHAPITRE 8 — TARIFICATION ET CONDITIONS FINANCIÈRES
+══════════════════════════════════════════════════════
+
+8.1 Grille de taux (indicative, révisée mensuellement)
+- Crédit immobilier 20 ans : taux fixe de référence interne + marge selon score
+  * Score ≥ 80 : marge 0 à 0.2 %
+  * Score 60-79 : marge 0.2 à 0.5 %
+  * Score 40-59 : marge 0.5 à 1.0 % (sous réserve d'accord comité)
+- Crédit professionnel : taux de base + marge sectorielle + marge risque dossier
+
+8.2 Frais et commissions
+- Frais de dossier : 1 % du montant financé, minimum 500 €, maximum 3 000 €
+- Indemnité de remboursement anticipé (IRA) : 3 % du capital restant dû ou 6 mois d'intérêts, retenu le plus faible
+- Frais de garantie (hypothèque) : environ 1.5 % du montant à la charge de l'emprunteur
+
+8.3 Assurance emprunteur
+- ADI (Assurance Décès-Invalidité) obligatoire pour tout crédit > 50 000 €
+- Couverture minimale : 100 % du capital en décès, 100 % en invalidité permanente totale (IPT)
+- La délégation d'assurance est possible sous réserve d'un niveau de garanties équivalent (loi Lemoine)
+
+══════════════════════════════════════════════════════
+CHAPITRE 9 — SURVEILLANCE ET SUIVI DES DOSSIERS
+══════════════════════════════════════════════════════
+
+9.1 Suivi post-accord
+- Tout dossier en Vigilance Renforcée fait l'objet d'un suivi trimestriel
+- Un dossier "Vigilance Modérée" est revu annuellement
+- Les dossiers entreprise > 200 000 € font l'objet d'une revue annuelle incluant les nouveaux bilans
+
+9.2 Alertes et déclassement
+- 2 impayés consécutifs : passage automatique en surveillance renforcée
+- 3 impayés : saisine du comité contentieux
+- Dégradation significative des ratios financiers (DSCR < 1.0 ou marge nette négative) : revue immédiate du dossier
+
+9.3 Renégociation et restructuration
+- Renégociation taux possible si score > 70 et durée résiduelle > 5 ans
+- Restructuration de la dette autorisée uniquement si DSCR restructuré ≥ 1.2 et garanties maintenues
+
+══════════════════════════════════════════════════════
+FIN DU DOCUMENT — Version 2.2
 ══════════════════════════════════════════════════════

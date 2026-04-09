@@ -13,6 +13,9 @@ import HelpCenter from './pages/HelpCenter';
 import Chat from './pages/Chat';
 import Prediction from './pages/Prediction';
 import Privacy from './pages/Privacy';
+import ContactPublic from './pages/ContactPublic';
+import About from './pages/About';
+import PrivacyPublic from './pages/PrivacyPublic';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SessionTimeout from './components/SessionTimeout';
@@ -26,6 +29,10 @@ function App() {
           {/* Route SANS barre latérale */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/contact-public" element={<ContactPublic />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy-policy" element={<PrivacyPublic />} />
+          <Route path="/terms" element={<PrivacyPublic />} />
 
           {/* Routes AVEC barre latérale (via Layout) & PROTEGEES */}
           <Route element={<ProtectedRoute />}>
