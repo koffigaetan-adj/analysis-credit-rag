@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Mail, ShieldCheck, Zap, BarChart3, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -278,17 +278,9 @@ export default function Login() {
           <div className="max-w-md text-left">
             {/* Logo réduit */}
             <div className="mb-10 w-fit inline-block" style={{ perspective: '1000px' }}>
-              <a 
-                href="https://kais-analytics.vercel.app/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <img
-                  src="/Logocomplet.svg"
-                  alt="Kaïs Logo"
-                  className="h-36 object-contain drop-shadow-[0_20px_80px_rgba(230,57,25,0.2)] pointer-events-none"
-                />
-              </a>
+              <Link to="/" >
+                <img src="/Logocomplet.svg" alt="Kaïs Analytics" className="h-36 object-contain drop-shadow-[0_20px_80px_rgba(230,57,25,0.2)] pointer-events-none" />
+              </Link>
             </div>
 
             <p className="text-slate-400 text-lg mb-12 leading-relaxed">
@@ -339,10 +331,9 @@ export default function Login() {
             {(!isForgotPassword && !isResetPassword) && (
               <div className="relative flex mb-8 bg-white/5 p-1.5 rounded-2xl overflow-hidden">
                 {/* Pill animée */}
-                <div 
-                  className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-blue-600/20 border border-blue-500/30 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-                    isSignUp ? 'translate-x-[calc(100%+6px)]' : 'translate-x-0'
-                  }`} 
+                <div
+                  className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-blue-600/20 border border-blue-500/30 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSignUp ? 'translate-x-[calc(100%+6px)]' : 'translate-x-0'
+                    }`}
                 />
                 <button
                   type="button"
