@@ -278,11 +278,17 @@ export default function Login() {
           <div className="max-w-md text-left">
             {/* Logo réduit */}
             <div className="mb-10 w-fit inline-block" style={{ perspective: '1000px' }}>
-              <img
-                src="/Logocomplet.svg"
-                alt="Kaïs Logo"
-                className="h-36 object-contain drop-shadow-[0_20px_80px_rgba(230,57,25,0.2)] pointer-events-none"
-              />
+              <a 
+                href="https://kais-analytics.vercel.app/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/Logocomplet.svg"
+                  alt="Kaïs Logo"
+                  className="h-36 object-contain drop-shadow-[0_20px_80px_rgba(230,57,25,0.2)] pointer-events-none"
+                />
+              </a>
             </div>
 
             <p className="text-slate-400 text-lg mb-12 leading-relaxed">

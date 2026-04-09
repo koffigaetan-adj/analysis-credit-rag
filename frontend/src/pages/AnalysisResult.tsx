@@ -74,6 +74,11 @@ interface Financials {
   debt_ratio?: number;
   rest_to_live?: number;
   savings_capacity?: number;
+
+  // Indicateurs avancés AI
+  explainability?: { label: string, impact: number }[];
+  default_probability?: number;
+  weak_signals?: string[];
 }
 
 interface ResultData {
@@ -590,7 +595,7 @@ export default function AnalysisResult() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-2 print:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 print:grid-cols-3 print:gap-6">
           <div className={`rounded-[28px] print:rounded-2xl p-6 print:p-6 border shadow-sm print:border-slate-200 hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300 group ${decisionStyle.bg} ${decisionStyle.border}`}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-300">Décision IA</p>
             <div className="flex items-center gap-3">{decisionStyle.icon}<h2 className={`text-2xl font-bold ${decisionStyle.text}`}>{decision}</h2></div>
@@ -614,6 +619,17 @@ export default function AnalysisResult() {
             <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all"><LineChart className="w-6 h-6 text-indigo-600 group-hover:text-white" /></div>
               <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">{trend}</h3>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-rose-900/10 hover:-translate-y-1.5 transition-all duration-300">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Proba. de Défaut</p>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl transition-all ${
+                (fins.default_probability ?? 5.0) > 10 ? 'bg-rose-50 dark:bg-rose-900/20 group-hover:bg-rose-500 group-hover:text-white text-rose-500' :
+                (fins.default_probability ?? 5.0) > 3 ? 'bg-orange-50 dark:bg-orange-900/20 group-hover:bg-orange-500 group-hover:text-white text-orange-500' :
+                'bg-emerald-50 dark:bg-emerald-900/20 group-hover:bg-emerald-500 group-hover:text-white text-emerald-500'
+              }`}><AlertTriangle className="w-6 h-6" /></div>
+              <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{(fins.default_probability ?? 5.0).toFixed(1)}<span className="text-slate-300 dark:text-slate-600 text-sm ml-1">%</span></h3>
             </div>
           </div>
         </div>
@@ -806,15 +822,60 @@ export default function AnalysisResult() {
           )}
         </div>
 
-        {/* SYNTHÈSE ET RISQUES */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:grid-cols-1 print:gap-8">
-          <div className="lg:col-span-2 print:col-span-1 bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-10 print:p-8 transition-colors print:break-inside-avoid">
-            <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 print:mb-6 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-500" /> Note d'Audit
+        {/* WEAK SIGNALS (SIGNAUX FAIBLES) */}
+        {(fins.weak_signals && fins.weak_signals.length > 0) && (
+          <div className="bg-orange-50 dark:bg-orange-500/10 rounded-[28px] p-8 border border-orange-200 dark:border-orange-500/20 transition-colors print:break-inside-avoid">
+            <h3 className="text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" /> Surveillance & Signaux Faibles
             </h3>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line text-sm">
-              {resultData.ia_summary || resultData.summary || "Aucune note disponible."}
-            </p>
+            <ul className="space-y-3">
+              {fins.weak_signals.map((ws, i) => (
+                <li key={i} className="text-sm font-medium text-orange-800 dark:text-orange-400 flex items-start gap-3">
+                  <span className="mt-0.5">•</span> <span>{ws}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* SYNTHÈSE ET EXPLICABILITÉ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:grid-cols-1 print:gap-8">
+          <div className="lg:col-span-2 print:col-span-1 space-y-8">
+            <div className="bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-10 print:p-8 transition-colors print:break-inside-avoid">
+              <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 print:mb-6 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-500" /> Note d'Audit
+              </h3>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line text-sm">
+                {resultData.ia_summary || resultData.summary || "Aucune note disponible."}
+              </p>
+            </div>
+            
+            {/* EXPLICABILITÉ DU SCORE */}
+            {(fins.explainability && fins.explainability.length > 0) && (
+              <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm p-8 transition-colors print:break-inside-avoid">
+                <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Impacts sur le Score (Top facteurs)</h3>
+                <div className="space-y-4 py-2">
+                  {[...fins.explainability].filter(f => f.impact !== 0).sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact)).slice(0, 7).map((item, i) => (
+                    <div key={i} className="flex items-center gap-6">
+                      <div className="w-1/3 text-right text-xs font-bold text-slate-600 dark:text-slate-300 truncate" title={item.label}>
+                        {item.label}
+                      </div>
+                      <div className="flex-1 relative h-6 bg-slate-50 dark:bg-slate-800/50 rounded flex items-center">
+                        <div className="absolute top-0 bottom-0 left-1/2 w-px bg-slate-200 dark:bg-slate-700 z-10" />
+                        {item.impact > 0 ? (
+                          <div className="absolute top-1 bottom-1 left-1/2 bg-emerald-500 rounded-r shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all" style={{ width: `${Math.min(50, item.impact * 1.5)}%` }} />
+                        ) : (
+                          <div className="absolute top-1 bottom-1 right-1/2 bg-rose-500 rounded-l shadow-[0_0_8px_rgba(244,63,94,0.3)] transition-all" style={{ width: `${Math.min(50, Math.abs(item.impact) * 1.5)}%` }} />
+                        )}
+                      </div>
+                      <div className={`w-12 text-sm font-black ${item.impact > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {item.impact > 0 ? '+' : ''}{item.impact}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="space-y-6 print:space-y-6 print:grid print:grid-cols-2 print:gap-6 print:space-y-0 print:break-inside-avoid">
             <div className="bg-white dark:bg-slate-900 rounded-[28px] print:rounded-3xl border border-red-50 dark:border-red-500/30 p-6 print:p-6 shadow-sm transition-colors print:h-full">

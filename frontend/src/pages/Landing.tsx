@@ -445,7 +445,7 @@ const Landing = () => {
 
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-500">© {new Date().getFullYear()} Kaïs Analytics. Tous droits réservés.</p>
-            <p className="text-xs text-slate-600">Propulsé par LLaMA 3.3 70B · Supabase pgvector · FastAPI</p>
+            <p className="text-xs text-slate-600">Powered by Kof Company</p>
           </div>
         </div>
       </footer>
