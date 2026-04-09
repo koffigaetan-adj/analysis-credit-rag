@@ -462,9 +462,9 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() => { setIsForgotPassword(true); setError(null); setSuccessMessage(null); }}
-                      className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter hover:text-blue-400 transition-colors"
+                      className="text-[10px] font-bold text-blue-500  tracking-tighter hover:text-blue-400 transition-colors"
                     >
-                      Oublié ?
+                      Mot de passe oublié ?
                     </button>
                   </div>
                   <PasswordInput
