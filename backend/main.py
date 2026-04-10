@@ -421,13 +421,7 @@ async def analyze_dashboard(
             "extracted_name": extracted_data.get("extracted_name", fullName),
             "payment_reliability": score_data.get("payment_reliability", "Moyen"),
             "account_trend": score_data.get("account_trend", "Stable"),
-            "financials": {
-                **fin_data, 
-                **ratios_data,
-                "explainability": score_data.get("explainability", []),
-                "default_probability": score_data.get("default_probability", 5.0),
-                "weak_signals": score_data.get("weak_signals", [])
-            },
+            "financials": {**fin_data, **ratios_data},
             "risks": list(set(score_data.get("technical_risks", []) + final_ia_data.get("risks", []))),
             "opportunities": list(set(score_data.get("technical_opportunities", []) + final_ia_data.get("opportunities", []))),
             "summary": final_ia_data.get("summary", ""),
