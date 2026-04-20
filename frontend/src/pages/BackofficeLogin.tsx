@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, ArrowRight, Server, TerminalSquare } from 'lucide-react';
+import { Lock, ArrowRight, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import logoSvg from '../images/logocompletoffice.svg';
 
 export default function BackofficeLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -13,27 +15,20 @@ export default function BackofficeLogin() {
     e.preventDefault();
     setErrorMsg('');
     setIsLoading(true);
-
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/login`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Identifiants invalides");
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.detail || 'Identifiants invalides');
       }
-
-      const data = await response.json();
-      
-      // Store token specific to backoffice
+      const data = await res.json();
       localStorage.setItem('backoffice_token', data.access_token);
       localStorage.setItem('backoffice_user', JSON.stringify(data.user_info));
-      
       navigate('/backoffice');
-
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -42,77 +37,126 @@ export default function BackofficeLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#06080F] flex items-center justify-center p-4 relative overflow-hidden font-mono text-sm selection:bg-emerald-500/30">
-      
-      {/* Decorative Grid Network */}
-      <div className="absolute inset-0 z-0 opacity-10" style={{
-        backgroundImage: `linear-gradient(rgba(16, 185, 129, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.2) 1px, transparent 1px)`,
-        backgroundSize: '40px 40px'
-      }} />
+    <div className="min-h-screen bg-[#0D0C14] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Fond subtil grille */}
+      <div
+        className="absolute inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage: `linear-gradient(to right, #645CA5 1px, transparent 1px), linear-gradient(to bottom, #645CA5 1px, transparent 1px)`,
+          backgroundSize: '48px 48px',
+        }}
+      />
+      {/* Glow violet centré */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[140px] pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(100,92,165,0.15) 0%, transparent 70%)' }}
+      />
 
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_#06080F_100%)]"></div>
-
-      <div className="w-full max-w-md bg-[#0F1523]/90 backdrop-blur-md border border-emerald-900/40 rounded-sm relative z-10 p-8 shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)]">
-        
-        {/* Terminal Header */}
-        <div className="flex items-center gap-2 mb-8 border-b border-emerald-900/30 pb-4">
-          <TerminalSquare className="w-6 h-6 text-emerald-500" />
-          <div>
-            <h1 className="text-emerald-500 font-bold tracking-widest uppercase">System Console</h1>
-            <p className="text-xs text-emerald-500/50">Core Administration Interface</p>
-          </div>
+      <div className="relative w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <img src={logoSvg} alt="Kaïs Backoffice" className="h-12 w-auto" />
         </div>
 
-        {errorMsg && (
-          <div className="mb-6 p-3 bg-red-900/20 border border-red-500/50 text-red-400 text-xs flex items-start gap-2">
-            <span className="text-red-500 font-bold">[ERR]</span>
-            {errorMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-             <label className="flex items-center gap-2 text-emerald-500/70 text-xs mb-2 uppercase tracking-wider">
-               <Server className="w-3 h-3" /> System ID
-             </label>
-             <input 
-               type="email"
-               value={email}
-               onChange={(e) => setEmail(e.target.value)}
-               required
-               placeholder="admin@kais-analytics.com"
-               className="w-full bg-black/50 border border-emerald-900/50 text-emerald-400 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono text-sm placeholder:text-emerald-900/50"
-             />
+        {/* Card */}
+        <div
+          className="rounded-2xl p-7 shadow-2xl"
+          style={{
+            background: 'rgba(18,16,30,0.95)',
+            border: '1px solid rgba(100,92,165,0.25)',
+            backdropFilter: 'blur(20px)'
+          }}
+        >
+          <div className="mb-6">
+            <h1 className="text-lg font-semibold text-white">Administration</h1>
+            <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              Accès réservé aux administrateurs système
+            </p>
           </div>
 
-          <div>
-             <label className="flex items-center gap-2 text-emerald-500/70 text-xs mb-2 uppercase tracking-wider">
-               <Lock className="w-3 h-3" /> Credentials
-             </label>
-             <input 
-               type="password"
-               value={password}
-               onChange={(e) => setPassword(e.target.value)}
-               required
-               placeholder="****************"
-               className="w-full bg-black/50 border border-emerald-900/50 text-emerald-400 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono tracking-widest text-sm placeholder:text-emerald-900/50"
-             />
-          </div>
+          {errorMsg && (
+            <div className="mb-5 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              {errorMsg}
+            </div>
+          )}
 
-          <button 
-             type="submit"
-             disabled={isLoading}
-             className="w-full bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 hover:border-emerald-400 py-3 font-bold uppercase tracking-wider disabled:opacity-50 transition-all flex items-center justify-center gap-3 mt-8 group"
-          >
-            {isLoading ? 'Authenticating...' : 'Establish link'}
-            {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-          </button>
-        </form>
-        
-        <div className="mt-8 pt-4 border-t border-emerald-900/30 flex items-center justify-between text-[10px] text-emerald-900/60 uppercase tracking-widest">
-           <span>Kaïs Secure Auth</span>
-           <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div> Node Online</span>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                Adresse Email
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="admin@kais-analytics.com"
+                className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(100,92,165,0.25)',
+                  color: '#e2e0f0',
+                }}
+                onFocus={e => (e.target.style.borderColor = '#645CA5')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(100,92,165,0.25)')}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                Mot de passe
+              </label>
+              <div className="relative">
+                <input
+                  type={showPwd ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full px-4 py-2.5 pr-10 rounded-xl text-sm outline-none transition-all"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(100,92,165,0.25)',
+                    color: '#e2e0f0',
+                  }}
+                  onFocus={e => (e.target.style.borderColor = '#645CA5')}
+                  onBlur={e => (e.target.style.borderColor = 'rgba(100,92,165,0.25)')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: 'rgba(255,255,255,0.3)' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = '#645CA5')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.3)')}
+                >
+                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-2 py-2.5 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm group disabled:opacity-50"
+              style={{ background: '#645CA5', color: 'white' }}
+              onMouseEnter={e => { if (!isLoading) (e.currentTarget as HTMLButtonElement).style.background = '#534d8e'; }}
+              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = '#645CA5')}
+            >
+              {isLoading ? 'Connexion en cours...' : (
+                <>
+                  Se connecter
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
         </div>
+
+        <p className="text-center text-xs mt-6" style={{ color: 'rgba(255,255,255,0.15)' }}>
+          Kaïs Analytics · Console d'Administration
+        </p>
       </div>
     </div>
   );

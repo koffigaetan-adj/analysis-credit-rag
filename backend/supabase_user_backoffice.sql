@@ -13,5 +13,14 @@ CREATE TABLE IF NOT EXISTS public.user_backoffice (
 CREATE INDEX IF NOT EXISTS ix_user_backoffice_id ON public.user_backoffice (id);
 CREATE INDEX IF NOT EXISTS ix_user_backoffice_email ON public.user_backoffice (email);
 
--- Attention: Il faudra générer le password hash via Python et faire l'insertion sur Supabase, 
---  ou exécuter le script seed_backoffice.py avec DATABASE_URL pointant vers Supabase.
+-- 3. Insertion du premier administrateur système (Système Admin)
+-- Email : admin@kais-analytics.com
+-- Mot de passe : KaisAdmin2026!
+INSERT INTO public.user_backoffice (email, password_hash, name, role, is_active)
+VALUES (
+    'admin@kais-analytics.com', 
+    '$2b$12$kstVwDUu36yo4i7gT1Mih.kJA773dBaBYYaqSk6ToFxfULQhnCWDi', 
+    'Système Admin', 
+    'SYSTEM_ADMIN', 
+    TRUE
+) ON CONFLICT (email) DO NOTHING;
