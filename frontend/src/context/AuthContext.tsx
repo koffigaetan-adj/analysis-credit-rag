@@ -77,25 +77,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsLoading(false);
      }, []);
 
-     // Quand l'utilisateur est connecté ET a un établissement → charger la couleur
+     // Charger + re-charger la couleur à chaque reprise de focus (capte les changements admin)
      useEffect(() => {
           if (!user?.establishment || !token) return;
 
           const API = import.meta.env.VITE_API_URL;
-          fetch(`${API}/auth/establishments`, {
-               headers: { Authorization: `Bearer ${token}` }
-          })
-          .then(res => res.ok ? res.json() : [])
-          .then((ests: any[]) => {
-               const est = ests.find((e: any) => e.name === user.establishment);
-               if (est?.primary_color) {
-                    const color = est.primary_color;
-                    setPrimaryColor(color);
-                    applyThemeColor(color);
-                    localStorage.setItem('establishment_color', color);
-               }
-          })
-          .catch(() => {});
+
+          const fetchColor = () => {
+               fetch(`${API}/auth/establishments`, {
+                    headers: { Authorization: `Bearer ${token}` }
+               })
+               .then(res => res.ok ? res.json() : [])
+               .then((ests: any[]) => {
+                    const est = ests.find((e: any) => e.name === user.establishment);
+                    if (est?.primary_color) {
+                         const color = est.primary_color;
+                         setPrimaryColor(color);
+                         applyThemeColor(color);
+                         localStorage.setItem('establishment_color', color);
+                    }
+               })
+               .catch(() => {});
+          };
+
+          // Fetch immédiat
+          fetchColor();
+
+          // Re-fetch quand l'utilisateur revient sur l'onglet
+          window.addEventListener('focus', fetchColor);
+          document.addEventListener('visibilitychange', fetchColor);
+
+          return () => {
+               window.removeEventListener('focus', fetchColor);
+               document.removeEventListener('visibilitychange', fetchColor);
+          };
      }, [user?.establishment, token]);
 
      const login = (newToken: string, newUser: User, firstLogin: boolean) => {
