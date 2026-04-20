@@ -810,7 +810,7 @@ export default function AnalysisResult() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:grid-cols-1 print:gap-8">
           <div className="lg:col-span-2 print:col-span-1 bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-10 print:p-8 transition-colors print:break-inside-avoid">
             <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 print:mb-6 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-500" /> Note d'Audit
+              <FileText className="w-5 h-5 icon-primary" /> Note d'Audit
             </h3>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line text-sm">
               {resultData.ia_summary || resultData.summary || "Aucune note disponible."}

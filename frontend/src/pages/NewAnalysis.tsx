@@ -191,12 +191,12 @@ export default function NewAnalysis() {
           Nouveau <span className="font-semibold text-slate-900 dark:text-white">Dossier {activeCategory === 'entreprise' ? 'PRO' : 'Client'}</span>
         </h1>
         <div className="mt-6 flex justify-center items-center gap-6">
-          <div className={`flex items-center gap-3 transition-colors ${step >= 1 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-700'}`}>
+          <div className={`flex items-center gap-3 transition-colors ${step >= 1 ? 'text-primary' : 'text-slate-300 dark:text-slate-700'}`}>
             <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 1 ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-800'}`}>1</span>
             <span className="text-sm font-medium">Anamnèse</span>
           </div>
           <div className="w-12 h-px bg-slate-200 dark:bg-slate-800"></div>
-          <div className={`flex items-center gap-3 transition-colors ${step >= 2 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-700'}`}>
+          <div className={`flex items-center gap-3 transition-colors ${step >= 2 ? 'text-primary' : 'text-slate-300 dark:text-slate-700'}`}>
             <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 2 ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-800'}`}>2</span>
             <span className="text-sm font-medium">Documents</span>
           </div>
@@ -209,7 +209,7 @@ export default function NewAnalysis() {
           {/* CATEGORY SWITCHER */}
           <div className="flex justify-center mb-10">
             <div className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl flex flex-col sm:flex-row border border-slate-100 dark:border-slate-800 shadow-inner w-full sm:w-auto">
-              <button onClick={() => handleCategoryChange('particulier')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'particulier' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+              <button onClick={() => handleCategoryChange('particulier')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'particulier' ? 'bg-white dark:bg-slate-800 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <User className="w-4 h-4 inline mr-2" /> Particulier
               </button>
               <button onClick={() => handleCategoryChange('entreprise')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'entreprise' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
@@ -221,7 +221,7 @@ export default function NewAnalysis() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-6">
               <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-blue-500" /> Profil Demandeur
+                <Briefcase className="w-5 h-5 icon-primary" /> Profil Demandeur
               </h3>
               <div className="space-y-4">
                 {activeCategory === 'entreprise' && (
@@ -252,7 +252,7 @@ export default function NewAnalysis() {
 
             <div className="space-y-6">
               <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-blue-500" /> Engagement
+                <CreditCard className="w-5 h-5 icon-primary" /> Engagement
               </h3>
               <div className="space-y-4">
                 <div>
@@ -319,7 +319,7 @@ export default function NewAnalysis() {
           <div className="p-6 md:px-10 md:py-8 bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
             <div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3 uppercase tracking-tight">
-                <FileText className="w-5 h-5 text-blue-500" /> Justificatifs Requis
+                <FileText className="w-5 h-5 icon-primary" /> Justificatifs Requis
               </h3>
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase font-black tracking-widest">
                 Profil : {activeCategory === 'entreprise' ? 'PRO' : 'PART'} — {currentDocs.length} pièces

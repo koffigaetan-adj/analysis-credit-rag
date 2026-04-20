@@ -41,12 +41,40 @@
 }
 
 .bg-primary-light {
-  background-color: color-mix(in srgb, var(--kais-primary) 15%, transparent) !important;
+  background-color: color-mix(in srgb, var(--kais-primary) 12%, transparent) !important;
 }
 
 .ring-primary:focus {
   outline: 2px solid var(--kais-primary);
   outline-offset: 2px;
+}
+
+/* Barre d'onglet actif */
+.tab-active-bar {
+  background-color: var(--kais-primary) !important;
+}
+
+/* Bullet/point thème */
+.dot-primary {
+  background-color: var(--kais-primary) !important;
+}
+
+/* Hover sur icône */
+.icon-primary {
+  color: var(--kais-primary) !important;
+}
+
+/* Lien thème */
+.link-primary {
+  color: var(--kais-primary) !important;
+}
+.link-primary:hover {
+  opacity: 0.8;
+}
+
+/* Halo / glow en arrière-plan */
+.glow-primary {
+  background-color: color-mix(in srgb, var(--kais-primary) 8%, transparent) !important;
 }
 
 

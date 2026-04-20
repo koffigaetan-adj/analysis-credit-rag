@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AlertTriangle, X, Check, Trash2, Loader2, Info } from 'lucide-react';
 
 export type ModalType = 'danger' | 'warning' | 'info' | 'success' | 'loading';

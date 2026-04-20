@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { ArrowRight, Activity, Percent, Banknote, ShieldAlert, TrendingDown, TrendingUp, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Plot from 'react-plotly.js';
@@ -81,7 +81,7 @@ export default function Simulator() {
     <div className="mb-6">
       <div className="flex justify-between items-center mb-2">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-           <Icon className="w-4 h-4 text-blue-500" /> {label}
+           <Icon className="w-5 h-5 icon-primary" /> {label}
         </label>
         <span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg">
           {value.toLocaleString('fr-FR')} {unit}
@@ -106,7 +106,7 @@ export default function Simulator() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
-            <Activity className="w-8 h-8 text-blue-500" /> Simulateur de Crédit
+            <Activity className="w-5 h-5 icon-primary" /> Simulateur de Crédit
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-2">
             Simulez instantanément différents scénarios économiques pour tester la robustesse des emprunteurs.

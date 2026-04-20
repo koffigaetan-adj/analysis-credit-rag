@@ -247,10 +247,10 @@ export default function Settings() {
             </div>
 
             <div className="mt-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-all overflow-hidden p-6 gap-4 flex items-center">
-              <ShieldCheck className="w-8 h-8 text-blue-500" />
+              <ShieldCheck className="w-5 h-5 icon-primary" />
               <div>
                 <h3 className="text-sm font-bold text-slate-800 dark:text-white">Droits de votre compte</h3>
-                <p className="text-xs text-slate-500 font-medium">Vous êtes actuellement connecté en tant que <span className="text-blue-600 font-bold uppercase">{user?.role === 'SUPER_ADMIN' ? 'Super Administrateur' : user?.role === 'ADMIN' ? 'Administrateur' : 'Analyste'}</span></p>
+                <p className="text-xs text-slate-500 font-medium">Vous êtes actuellement connecté en tant que <span className="text-primary font-bold uppercase">{user?.role === 'SUPER_ADMIN' ? 'Super Administrateur' : user?.role === 'ADMIN' ? 'Administrateur' : 'Analyste'}</span></p>
               </div>
             </div>
           </div>
@@ -367,7 +367,7 @@ export default function Settings() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-blue-500" />
+                <Lock className="w-5 h-5 icon-primary" />
                 Confirmation de sécurité
               </h3>
               <button

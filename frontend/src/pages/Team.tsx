@@ -352,18 +352,18 @@ export default function Team() {
         <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-2">
           <button
             onClick={() => setActiveTab('members')}
-            className={`px-4 py-2 text-sm font-bold relative ${activeTab === 'members' ? 'text-blue-600 dark:text-blue-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            className={`px-4 py-2 text-sm font-bold relative ${activeTab === 'members' ? 'text-primary' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             Membres Actifs
-            {activeTab === 'members' && <div className="absolute bottom-[-9px] left-0 w-full h-[2px] bg-blue-600 dark:bg-blue-500 rounded-t-full"></div>}
+            {activeTab === 'members' && <div className="absolute bottom-[-9px] left-0 w-full h-[2px] tab-active-bar rounded-t-full"></div>}
           </button>
           <button
             onClick={() => setActiveTab('requests')}
-            className={`px-4 py-2 text-sm font-bold relative flex items-center gap-2 ${activeTab === 'requests' ? 'text-blue-600 dark:text-blue-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            className={`px-4 py-2 text-sm font-bold relative flex items-center gap-2 ${activeTab === 'requests' ? 'text-primary' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             Demandes en attente
             {requests.length > 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[10px]">{requests.length}</span>}
-            {activeTab === 'requests' && <div className="absolute bottom-[-9px] left-0 w-full h-[2px] bg-blue-600 dark:bg-blue-500 rounded-t-full"></div>}
+            {activeTab === 'requests' && <div className="absolute bottom-[-9px] left-0 w-full h-[2px] tab-active-bar rounded-t-full"></div>}
           </button>
         </div>
       )}
@@ -583,7 +583,7 @@ export default function Team() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-blue-500" />
+                <Edit3 className="w-5 h-5 icon-primary" />
                 Modifier le membre
               </h3>
               <button

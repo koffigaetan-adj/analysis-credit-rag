@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AlertTriangle, LogOut } from 'lucide-react';
 
@@ -110,7 +110,7 @@ export default function SessionTimeout() {
                          </button>
                          <button
                               onClick={resetTimer}
-                              className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30"
+                              className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-white btn-primary transition-all"
                          >
                               Rester connecté
                          </button>

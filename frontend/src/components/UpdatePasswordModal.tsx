@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Lock, ArrowRight, ShieldAlert, Eye, EyeOff, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -179,7 +179,7 @@ export default function UpdatePasswordModal({ isOpen = false, onClose }: UpdateP
                               <button
                                    type="submit"
                                    disabled={isLoading || !oldPassword || !newPassword || !confirmPassword}
-                                   className="w-full mt-6 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+                                   className="w-full mt-6 btn-primary py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:active:scale-100"
                               >
                                    {isLoading ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -140,10 +140,10 @@ export default function Applications() {
       {/* FILTERS & SEARCH BAR */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-50 dark:border-slate-800 p-3 mb-8 flex flex-col lg:flex-row justify-between items-center gap-4 transition-colors">
         <div className="flex bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl w-full lg:w-auto">
-          <button onClick={() => setActiveTab('particulier')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'particulier' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+          <button onClick={() => setActiveTab('particulier')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'particulier' ? 'bg-white dark:bg-slate-900 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
             <User className="w-4 h-4" /> Particuliers
           </button>
-          <button onClick={() => setActiveTab('entreprise')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'entreprise' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+          <button onClick={() => setActiveTab('entreprise')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'entreprise' ? 'bg-white dark:bg-slate-900 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
             <Building2 className="w-4 h-4" /> Entreprises
           </button>
         </div>

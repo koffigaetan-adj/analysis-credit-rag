@@ -224,7 +224,7 @@ export default function Chat() {
                               Assistant <span className="font-semibold text-slate-900 dark:text-white">IA</span>
                          </h1>
                          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
-                              <Bot className="w-4 h-4 text-blue-500" />
+                              <Bot className="w-5 h-5 icon-primary" />
                               Discutez, analysez et explorez des concepts financiers.
                          </p>
                     </div>

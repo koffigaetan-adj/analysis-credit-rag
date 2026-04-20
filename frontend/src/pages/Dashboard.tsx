@@ -72,7 +72,7 @@ export default function Dashboard() {
             Vue <span className="font-semibold text-slate-900 dark:text-white">d'ensemble</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-blue-500" />
+            <Activity className="w-5 h-5 icon-primary" />
             Analyse en temps réel du portefeuille crédit
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function Dashboard() {
                 <div className="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
                 <div className="flex flex-col">
                   <span className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-500" /> {partCount}
+                    <User className="w-5 h-5 icon-primary" /> {partCount}
                   </span>
                   <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-1">PART</span>
                 </div>
