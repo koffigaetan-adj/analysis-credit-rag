@@ -59,6 +59,14 @@ class Application(Base):
     # Chat
     chat_history = Column(JSON, default=[])
 
+class Establishment(Base):
+    __tablename__ = "establishments"
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String, unique=True, index=True, nullable=False)
+    address = Column(String, nullable=True)
+    status = Column(String, default="active") # active, inactive
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class User(Base):
     __tablename__ = "users"
 

@@ -1,4 +1,14 @@
-import { Application, TeamMember, AIAnalysis } from './types';
+import { Application, TeamMember, AIAnalysis, Establishment } from './types';
+
+export const mockEstablishments: Establishment[] = [
+  {
+    id: 'est-1',
+    name: 'Kof company',
+    address: 'Abidjan, Côte d\'Ivoire',
+    status: 'active',
+    createdAt: '2023-01-15'
+  }
+];
 
 export const mockApplications: Application[] = [
   {
@@ -67,6 +77,7 @@ export const mockTeamMembers: TeamMember[] = [
     email: 'sophie.dubois@creditai.fr',
     role: 'admin',
     status: 'active',
+    establishmentId: 'est-1'
   },
   {
     id: '2',
@@ -74,6 +85,7 @@ export const mockTeamMembers: TeamMember[] = [
     email: 'pierre.martin@creditai.fr',
     role: 'analyst',
     status: 'active',
+    establishmentId: 'est-1'
   },
   {
     id: '3',
@@ -81,13 +93,15 @@ export const mockTeamMembers: TeamMember[] = [
     email: 'marie.leclerc@creditai.fr',
     role: 'analyst',
     status: 'active',
+    establishmentId: 'est-1'
   },
   {
     id: '4',
     name: 'Jean Rousseau',
     email: 'jean.rousseau@creditai.fr',
-    role: 'analyst',
-    status: 'inactive',
+    role: 'member',
+    status: 'suspended',
+    establishmentId: 'est-1'
   },
 ];
 

@@ -13,12 +13,21 @@ export interface Application {
   score?: number;
 }
 
+export interface Establishment {
+  id: string;
+  name: string;
+  address: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
 export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'analyst';
-  status: 'active' | 'inactive';
+  role: 'admin' | 'member' | 'analyst';
+  status: 'active' | 'inactive' | 'suspended';
+  establishmentId?: string;
 }
 
 export interface FinancialMetric {

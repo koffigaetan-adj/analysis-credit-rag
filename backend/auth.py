@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 import shutil
 import uuid
 import random
-from database import get_db, User, AccountRequest, Notification, PasswordResetCode
+from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment
 from email_service import send_email_sync
 
 # Paramètres Sécurité & JWT (à configurer via .env en prod)
@@ -1002,3 +1002,53 @@ def clear_all_notifications(
         
     db.commit()
     return {"message": "Toutes les notifications ont été supprimées."}
+
+# --- ETABLISSEMENTS ---
+class CreateEstablishmentRequest(BaseModel):
+    name: str
+    address: str
+
+@router.get("/establishments")
+def get_establishments(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+):
+    est = db.query(Establishment).all()
+    return [{
+        "id": e.id,
+        "name": e.name,
+        "address": e.address,
+        "status": e.status,
+        "created_at": e.created_at
+    } for e in est]
+
+@router.post("/establishments")
+def create_establishment(
+    req: CreateEstablishmentRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+):
+    existing = db.query(Establishment).filter(Establishment.name == req.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Un établissement avec ce nom existe déjà.")
+    
+    new_est = Establishment(
+        id=str(uuid.uuid4()),
+        name=req.name,
+        address=req.address,
+        status="active"
+    )
+    db.add(new_est)
+    db.commit()
+    db.refresh(new_est)
+    
+    return {
+        "message": "Établissement créé avec succès.",
+        "establishment": {
+             "id": new_est.id,
+             "name": new_est.name,
+             "address": new_est.address,
+             "status": new_est.status,
+             "created_at": new_est.created_at
+        }
+    }
