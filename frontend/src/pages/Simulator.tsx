@@ -3,7 +3,7 @@ import { ArrowRight, Activity, Percent, Banknote, ShieldAlert, TrendingDown, Tre
 import { useNavigate } from 'react-router-dom';
 import Plot from 'react-plotly.js';
 
-export default function Prediction() {
+export default function Simulator() {
   const navigate = useNavigate();
 
   // --- ÉTATS (SLIDERS) ---
@@ -106,7 +106,7 @@ export default function Prediction() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
-            <Activity className="w-8 h-8 text-blue-500" /> Stress Test Prédictif
+            <Activity className="w-8 h-8 text-blue-500" /> Simulateur de Crédit
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-2">
             Simulez instantanément différents scénarios économiques pour tester la robustesse des emprunteurs.
@@ -126,7 +126,7 @@ export default function Prediction() {
         <div className="lg:col-span-5 space-y-8">
           
           {/* Bloc Entreprise */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
               <Settings2 className="w-5 h-5 text-indigo-500" /> Données de l'Entreprise
             </h2>
@@ -163,7 +163,7 @@ export default function Prediction() {
           </div>
 
           {/* Bloc Financement */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
               <TrendingUp className="w-5 h-5 text-emerald-500" /> Scénario de Financement
             </h2>
@@ -205,10 +205,10 @@ export default function Prediction() {
         <div className="lg:col-span-7 space-y-8">
           
           {/* Main KPI */}
-          <div className={`rounded-3xl p-8 border shadow-sm transition-colors duration-500 relative overflow-hidden ${
-            pd > 15 ? 'bg-rose-50 border-rose-200 dark:bg-rose-900/10 dark:border-rose-800/30' : 
-            pd > 5 ? 'bg-orange-50 border-orange-200 dark:bg-orange-900/10 dark:border-orange-800/30' : 
-            'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800/30'
+          <div className={`rounded-3xl p-8 border shadow-xl transition-all duration-500 relative overflow-hidden backdrop-blur-xl transform hover:-translate-y-1 ${
+            pd > 15 ? 'bg-rose-50/90 border-rose-200 dark:bg-rose-900/40 dark:border-rose-800/40' : 
+            pd > 5 ? 'bg-orange-50/90 border-orange-200 dark:bg-orange-900/40 dark:border-orange-800/40' : 
+            'bg-emerald-50/90 border-emerald-200 dark:bg-emerald-900/40 dark:border-emerald-800/40'
           }`}>
             {/* Décoration arriere plan */}
             <ShieldAlert className={`absolute -right-10 -top-10 w-64 h-64 opacity-[0.03] ${pd > 10 ? 'text-rose-500' : 'text-emerald-500'}`} />
@@ -246,7 +246,7 @@ export default function Prediction() {
 
           {/* Sub KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Ratio DSCR</p>
                 <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function Prediction() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Levier (Dette/EBITDA)</p>
                 <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function Prediction() {
           </div>
 
           {/* Graphique d'évolution */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Trajectoire du Cash Flow Libre</h3>
              <div className="h-64 w-full">
                <Plot

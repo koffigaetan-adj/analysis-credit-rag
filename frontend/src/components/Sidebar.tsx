@@ -30,7 +30,7 @@ const menuItems = [
   { path: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { path: '/new', label: 'Nouvelle Analyse', icon: FileText },
   { path: '/history', label: 'Historique', icon: ListTodo },
-  { path: '/prediction', label: 'Prédiction', icon: Activity },
+  { path: '/simulateur', label: 'Simulateur', icon: Activity },
   { path: '/chat', label: 'Assistant Chat', icon: MessageSquare },
   { path: '/team', label: 'Équipe', icon: Users },
 ];

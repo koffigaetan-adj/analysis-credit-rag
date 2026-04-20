@@ -11,7 +11,7 @@ import Team from './pages/Team';
 import Settings from './pages/Settings';
 import HelpCenter from './pages/HelpCenter';
 import Chat from './pages/Chat';
-import Prediction from './pages/Prediction';
+import Simulator from './pages/Simulator';
 import Privacy from './pages/Privacy';
 import ContactPublic from './pages/ContactPublic';
 import About from './pages/About';
@@ -40,7 +40,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/list" element={<List />} />
               <Route path="/history" element={<List />} />
-              <Route path="/prediction" element={<Prediction />} />
+              <Route path="/simulateur" element={<Simulator />} />
               <Route path="/new" element={<NewAnalysis />} />
               <Route path="/analysis/result" element={<AnalysisResult />} />
               <Route path="/analysis/:id" element={<AnalysisDetail />} />
