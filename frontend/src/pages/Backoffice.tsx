@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Building2, Users, LayoutDashboard,
   Plus, CheckCircle2, XCircle, Edit2,
-  Lock, Loader2, LogOut, AlertTriangle
+  Lock, Loader2, LogOut, AlertTriangle, Search, Filter
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
@@ -36,6 +36,21 @@ export default function Backoffice() {
     try { return JSON.parse(localStorage.getItem('backoffice_user') || '{}'); } catch { return {}; }
   })();
 
+  // Dynamically update tab title + favicon for backoffice
+  useEffect(() => {
+    const prevTitle = document.title;
+    const prevFavicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    const prevHref = prevFavicon?.href;
+
+    document.title = 'Kaïs Backoffice';
+    if (prevFavicon) prevFavicon.href = '/logobackoffice.svg';
+
+    return () => {
+      document.title = prevTitle;
+      if (prevFavicon && prevHref) prevFavicon.href = prevHref;
+    };
+  }, []);
+
   useEffect(() => {
     if (!token) navigate('/backoffice/login');
   }, [token, navigate]);
@@ -44,6 +59,12 @@ export default function Backoffice() {
   const [establishments, setEstablishments] = useState<Est[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // --- Filtres utilisateurs ---
+  const [searchUsr, setSearchUsr] = useState('');
+  const [filterEst, setFilterEst] = useState('');
+  const [filterRole, setFilterRole] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   // --- States Établissement ---
   const [showEstModal, setShowEstModal] = useState(false);
@@ -56,7 +77,7 @@ export default function Backoffice() {
   const [showUsrModal, setShowUsrModal] = useState(false);
   const [editingUsr, setEditingUsr] = useState<Member | null>(null);
   const [usrForm, setUsrForm] = useState({
-    name: '', email: '', tempPwd: '', role: 'ANALYST', establishment: ''
+    first_name: '', last_name: '', email: '', tempPwd: '', role: 'ANALYST', establishment: ''
   });
   const [usrError, setUsrError] = useState('');
 
@@ -81,6 +102,21 @@ export default function Backoffice() {
   // Stats
   const activeUsers = members.filter(m => m.is_active).length;
 
+  // Membres filtrés
+  const filteredMembers = members.filter(m => {
+    const search = searchUsr.toLowerCase();
+    const matchSearch = !search ||
+      m.first_name.toLowerCase().includes(search) ||
+      m.last_name.toLowerCase().includes(search) ||
+      m.email.toLowerCase().includes(search);
+    const matchEst = !filterEst || m.establishment === filterEst;
+    const matchRole = !filterRole || m.role === filterRole;
+    const matchStatus = !filterStatus ||
+      (filterStatus === 'active' && m.is_active) ||
+      (filterStatus === 'inactive' && !m.is_active);
+    return matchSearch && matchEst && matchRole && matchStatus;
+  });
+
   // --- Handlers Établissement ---
   const openNewEstModal = () => {
     setEditingEst(null);
@@ -101,9 +137,7 @@ export default function Backoffice() {
     setEstError('');
     setIsSubmitting(true);
     try {
-      const url = editingEst
-        ? `${API}/auth/establishments/${editingEst.id}`
-        : `${API}/auth/establishments`;
+      const url = editingEst ? `${API}/auth/establishments/${editingEst.id}` : `${API}/auth/establishments`;
       const method = editingEst ? 'PUT' : 'POST';
       const res = await fetch(url, { method, headers, body: JSON.stringify(estForm) });
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
@@ -126,7 +160,7 @@ export default function Backoffice() {
   // --- Handlers Utilisateur ---
   const openNewUsrModal = () => {
     setEditingUsr(null);
-    setUsrForm({ name: '', email: '', tempPwd: '', role: 'ANALYST', establishment: '' });
+    setUsrForm({ first_name: '', last_name: '', email: '', tempPwd: '', role: 'ANALYST', establishment: '' });
     setUsrError('');
     setShowUsrModal(true);
   };
@@ -134,7 +168,8 @@ export default function Backoffice() {
   const openEditUsrModal = (usr: Member) => {
     setEditingUsr(usr);
     setUsrForm({
-      name: `${usr.first_name} ${usr.last_name}`,
+      first_name: usr.first_name,
+      last_name: usr.last_name,
       email: usr.email,
       tempPwd: '',
       role: usr.role,
@@ -148,20 +183,35 @@ export default function Backoffice() {
     e.preventDefault();
     setUsrError('');
     setIsSubmitting(true);
-    const parts = usrForm.name.trim().split(' ');
-    const first_name = parts[0] || 'Inconnu';
-    const last_name = parts.slice(1).join(' ') || 'Inconnu';
     try {
       if (editingUsr) {
         const res = await fetch(`${API}/auth/backoffice/users/${editingUsr.id}`, {
           method: 'PUT', headers,
-          body: JSON.stringify({ first_name, last_name, email: usrForm.email, role: usrForm.role, establishment: usrForm.establishment, sexe: 'M', poste: 'Data Analyst', password: 'unchanged' })
+          body: JSON.stringify({
+            first_name: usrForm.first_name,
+            last_name: usrForm.last_name,
+            email: usrForm.email,
+            role: usrForm.role,
+            establishment: usrForm.establishment,
+            sexe: 'M',
+            poste: 'Data Analyst',
+            password: 'unchanged'
+          })
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
       } else {
         const res = await fetch(`${API}/auth/users`, {
           method: 'POST', headers,
-          body: JSON.stringify({ first_name, last_name, email: usrForm.email, password: usrForm.tempPwd || 'TempPass123!', role: usrForm.role, establishment: usrForm.establishment, sexe: 'M', poste: 'Data Analyst' })
+          body: JSON.stringify({
+            first_name: usrForm.first_name,
+            last_name: usrForm.last_name,
+            email: usrForm.email,
+            password: usrForm.tempPwd || 'TempPass123!',
+            role: usrForm.role,
+            establishment: usrForm.establishment,
+            sexe: 'M',
+            poste: 'Data Analyst'
+          })
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
       }
@@ -186,9 +236,11 @@ export default function Backoffice() {
 
   const ROLE_COLORS: Record<string, string> = {
     SUPER_ADMIN: 'text-purple-400 border-purple-700 bg-purple-500/10',
-    ADMIN: 'text-blue-400 border-blue-700 bg-blue-500/10',
+    ADMIN: 'text-indigo-400 border-indigo-700 bg-indigo-500/10',
     ANALYST: 'text-slate-400 border-slate-700 bg-slate-800/50',
   };
+
+  const uniqueRoles = [...new Set(members.map(m => m.role))];
 
   return (
     <div className="min-h-screen bg-[#0B0F19] text-slate-300 font-sans flex text-sm">
@@ -202,7 +254,7 @@ export default function Backoffice() {
         <div className="p-3 border-b border-slate-800/50 mx-3 mt-3 rounded-xl bg-slate-800/30">
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Connecté en tant que</p>
           <p className="text-slate-200 font-medium text-xs mt-0.5 truncate">{backofficeUser.name || 'Admin'}</p>
-          <span className="text-[10px] text-blue-400">{backofficeUser.role || 'SYSTEM_ADMIN'}</span>
+          <span className="text-[10px]" style={{ color: '#a89fdb' }}>{backofficeUser.role || 'SYSTEM_ADMIN'}</span>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 mt-2">
@@ -216,9 +268,7 @@ export default function Backoffice() {
               onClick={() => setActiveTab(id)}
               style={activeTab === id ? { background: 'rgba(100,92,165,0.12)', color: '#a89fdb', borderColor: 'rgba(100,92,165,0.3)' } : {}}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm border ${
-                activeTab === id
-                  ? 'font-semibold'
-                  : 'border-transparent hover:bg-slate-800/60 text-slate-400 hover:text-white'
+                activeTab === id ? 'font-semibold' : 'border-transparent hover:bg-slate-800/60 text-slate-400 hover:text-white'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -245,18 +295,18 @@ export default function Backoffice() {
             <h2 className="text-xl font-semibold text-white">
               {activeTab === 'dashboard' && 'Vue Globale'}
               {activeTab === 'establishments' && 'Gestion des Établissements'}
-              {activeTab === 'users' && "Contrôle d'Accès Utilisateurs"}
+              {activeTab === 'users' && "Gestion des Utilisateurs"}
             </h2>
             <p className="text-slate-500 text-xs mt-0.5">Administration système — données en temps réel.</p>
           </div>
           <div>
             {activeTab === 'establishments' && (
-              <button onClick={openNewEstModal} className="text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all text-sm hover:opacity-90" style={{ background: '#645CA5' }}>
+              <button onClick={openNewEstModal} className="text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
                 <Plus className="w-4 h-4" /> Nouvel établissement
               </button>
             )}
             {activeTab === 'users' && (
-              <button onClick={openNewUsrModal} className="text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all text-sm hover:opacity-90" style={{ background: '#645CA5' }}>
+              <button onClick={openNewUsrModal} className="text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
                 <Plus className="w-4 h-4" /> Créer un compte
               </button>
             )}
@@ -369,68 +419,128 @@ export default function Backoffice() {
 
               {/* UTILISATEURS */}
               {activeTab === 'users' && (
-                <div className="bg-[#121927] border border-slate-800/60 rounded-xl overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-[#0F1523] text-slate-500 text-xs uppercase tracking-wider border-b border-slate-800">
-                        <th className="px-5 py-3 font-medium">Utilisateur</th>
-                        <th className="px-5 py-3 font-medium">Établissement</th>
-                        <th className="px-5 py-3 font-medium">Rôle</th>
-                        <th className="px-5 py-3 font-medium text-center">Accès</th>
-                        <th className="px-5 py-3 font-medium text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/50">
-                      {members.length === 0 && (
-                        <tr><td colSpan={5} className="p-8 text-center text-slate-500">Aucun utilisateur.</td></tr>
-                      )}
-                      {members.map(usr => (
-                        <tr key={usr.id} className="hover:bg-slate-800/20 transition-colors group">
-                          <td className="px-5 py-4">
-                            <div className="text-slate-200 font-medium">{usr.first_name} {usr.last_name}</div>
-                            <div className="text-slate-500 text-xs mt-0.5">{usr.email}</div>
-                          </td>
-                          <td className="px-5 py-4 text-sm">
-                            {usr.establishment
-                              ? <span className="text-slate-300">{usr.establishment}</span>
-                              : <span className="text-amber-600/70 italic text-xs">Non assigné</span>
-                            }
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className={`text-[10px] border px-2 py-1 rounded font-bold uppercase ${ROLE_COLORS[usr.role] || ROLE_COLORS['ANALYST']}`}>
-                              {usr.role}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-center">
-                            {usr.is_active
-                              ? <CheckCircle2 className="w-4 h-4 text-emerald-500 inline" />
-                              : <AlertTriangle className="w-4 h-4 text-amber-500 inline" />
-                            }
-                          </td>
-                          <td className="px-5 py-4">
-                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                              <button
-                                onClick={() => openEditUsrModal(usr)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
-                              >
-                                <Edit2 className="w-3 h-3" /> Modifier
-                              </button>
-                              <button
-                                onClick={() => toggleUserStatus(usr)}
-                                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                                  usr.is_active
-                                    ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'
-                                    : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                                }`}
-                              >
-                                {usr.is_active ? 'Suspendre' : 'Activer'}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                <div className="space-y-4">
+                  {/* Barre de filtres */}
+                  <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-4 flex flex-wrap gap-3 items-center">
+                    <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+
+                    {/* Recherche texte */}
+                    <div className="relative flex-1 min-w-[180px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                      <input
+                        type="text"
+                        placeholder="Nom, email…"
+                        value={searchUsr}
+                        onChange={e => setSearchUsr(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 bg-[#0F1523] border border-slate-700 rounded-lg text-sm text-slate-300 outline-none focus:border-[#645CA5] transition-all"
+                      />
+                    </div>
+
+                    {/* Filtre établissement */}
+                    <select
+                      value={filterEst}
+                      onChange={e => setFilterEst(e.target.value)}
+                      className="px-3 py-2 bg-[#0F1523] border border-slate-700 rounded-lg text-sm text-slate-300 outline-none focus:border-[#645CA5] transition-all"
+                    >
+                      <option value="">Tous les établissements</option>
+                      {establishments.map(est => (
+                        <option key={est.id} value={est.name}>{est.name}</option>
                       ))}
-                    </tbody>
-                  </table>
+                    </select>
+
+                    {/* Filtre rôle */}
+                    <select
+                      value={filterRole}
+                      onChange={e => setFilterRole(e.target.value)}
+                      className="px-3 py-2 bg-[#0F1523] border border-slate-700 rounded-lg text-sm text-slate-300 outline-none focus:border-[#645CA5] transition-all"
+                    >
+                      <option value="">Tous les rôles</option>
+                      {uniqueRoles.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+
+                    {/* Filtre statut */}
+                    <select
+                      value={filterStatus}
+                      onChange={e => setFilterStatus(e.target.value)}
+                      className="px-3 py-2 bg-[#0F1523] border border-slate-700 rounded-lg text-sm text-slate-300 outline-none focus:border-[#645CA5] transition-all"
+                    >
+                      <option value="">Tous les statuts</option>
+                      <option value="active">Actifs</option>
+                      <option value="inactive">Suspendus</option>
+                    </select>
+
+                    {/* Compteur */}
+                    <span className="text-xs text-slate-500 ml-auto">
+                      {filteredMembers.length} / {members.length} utilisateur{members.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {/* Tableau */}
+                  <div className="bg-[#121927] border border-slate-800/60 rounded-xl overflow-hidden">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-[#0F1523] text-slate-500 text-xs uppercase tracking-wider border-b border-slate-800">
+                          <th className="px-5 py-3 font-medium">Utilisateur</th>
+                          <th className="px-5 py-3 font-medium">Établissement</th>
+                          <th className="px-5 py-3 font-medium">Rôle</th>
+                          <th className="px-5 py-3 font-medium text-center">Accès</th>
+                          <th className="px-5 py-3 font-medium text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/50">
+                        {filteredMembers.length === 0 && (
+                          <tr><td colSpan={5} className="p-8 text-center text-slate-500">Aucun utilisateur trouvé avec ces filtres.</td></tr>
+                        )}
+                        {filteredMembers.map(usr => (
+                          <tr key={usr.id} className="hover:bg-slate-800/20 transition-colors group">
+                            <td className="px-5 py-4">
+                              <div className="text-slate-200 font-medium">{usr.first_name} {usr.last_name}</div>
+                              <div className="text-slate-500 text-xs mt-0.5">{usr.email}</div>
+                            </td>
+                            <td className="px-5 py-4 text-sm">
+                              {usr.establishment
+                                ? <span className="text-slate-300">{usr.establishment}</span>
+                                : <span className="text-amber-600/70 italic text-xs">Non assigné</span>
+                              }
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`text-[10px] border px-2 py-1 rounded font-bold uppercase ${ROLE_COLORS[usr.role] || ROLE_COLORS['ANALYST']}`}>
+                                {usr.role}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-center">
+                              {usr.is_active
+                                ? <CheckCircle2 className="w-4 h-4 text-emerald-500 inline" />
+                                : <AlertTriangle className="w-4 h-4 text-amber-500 inline" />
+                              }
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                <button
+                                  onClick={() => openEditUsrModal(usr)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
+                                >
+                                  <Edit2 className="w-3 h-3" /> Modifier
+                                </button>
+                                <button
+                                  onClick={() => toggleUserStatus(usr)}
+                                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
+                                    usr.is_active
+                                      ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'
+                                      : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                  }`}
+                                >
+                                  {usr.is_active ? 'Suspendre' : 'Activer'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </>
@@ -446,7 +556,7 @@ export default function Backoffice() {
               <XCircle className="w-5 h-5" />
             </button>
             <h3 className="text-lg font-semibold text-white mb-5">
-              {editingEst ? 'Modifier l\'établissement' : 'Nouvel établissement'}
+              {editingEst ? "Modifier l'établissement" : 'Nouvel établissement'}
             </h3>
             {estError && (
               <div className="mb-4 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg flex items-center gap-2">
@@ -457,18 +567,18 @@ export default function Backoffice() {
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Nom (unique) *</label>
                 <input required type="text" value={estForm.name} onChange={e => setEstForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 transition-all"
+                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                   placeholder="Ex: Agence Nord" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Adresse</label>
                 <input type="text" value={estForm.address} onChange={e => setEstForm(f => ({ ...f, address: e.target.value }))}
-                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 transition-all"
+                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                   placeholder="Adresse complète" />
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowEstModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">Annuler</button>
-                <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium transition-all text-sm disabled:opacity-50 hover:opacity-90" style={{ background: '#645CA5' }}>
+                <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium text-sm disabled:opacity-50 hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
                   {isSubmitting ? 'Enregistrement...' : (editingEst ? 'Sauvegarder' : 'Créer')}
                 </button>
               </div>
@@ -493,31 +603,44 @@ export default function Backoffice() {
               </div>
             )}
             <form onSubmit={handleSaveUsr} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Nom complet *</label>
-                <input required type="text" value={usrForm.name} onChange={e => setUsrForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 transition-all"
-                  placeholder="Prénom Nom" />
+
+              {/* Prénom + Nom séparés */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Prénom *</label>
+                  <input required type="text" value={usrForm.first_name} onChange={e => setUsrForm(f => ({ ...f, first_name: e.target.value }))}
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
+                    placeholder="Jean" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Nom *</label>
+                  <input required type="text" value={usrForm.last_name} onChange={e => setUsrForm(f => ({ ...f, last_name: e.target.value }))}
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
+                    placeholder="Dupont" />
+                </div>
               </div>
+
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Email *</label>
                 <input required type="email" value={usrForm.email} onChange={e => setUsrForm(f => ({ ...f, email: e.target.value }))}
-                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 transition-all"
-                  placeholder="prenom.nom@email.com" />
+                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
+                  placeholder="jean.dupont@email.com" />
               </div>
+
               {!editingUsr && (
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Mot de passe provisoire</label>
                   <input type="text" value={usrForm.tempPwd} onChange={e => setUsrForm(f => ({ ...f, tempPwd: e.target.value }))}
-                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 transition-all font-mono"
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all font-mono"
                     placeholder="Laisser vide → TempPass123!" />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Rôle *</label>
                   <select value={usrForm.role} onChange={e => setUsrForm(f => ({ ...f, role: e.target.value }))}
-                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 transition-all">
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all">
                     <option value="ANALYST">Analyste</option>
                     <option value="ADMIN">Administrateur</option>
                     <option value="SUPER_ADMIN">Super Admin</option>
@@ -526,7 +649,7 @@ export default function Backoffice() {
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Établissement</label>
                   <select value={usrForm.establishment} onChange={e => setUsrForm(f => ({ ...f, establishment: e.target.value }))}
-                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 transition-all">
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all">
                     <option value="">— Aucun —</option>
                     {establishments.map(est => (
                       <option key={est.id} value={est.name}>{est.name}</option>
@@ -534,9 +657,10 @@ export default function Backoffice() {
                   </select>
                 </div>
               </div>
+
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowUsrModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">Annuler</button>
-                <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium transition-all text-sm disabled:opacity-50 hover:opacity-90" style={{ background: '#645CA5' }}>
+                <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium text-sm disabled:opacity-50 hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
                   {isSubmitting ? 'Enregistrement...' : (editingUsr ? 'Sauvegarder' : 'Créer le compte')}
                 </button>
               </div>
