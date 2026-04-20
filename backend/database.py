@@ -66,6 +66,8 @@ class Establishment(Base):
     address = Column(String, nullable=True)
     status = Column(String, default="active") # active, inactive
     created_at = Column(DateTime, default=datetime.utcnow)
+    primary_color = Column(String, nullable=True, default="#E73919")  # Couleur thème par établissement
+
 
 class UserBackoffice(Base):
     __tablename__ = "user_backoffice"

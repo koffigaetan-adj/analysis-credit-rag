@@ -14,6 +14,7 @@ interface Est {
   name: string;
   address?: string;
   status: string;
+  primary_color?: string;
   created_at?: string;
 }
 
@@ -69,7 +70,7 @@ export default function Backoffice() {
   // --- States Établissement ---
   const [showEstModal, setShowEstModal] = useState(false);
   const [editingEst, setEditingEst] = useState<Est | null>(null);
-  const [estForm, setEstForm] = useState({ name: '', address: '' });
+  const [estForm, setEstForm] = useState({ name: '', address: '', primary_color: '#E73919' });
   const [estError, setEstError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -120,14 +121,14 @@ export default function Backoffice() {
   // --- Handlers Établissement ---
   const openNewEstModal = () => {
     setEditingEst(null);
-    setEstForm({ name: '', address: '' });
+    setEstForm({ name: '', address: '', primary_color: '#E73919' });
     setEstError('');
     setShowEstModal(true);
   };
 
   const openEditEstModal = (est: Est) => {
     setEditingEst(est);
-    setEstForm({ name: est.name, address: est.address || '' });
+    setEstForm({ name: est.name, address: est.address || '', primary_color: est.primary_color || '#E73919' });
     setEstError('');
     setShowEstModal(true);
   };
@@ -192,13 +193,12 @@ export default function Backoffice() {
             last_name: usrForm.last_name,
             email: usrForm.email,
             role: usrForm.role,
-            establishment: usrForm.establishment,
-            sexe: 'M',
-            poste: 'Data Analyst',
-            password: 'unchanged'
+            establishment: usrForm.establishment || null,
+            sexe: editingUsr.id ? undefined : 'M',
+            poste: undefined
           })
         });
-        if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Erreur lors de la mise à jour'); }
       } else {
         const res = await fetch(`${API}/auth/users`, {
           method: 'POST', headers,
@@ -346,15 +346,21 @@ export default function Backoffice() {
                       {establishments.length === 0 && <p className="text-slate-500 text-sm">Aucun établissement.</p>}
                       {establishments.map(est => {
                         const count = members.filter(m => m.establishment === est.name).length;
-                        const pct = members.length > 0 ? (count / members.length) * 100 : 0;
+                        const active = members.filter(m => m.establishment === est.name && m.is_active).length;
+                        const color = est.primary_color || '#645CA5';
                         return (
-                          <div key={est.id} className="flex items-center gap-4">
-                            <div className={`w-2 h-2 rounded-full shrink-0 ${est.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                            <span className="text-slate-300 w-48 truncate text-sm">{est.name}</span>
-                            <div className="flex-1 bg-slate-800 rounded-full h-1.5">
-                              <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: '#645CA5' }} />
+                          <div key={est.id} className="flex items-center justify-between p-4 bg-[#0F1523] rounded-xl border border-slate-800/40">
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
+                              <span className="text-slate-200 font-medium text-sm">{est.name}</span>
+                              {est.status !== 'active' && (
+                                <span className="text-[10px] text-rose-400 border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 rounded-full">Suspendu</span>
+                              )}
                             </div>
-                            <span className="text-slate-400 text-xs w-16 text-right">{count} membre{count !== 1 ? 's' : ''}</span>
+                            <div className="flex items-center gap-4 text-xs">
+                              <span className="text-slate-400">{count} membre{count !== 1 ? 's' : ''}</span>
+                              <span className="text-emerald-500">{active} actif{active !== 1 ? 's' : ''}</span>
+                            </div>
                           </div>
                         );
                       })}
@@ -385,7 +391,12 @@ export default function Backoffice() {
                         const count = members.filter(m => m.establishment === est.name).length;
                         return (
                           <tr key={est.id} className="hover:bg-slate-800/20 transition-colors group">
-                            <td className="px-5 py-4 text-slate-200 font-medium">{est.name}</td>
+                            <td className="px-5 py-4 text-slate-200 font-medium">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: est.primary_color || '#645CA5' }} />
+                                {est.name}
+                              </div>
+                            </td>
                             <td className="px-5 py-4 text-slate-400 text-sm">{est.address || <span className="text-slate-600 italic">Non renseignée</span>}</td>
                             <td className="px-5 py-4 text-slate-400 text-sm">{count} membre{count !== 1 ? 's' : ''}</td>
                             <td className="px-5 py-4 text-slate-500 text-xs font-mono">
@@ -576,12 +587,42 @@ export default function Backoffice() {
                   className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                   placeholder="Adresse complète" />
               </div>
+              </div>
+
+              {/* Color Picker */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-2">Couleur thème du logiciel</label>
+                <div className="flex items-center gap-4 p-3 bg-[#0F1523] border border-slate-700 rounded-lg">
+                  <input
+                    type="color"
+                    value={estForm.primary_color}
+                    onChange={e => setEstForm(f => ({ ...f, primary_color: e.target.value }))}
+                    className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent p-0.5"
+                    title="Choisir la couleur"
+                  />
+                  <div>
+                    <p className="text-white text-sm font-medium" style={{ color: estForm.primary_color }}>
+                      Aperçu — Couleur de l'établissement
+                    </p>
+                    <p className="text-slate-500 text-xs font-mono mt-0.5">{estForm.primary_color}</p>
+                  </div>
+                  <span
+                    className="ml-auto text-xs px-3 py-1.5 rounded-lg font-medium text-white"
+                    style={{ background: estForm.primary_color }}
+                  >
+                    Bouton
+                  </span>
+                </div>
+                <p className="text-slate-600 text-[10px] mt-1.5">Cette couleur sera appliquée automatiquement pour tous les membres de cet établissement.</p>
+              </div>
+
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowEstModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">Annuler</button>
                 <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium text-sm disabled:opacity-50 hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
                   {isSubmitting ? 'Enregistrement...' : (editingEst ? 'Sauvegarder' : 'Créer')}
                 </button>
               </div>
+
             </form>
           </div>
         </div>

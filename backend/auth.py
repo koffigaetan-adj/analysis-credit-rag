@@ -1055,11 +1055,13 @@ def clear_all_notifications(
 class CreateEstablishmentRequest(BaseModel):
     name: str
     address: str
+    primary_color: Optional[str] = "#E73919"
 
 class UpdateEstablishmentRequest(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
     status: Optional[str] = None
+    primary_color: Optional[str] = None
 
 @router.get("/establishments")
 def get_establishments(
@@ -1071,6 +1073,7 @@ def get_establishments(
         "name": e.name,
         "address": e.address,
         "status": e.status,
+        "primary_color": e.primary_color or "#E73919",
         "created_at": e.created_at
     } for e in est]
 
@@ -1088,7 +1091,8 @@ def create_establishment(
         id=str(uuid.uuid4()),
         name=req.name,
         address=req.address,
-        status="active"
+        status="active",
+        primary_color=req.primary_color or "#E73919"
     )
     db.add(new_est)
     db.commit()
@@ -1126,6 +1130,8 @@ def update_establishment(
         est.address = req.address
     if req.status is not None:
         est.status = req.status
+    if req.primary_color is not None:
+        est.primary_color = req.primary_color
         
     db.commit()
     return {"message": "Établissement mis à jour avec succès."}
@@ -1149,10 +1155,19 @@ def get_backoffice_users(
         "created_at": u.created_at
     } for u in users]
 
+class UpdateBackofficeUserRequest(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    role: str
+    establishment: Optional[str] = None
+    sexe: Optional[str] = "M"
+    poste: Optional[str] = "Data Analyst"
+
 @router.put("/backoffice/users/{user_id}")
 def update_backoffice_user(
     user_id: str,
-    req: AdminCreateUserRequest, 
+    req: UpdateBackofficeUserRequest,
     db: Session = Depends(get_db),
     current_admin: UserBackoffice = Depends(get_current_backoffice_user)
 ):
@@ -1164,14 +1179,30 @@ def update_backoffice_user(
     user.last_name = req.last_name
     user.role = req.role
     user.establishment = req.establishment
+    if req.sexe:
+        user.sexe = req.sexe
+    if req.poste:
+        user.poste = req.poste
+
     if req.email != user.email:
-         existing = db.query(User).filter(User.email == req.email).first()
-         if existing:
-              raise HTTPException(status_code=400, detail="Email déjà utilisé")
-         user.email = req.email
-         
+        existing = db.query(User).filter(User.email == req.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email déjà utilisé")
+        user.email = req.email
+        
     db.commit()
-    return {"message": "Utilisateur mis à jour."}
+    return {
+        "message": "Utilisateur mis à jour.",
+        "user": {
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "role": user.role,
+            "establishment": user.establishment
+        }
+    }
+
 
 @router.put("/backoffice/users/{user_id}/toggle-status")
 def toggle_backoffice_user_status(

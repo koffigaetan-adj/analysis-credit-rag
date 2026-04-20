@@ -15,6 +15,7 @@ interface User {
 interface AuthContextType {
      user: User | null;
      token: string | null;
+     primaryColor: string;
      login: (token: string, user: User, is_first_login: boolean) => void;
      logout: () => void;
      isAuthenticated: boolean;
@@ -25,12 +26,33 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const SESSION_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+const DEFAULT_COLOR = '#E73919';
+
+// Applique la couleur dans le DOM
+function applyThemeColor(color: string) {
+     document.documentElement.style.setProperty('--kais-primary', color);
+     // Derivées: version claire et foncée
+     document.documentElement.style.setProperty('--kais-primary-light', `${color}22`);
+     document.documentElement.style.setProperty('--kais-primary-border', `${color}44`);
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
      const [user, setUser] = useState<User | null>(null);
      const [token, setToken] = useState<string | null>(null);
      const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
      const [isLoading, setIsLoading] = useState<boolean>(true);
+     const [primaryColor, setPrimaryColor] = useState<string>(DEFAULT_COLOR);
+
+     // Charge la couleur sauvegardée au démarrage
+     useEffect(() => {
+          const storedColor = localStorage.getItem('establishment_color');
+          if (storedColor) {
+               setPrimaryColor(storedColor);
+               applyThemeColor(storedColor);
+          } else {
+               applyThemeColor(DEFAULT_COLOR);
+          }
+     }, []);
 
      useEffect(() => {
           // Restaurer la session à partir du localStorage
@@ -47,15 +69,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     setToken(storedToken);
                     setUser(JSON.parse(storedUser));
                     setIsFirstLogin(storedFirstLogin === 'true');
-                    // Update last activity on restore
                     localStorage.setItem('lastActivity', now.toString());
                } else {
-                    // Session expired
                     logout();
                }
           }
           setIsLoading(false);
      }, []);
+
+     // Quand l'utilisateur est connecté ET a un établissement → charger la couleur
+     useEffect(() => {
+          if (!user?.establishment || !token) return;
+
+          const API = import.meta.env.VITE_API_URL;
+          fetch(`${API}/auth/establishments`, {
+               headers: { Authorization: `Bearer ${token}` }
+          })
+          .then(res => res.ok ? res.json() : [])
+          .then((ests: any[]) => {
+               const est = ests.find((e: any) => e.name === user.establishment);
+               if (est?.primary_color) {
+                    const color = est.primary_color;
+                    setPrimaryColor(color);
+                    applyThemeColor(color);
+                    localStorage.setItem('establishment_color', color);
+               }
+          })
+          .catch(() => {});
+     }, [user?.establishment, token]);
 
      const login = (newToken: string, newUser: User, firstLogin: boolean) => {
           const now = Date.now().toString();
@@ -73,17 +114,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setToken(null);
           setUser(null);
           setIsFirstLogin(false);
+          setPrimaryColor(DEFAULT_COLOR);
+          applyThemeColor(DEFAULT_COLOR);
 
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           localStorage.removeItem('isFirstLogin');
           localStorage.removeItem('lastActivity');
+          localStorage.removeItem('establishment_color');
      };
 
      return (
           <AuthContext.Provider value={{
                user,
                token,
+               primaryColor,
                login,
                logout,
                isAuthenticated: !!token,
