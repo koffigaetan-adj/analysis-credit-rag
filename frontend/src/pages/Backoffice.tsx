@@ -590,7 +590,16 @@ export default function Backoffice() {
 
               {/* Color Picker */}
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-2">Couleur thème du logiciel</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-medium text-slate-400">Couleur thème du logiciel</label>
+                  <button
+                    type="button"
+                    onClick={() => setEstForm(f => ({ ...f, primary_color: '#E73919' }))}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+                  >
+                    ↺ Couleur par défaut
+                  </button>
+                </div>
                 <div className="flex items-center gap-4 p-3 bg-[#0F1523] border border-slate-700 rounded-lg">
                   <input
                     type="color"
@@ -614,6 +623,7 @@ export default function Backoffice() {
                 </div>
                 <p className="text-slate-600 text-[10px] mt-1.5">Cette couleur sera appliquée automatiquement pour tous les membres de cet établissement.</p>
               </div>
+
 
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowEstModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">Annuler</button>

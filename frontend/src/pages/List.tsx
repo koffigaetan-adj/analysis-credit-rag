@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, User, Building2, Eye,
@@ -129,7 +129,7 @@ export default function Applications() {
           </button>
           <button
             onClick={() => navigate('/new')}
-            className="px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
+            className="px-5 py-2.5 btn-primary rounded-xl font-semibold text-sm  shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Nouvelle Analyse

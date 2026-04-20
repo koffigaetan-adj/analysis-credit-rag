@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Send, Download,
@@ -582,7 +582,7 @@ export default function AnalysisResult() {
                 <Trash2 className="w-4 h-4" /> Supprimer
               </button>
             ) : (
-              <button onClick={handleSaveAnalysis} className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center ${isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-500'}`}>
+              <button onClick={handleSaveAnalysis} className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center ${isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 dark:btn-primary hover:bg-blue-600 dark:'}`}>
                 {isSaved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} {isSaved ? 'Enregistré' : 'Enregistrer'}
               </button>
             )}

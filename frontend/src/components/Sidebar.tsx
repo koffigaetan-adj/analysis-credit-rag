@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+﻿import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -57,24 +57,25 @@ function Tooltip({ label }: { label: string }) {
 
 // Lien de navigation principal
 function NavItem({
-  to, icon: Icon, label, isActive, isCollapsed, onClick,
+  to, icon: Icon, label, isActive, isCollapsed, onClick, primaryColor,
 }: {
   to: string; icon: React.ElementType; label: string;
-  isActive: boolean; isCollapsed: boolean; onClick?: () => void;
+  isActive: boolean; isCollapsed: boolean; onClick?: () => void; primaryColor: string;
 }) {
   return (
     <div className="relative group/tooltip">
       <Link
         to={to}
         onClick={onClick}
+        style={isActive ? { background: primaryColor } : {}}
         className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 group
           ${isActive
-            ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20 font-semibold'
+            ? 'text-white shadow-lg font-semibold'
             : 'text-slate-400 hover:bg-slate-900 hover:text-white font-medium'}
           ${isCollapsed ? 'lg:justify-center' : ''}
         `}
       >
-        <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'group-hover:text-blue-400'}`} />
+        <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'group-hover:text-white'}`} />
         {/* Label : toujours visible sur mobile, caché en desktop réduit */}
         <span className={`text-sm tracking-tight whitespace-nowrap animate-in fade-in slide-in-from-left-2
           ${isCollapsed ? 'lg:hidden' : ''}
@@ -117,7 +118,7 @@ function BottomNavItem({
 export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = false, setIsOpenMobile }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, primaryColor } = useAuth();
 
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
 
@@ -159,7 +160,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
         {/* BOUTON TOGGLE DESKTOP */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden lg:flex absolute -right-3 top-10 w-6 h-6 bg-blue-600 text-white rounded-full items-center justify-center shadow-lg hover:bg-blue-500 transition-colors z-[60]"
+          className="hidden lg:flex absolute -right-3 top-10 w-6 h-6 text-white rounded-full items-center justify-center shadow-lg transition-colors z-[60] hover:opacity-80"
+          style={{ background: primaryColor }}
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
@@ -203,6 +205,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
                 isActive={location.pathname === item.path}
                 isCollapsed={isCollapsed}
                 onClick={closeMobileSidebar}
+                primaryColor={primaryColor}
               />
             );
           })}

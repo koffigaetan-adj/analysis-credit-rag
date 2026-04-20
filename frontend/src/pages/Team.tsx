@@ -1,4 +1,4 @@
-import { UserPlus, Mail, Shield, User, Trash2, Edit3, Search, X, Lock, Save, RefreshCcw } from 'lucide-react';
+﻿import { UserPlus, Mail, Shield, User, Trash2, Edit3, Search, X, Lock, Save, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -341,7 +341,7 @@ export default function Team() {
         setCreateForm({ prenom: '', nom: '', sexe: 'M', email: '', role: 'ANALYST', password: '', establishment: '' });
         setModalError(null);
       }}
-      className="px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95">
+      className="px-5 py-2.5 btn-primary rounded-xl font-semibold text-sm  shadow-lg shadow-blue-100 dark:shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95">
       <UserPlus className="w-5 h-5" />
       Inviter un membre
     </button>
@@ -694,7 +694,7 @@ export default function Team() {
               <button
                 onClick={handleSaveEdit}
                 disabled={modalLoading || !editForm.prenom || !editForm.nom || !editForm.email}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2 btn-primary rounded-lg font-bold text-sm shadow-md  active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
               >
                 {modalLoading ? 'Sauvegarde...' : <><Save className="w-4 h-4" /> Enregistrer</>}
               </button>
@@ -897,7 +897,7 @@ export default function Team() {
               <button
                 onClick={handleCreateUser}
                 disabled={modalLoading || !createForm.prenom || !createForm.nom || !createForm.email || !createForm.password}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2 btn-primary rounded-lg font-bold text-sm shadow-md  active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
               >
                 {modalLoading ? 'Création...' : <><UserPlus className="w-4 h-4" /> Créer le compte</>}
               </button>
@@ -987,7 +987,7 @@ export default function Team() {
               <button
                 onClick={handleApproveRequest}
                 disabled={modalLoading || !approveForm.password}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2 btn-primary rounded-lg font-bold text-sm shadow-md  active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
               >
                 {modalLoading ? 'Approbation...' : 'Approuver la demande'}
               </button>

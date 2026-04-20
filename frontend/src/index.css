@@ -10,7 +10,45 @@
   .dark body {
     @apply bg-slate-950 text-slate-100;
   }
+
+  /* Couleur thème par établissement — modifiée dynamiquement via JS */
+  :root {
+    --kais-primary: #E73919;
+    --kais-primary-hover: color-mix(in srgb, var(--kais-primary) 80%, black);
+  }
 }
+
+/* === CLASSES THÈME DYNAMIQUE === */
+/* Utilisez .btn-primary partout pour les boutons d'action principaux */
+.btn-primary {
+  background-color: var(--kais-primary) !important;
+  color: white;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+}
+
+.text-primary {
+  color: var(--kais-primary) !important;
+}
+
+.border-primary {
+  border-color: var(--kais-primary) !important;
+}
+
+.bg-primary-light {
+  background-color: color-mix(in srgb, var(--kais-primary) 15%, transparent) !important;
+}
+
+.ring-primary:focus {
+  outline: 2px solid var(--kais-primary);
+  outline-offset: 2px;
+}
+
 
 .PhoneInputInput {
   outline: none;

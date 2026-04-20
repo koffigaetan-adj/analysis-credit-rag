@@ -1,4 +1,4 @@
-import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone, Globe } from 'lucide-react';
+﻿import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone, Globe } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -413,7 +413,7 @@ export default function Settings() {
               <button
                 onClick={handleSaveProfile}
                 disabled={isLoading || !passwordConfirm}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2 btn-primary rounded-lg font-bold text-sm shadow-md shadow-blue-500/20  active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
               >
                 {isLoading ? 'Vérification...' : 'Confirmer'}
               </button>

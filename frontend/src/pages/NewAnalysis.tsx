@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Upload, FileText, CheckCircle, Loader2, Trash2,
@@ -366,7 +366,7 @@ export default function NewAnalysis() {
             <button onClick={() => setStep(1)} className="justify-center sm:justify-start py-3 sm:py-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black  tracking-widest flex items-center gap-2 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Retour
             </button>
-            <button onClick={handleAnalyze} disabled={loading} className={`justify-center px-10 py-4 w-full sm:w-auto rounded-2xl text-xs font-black  tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'bg-blue-600 dark:bg-blue-600 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
+            <button onClick={handleAnalyze} disabled={loading} className={`justify-center px-10 py-4 w-full sm:w-auto rounded-2xl text-xs font-black  tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'btn-primary hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Analyser avec l'IA</>}
             </button>
           </div>
