@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Lock, ArrowRight, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
+// Dynamically update tab title + favicon for backoffice
+useEffect(() => {
+  const prevTitle = document.title;
+  const prevFavicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  const prevHref = prevFavicon?.href;
 
+  document.title = 'Kaïs Backoffice';
+  if (prevFavicon) prevFavicon.href = '/logobackoffice.svg';
+
+  return () => {
+    document.title = prevTitle;
+    if (prevFavicon && prevHref) prevFavicon.href = prevHref;
+  };
+}, []);
 export default function BackofficeLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
