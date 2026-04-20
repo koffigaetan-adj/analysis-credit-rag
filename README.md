@@ -27,21 +27,21 @@
 
 ---
 
-## 📋 Table des Matières
+##  Table des Matières
 
-- [🎯 À Propos du Projet](#-à-propos-du-projet)
-- [✨ Fonctionnalités](#-fonctionnalités)
-- [🏗️ Architecture](#️-architecture)
-- [🛠️ Stack Technologique](#️-stack-technologique)
-- [📁 Structure du Projet](#-structure-du-projet)
-- [⚙️ Installation & Démarrage](#️-installation--démarrage)
-- [🔧 Configuration des Variables d'Environnement](#-configuration-des-variables-denvironnement)
-- [🗄️ Base de Données](#️-base-de-données)
-- [🤖 Moteur IA & RAG](#-moteur-ia--rag)
-- [📡 API Endpoints](#-api-endpoints)
-- [🖥️ Pages Frontend](#️-pages-frontend)
-- [👥 Gestion des Rôles](#-gestion-des-rôles)
-- [🚀 Déploiement](#-déploiement)
+- [ À Propos du Projet](#-à-propos-du-projet)
+- [ Fonctionnalités](#-fonctionnalités)
+- [ Architecture](#️-architecture)
+- [ Stack Technologique](#️-stack-technologique)
+- [ Structure du Projet](#-structure-du-projet)
+- [ Installation & Démarrage](#️-installation--démarrage)
+- [ Configuration des Variables d'Environnement](#-configuration-des-variables-denvironnement)
+- [ Base de Données](#️-base-de-données)
+- [ Moteur IA & RAG](#-moteur-ia--rag)
+- [ API Endpoints](#-api-endpoints)
+- [ Pages Frontend](#️-pages-frontend)
+- [ Gestion des Rôles](#-gestion-des-rôles)
+- [ Déploiement](#-déploiement)
 
 ---
 
@@ -49,11 +49,11 @@
 
 **Kaïs Analytics** est une solution complète d'**analyse de risque crédit** dédiée aux professionnels bancaires (analystes, directeurs d'agence, SUPER_ADMIN). Elle automatise et enrichit l'analyse de dossiers de financement en combinant :
 
-1. 📄 **Extraction automatique** des données financières depuis des documents PDF (bilans, bulletins de salaire, relevés...)
-2. 📊 **Scoring déterministe** basé sur des ratios financiers (DSCR, endettement, marge nette, levier EBITDA...)
-3. 🤖 **Interprétation IA** via le modèle **LLaMA 3.3 70B** (Groq) pour une analyse narrative professionnelle
-4. 🔍 **RAG sur la politique de crédit** — l'IA consulte automatiquement les règles internes de la banque avant de formuler sa recommandation
-5. 💬 **Assistant IA contextuel** — un chatbot financier capable de répondre aux questions sur chaque dossier analysé
+1.  **Extraction automatique** des données financières depuis des documents PDF (bilans, bulletins de salaire, relevés...)
+2.  **Scoring déterministe** basé sur des ratios financiers (DSCR, endettement, marge nette, levier EBITDA...)
+3.  **Interprétation IA** via le modèle **LLaMA 3.3 70B** (Groq) pour une analyse narrative professionnelle
+4.  **RAG sur la politique de crédit** — l'IA consulte automatiquement les règles internes de la banque avant de formuler sa recommandation
+5.  **Assistant IA contextuel** — un chatbot financier capable de répondre aux questions sur chaque dossier analysé
 
 ### Cas d'usage
 
@@ -64,16 +64,16 @@
 
 ---
 
-## ✨ Fonctionnalités
+##  Fonctionnalités
 
-### 🔐 Authentification & Gestion des Accès
+###  Authentification & Gestion des Accès
 - Système de **création de compte sur demande** (validation par un administrateur)
 - Authentification **JWT** sécurisée avec rafraîchissement automatique de session
 - Expiration de session configurable (timeout automatique)
 - Récupération de mot de passe par **code email OTP**
 - Gestion des rôles hiérarchiques : `SUPER_ADMIN` > `ADMIN` > `ANALYST`
 
-### 📊 Analyse de Dossiers Crédit
+###  Analyse de Dossiers Crédit
 - **Dépôt multi-fichiers** (plusieurs PDF simultanément)
 - **Extraction intelligente** des données financières via LLM (prompts structurés → JSON strict)
 - **Scoreboard** avec décision automatique : `Favorable` / `Prudence` / `Refus`
@@ -81,27 +81,27 @@
 - Export du rapport en **PDF** et envoi par email SMTP
 - Sauvegarde des analyses dans l'historique utilisateur
 
-### 🤖 Intelligence Artificielle Avancée
+###  Intelligence Artificielle Avancée
 - **LLM** : LLaMA 3.3 70B Versatile via **Groq** (inférence ultra-rapide)
 - **RAG** : Politique de crédit indexée dans **Supabase pgvector** via embeddings HuggingFace (`all-MiniLM-L6-v2`)
 - Enrichissement automatique du contexte d'analyse avec les règles bancaires pertinentes
 
-### 💬 Chat Financier IA
+###  Chat Financier IA
 - Assistant **contextuel par dossier** (questions sur l'analyse en cours)
 - Assistant **global** avec gestion de sessions et historique de conversations
 - Réponse uniquement dans le domaine finance/crédit/comptabilité
 
-### 👨‍💼 Gestion d'Équipe (Admin)
+###  Gestion d'Équipe (Admin)
 - Tableau de bord des demandes d'accès (`PENDING` / `APPROVED` / `REJECTED`)
 - Gestion des membres : activation, désactivation, modification de rôle
 - Notification en temps réel (in-app)
 
-### 🌐 Internationalisation
+###  Internationalisation
 - Support multi-langue via **i18next** (prêt pour l'extension)
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -149,7 +149,7 @@
 
 ---
 
-## 🛠️ Stack Technologique
+##  Stack Technologique
 
 ### 🐍 Backend
 
@@ -160,18 +160,18 @@
 | ![Uvicorn](https://img.shields.io/badge/-Uvicorn-499848?logo=gunicorn&logoColor=white) **Uvicorn** | Latest | Serveur ASGI haute performance |
 | ![SQLAlchemy](https://img.shields.io/badge/-SQLAlchemy-CC2927?logo=databricks&logoColor=white) **SQLAlchemy** | Latest | ORM base de données |
 | ![Pydantic](https://img.shields.io/badge/-Pydantic-E92063?logo=pydantic&logoColor=white) **Pydantic** | v2 | Validation des données et modèles |
-| 🦜 **LangChain** | Latest | Orchestration RAG (loaders, splitters) |
-| 🤗 **HuggingFace** | Latest | Embeddings `all-MiniLM-L6-v2` |
-| ⚡ **Groq** | Latest | Inférence LLaMA 3.3 70B (ultra-rapide) |
+|  **LangChain** | Latest | Orchestration RAG (loaders, splitters) |
+|  **HuggingFace** | Latest | Embeddings `all-MiniLM-L6-v2` |
+|  **Groq** | Latest | Inférence LLaMA 3.3 70B (ultra-rapide) |
 | ![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white) **Supabase** | 2.x | Base vectorielle pgvector + stockage |
-| 🔐 **python-jose** | Latest | Génération et validation JWT |
-| 🔑 **passlib[bcrypt]** | Latest | Hachage sécurisé des mots de passe |
-| 📄 **pypdf** | Latest | Extraction de texte depuis les PDF |
-| 📊 **Plotly** | Latest | Génération de graphiques côté serveur |
-| 📧 **smtplib** | stdlib | Envoi d'emails SMTP (rapports, OTP) |
-| 🐼 **Pandas** | Latest | Manipulation de données financières |
+|  **python-jose** | Latest | Génération et validation JWT |
+|  **passlib[bcrypt]** | Latest | Hachage sécurisé des mots de passe |
+|  **pypdf** | Latest | Extraction de texte depuis les PDF |
+|  **Plotly** | Latest | Génération de graphiques côté serveur |
+|  **smtplib** | stdlib | Envoi d'emails SMTP (rapports, OTP) |
+|  **Pandas** | Latest | Manipulation de données financières |
 
-### ⚛️ Frontend
+###  Frontend
 
 | Technologie | Version | Rôle |
 |---|---|---|
@@ -179,16 +179,16 @@
 | ![TypeScript](https://img.shields.io/badge/-TypeScript-007ACC?logo=typescript&logoColor=white) **TypeScript** | 5.5 | Typage statique |
 | ![Vite](https://img.shields.io/badge/-Vite-B73BFE?logo=vite&logoColor=FFD62E) **Vite** | 5.4 | Bundler ultra-rapide |
 | ![TailwindCSS](https://img.shields.io/badge/-Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white) **TailwindCSS** | 3.4 | Styling utilitaire |
-| 🛣️ **React Router DOM** | v7 | Navigation SPA |
-| 📈 **Plotly.js** | 3.x | Graphiques financiers interactifs |
-| 📊 **Recharts** | 3.x | Graphiques React déclaratifs |
-| 🎨 **Lucide React** | 0.344 | Icônes SVG modernes |
-| 🌍 **i18next** | 25.x | Internationalisation (i18n) |
-| 📱 **react-phone-input** | 3.x | Saisie de numéros de téléphone |
-| 📄 **html2pdf.js** | 0.14 | Export PDF côté client |
-| 🔌 **Supabase JS** | 2.x | Client Supabase côté frontend |
+|  **React Router DOM** | v7 | Navigation SPA |
+|  **Plotly.js** | 3.x | Graphiques financiers interactifs |
+|  **Recharts** | 3.x | Graphiques React déclaratifs |
+|  **Lucide React** | 0.344 | Icônes SVG modernes |
+|  **i18next** | 25.x | Internationalisation (i18n) |
+|  **react-phone-input** | 3.x | Saisie de numéros de téléphone |
+|  **html2pdf.js** | 0.14 | Export PDF côté client |
+|  **Supabase JS** | 2.x | Client Supabase côté frontend |
 
-### ☁️ Infrastructure & Services
+###  Infrastructure & Services
 
 | Service | Rôle |
 |---|---|
@@ -260,7 +260,7 @@ analysis-credit-rag/
 │       └── 📁 locales/             # Fichiers de traduction i18n
 │
 ├── 📁 Document_simulation/         # Exemples de documents PDF pour les tests
-├── start.bat                       # 🚀 Script de lancement rapide (Windows)
+├── start.bat                       #  Script de lancement rapide (Windows)
 ├── start_env.bat                   # Script de lancement avec environnement virtuel
 └── requirements.txt                # Dépendances Python (racine)
 ```
@@ -314,7 +314,7 @@ copy .env.example .env
 
 ### 4. Lancer le Projet
 
-#### ✅ Option 1 — Script automatique (Windows)
+####  Option 1 — Script automatique (Windows)
 
 ```bash
 # Depuis la racine du projet
@@ -440,7 +440,7 @@ VITE_API_URL=http://localhost:8000
 
 ---
 
-## 🤖 Moteur IA & RAG
+##  Moteur IA & RAG
 
 ### Flux d'Analyse en 3 Phases
 
@@ -471,11 +471,11 @@ VITE_API_URL=http://localhost:8000
 ┌──────────────────────────────────────────┐
 │  PHASE 3 — Interprétation IA + RAG       │
 │                                          │
-│  🔍 RAG : Supabase pgvector              │
+│   RAG : Supabase pgvector              │
 │  → Retrieval des règles de crédit        │
 │     pertinentes (top-5 chunks)           │
 │                                          │
-│  🤖 LLaMA 3.3 70B (Groq)               │
+│   LLaMA 3.3 70B (Groq)               │
 │  → Analyse narrative professionnelle     │
 │  → Risques + Opportunités + Résumé       │
 │  → Recommandations conformes policy      │
@@ -565,7 +565,7 @@ Fonction RPC   : match_documents (similarité cosinus)
 
 ---
 
-## 👥 Gestion des Rôles
+##  Gestion des Rôles
 
 | Rôle | Capacités |
 |---|---|
@@ -575,7 +575,7 @@ Fonction RPC   : match_documents (similarité cosinus)
 
 ---
 
-## 🚀 Déploiement
+##  Déploiement
 
 ### Frontend — Vercel
 
@@ -617,13 +617,13 @@ web: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
 
 ---
 
-## 🔐 Sécurité
+##  Sécurité
 
-- 🔒 **JWT** avec expiration configurable
-- 🛡️ **Bcrypt** pour le hachage des mots de passe
-- 🚫 **RBAC** (Role-Based Access Control) sur toutes les routes
-- 🔑 **Headers de sécurité** : `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `HSTS`
-- 📧 **OTP email** pour la réinitialisation de mot de passe
+-  **JWT** avec expiration configurable
+-  **Bcrypt** pour le hachage des mots de passe
+-  **RBAC** (Role-Based Access Control) sur toutes les routes
+-  **Headers de sécurité** : `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `HSTS`
+-  **OTP email** pour la réinitialisation de mot de passe
 
 ---
 
