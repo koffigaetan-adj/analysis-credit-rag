@@ -22,6 +22,7 @@ export default function Team() {
   const location = useLocation();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
+  const [establishments, setEstablishments] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -63,6 +64,19 @@ export default function Team() {
     }
   };
 
+  const fetchEstablishments = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/establishments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setEstablishments(await res.json());
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const fetchRequests = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/account-requests`, {
@@ -77,6 +91,7 @@ export default function Team() {
   useEffect(() => {
     if (token) {
       fetchUsers();
+      fetchEstablishments();
       if (user?.role === 'SUPER_ADMIN') {
         fetchRequests();
       }
@@ -633,12 +648,16 @@ export default function Team() {
               {user?.role === 'SUPER_ADMIN' && (
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Établissement</label>
-                  <input
-                    type="text"
+                  <select
                     value={editForm.establishment}
                     onChange={(e) => setEditForm({ ...editForm, establishment: e.target.value })}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
-                  />
+                  >
+                    <option value="" disabled>Sélectionner un établissement</option>
+                    {establishments.map(est => (
+                      <option key={est.id} value={est.name}>{est.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -822,12 +841,16 @@ export default function Team() {
               {user?.role === 'SUPER_ADMIN' && (
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Établissement</label>
-                  <input
-                    type="text"
+                  <select
                     value={createForm.establishment}
                     onChange={(e) => setCreateForm({ ...createForm, establishment: e.target.value })}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
-                  />
+                  >
+                    <option value="" disabled>Sélectionner un établissement</option>
+                    {establishments.map(est => (
+                      <option key={est.id} value={est.name}>{est.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -913,13 +936,16 @@ export default function Team() {
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Établissement</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Siège Social, Agence Centrale..."
+                <select
                   value={approveForm.establishment}
                   onChange={(e) => setApproveForm({ ...approveForm, establishment: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
-                />
+                >
+                  <option value="" disabled>Sélectionner un établissement</option>
+                  {establishments.map(est => (
+                    <option key={est.id} value={est.name}>{est.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1.5">

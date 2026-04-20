@@ -370,7 +370,7 @@ export default function KaisBackoffice() {
                                <div className="text-slate-500 text-xs mt-1">{usr.email}</div>
                              </td>
                              <td className="p-4 text-slate-400">
-                               {est ? est.name : <span className="text-yellow-500/50">Non assignée</span>}
+                               {usr.establishment || <span className="text-yellow-500/50">Non assignée</span>}
                              </td>
                              <td className="p-4">
                                <span className="text-xs border border-slate-700 bg-slate-800/50 text-slate-300 px-2 py-1 rounded">
@@ -501,7 +501,7 @@ export default function KaisBackoffice() {
                   >
                     <option value="" disabled>Sélectionner...</option>
                     {establishments.map(e => (
-                      <option key={e.id} value={e.id}>{e.name}</option>
+                      <option key={e.id} value={e.name}>{e.name}</option>
                     ))}
                   </select>
                 </div>

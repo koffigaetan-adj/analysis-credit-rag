@@ -36,6 +36,18 @@ export default function Settings() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
+  const [establishments, setEstablishments] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (token) {
+      fetch(`${import.meta.env.VITE_API_URL}/auth/establishments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setEstablishments(data))
+      .catch(err => console.error(err));
+    }
+  }, [token]);
 
   useEffect(() => {
     if (user) {
@@ -289,13 +301,20 @@ export default function Settings() {
           <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase mb-4 tracking-tighter">Établissement</h3>
-              <input
-                type="text"
+              <select
                 value={establishment}
                 onChange={(e) => setEstablishment(e.target.value)}
                 disabled={user?.role !== 'SUPER_ADMIN'}
                 className="w-full mb-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
-              />
+              >
+                {establishments.length === 0 ? (
+                  <option value={establishment}>{establishment}</option>
+                ) : (
+                  establishments.map((est: any) => (
+                    <option key={est.id} value={est.name}>{est.name}</option>
+                  ))
+                )}
+              </select>
               <div className="flex items-center gap-1.5 text-emerald-500 text-[10px] font-bold uppercase mt-1">
                 <ShieldCheck className="w-3.5 h-3.5" /> Licence Pro
               </div>
