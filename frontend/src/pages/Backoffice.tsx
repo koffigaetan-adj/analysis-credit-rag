@@ -587,7 +587,6 @@ export default function Backoffice() {
                   className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                   placeholder="Adresse complète" />
               </div>
-              </div>
 
               {/* Color Picker */}
               <div>
