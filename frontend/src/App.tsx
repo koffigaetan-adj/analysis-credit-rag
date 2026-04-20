@@ -16,7 +16,8 @@ import Privacy from './pages/Privacy';
 import ContactPublic from './pages/ContactPublic';
 import About from './pages/About';
 import PrivacyPublic from './pages/PrivacyPublic';
-import KaisBackoffice from './pages/KaisBackoffice';
+import Backoffice from './pages/Backoffice';
+import BackofficeLogin from './pages/BackofficeLogin';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SessionTimeout from './components/SessionTimeout';
@@ -35,9 +36,12 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPublic />} />
           <Route path="/terms" element={<PrivacyPublic />} />
 
+          {/* Routes Backoffice Isolées */}
+          <Route path="/backoffice/login" element={<BackofficeLogin />} />
+          <Route path="/backoffice" element={<Backoffice />} />
+
           {/* Routes AVEC barre latérale (via Layout) & PROTEGEES */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/kais_backoffice" element={<KaisBackoffice />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/list" element={<List />} />

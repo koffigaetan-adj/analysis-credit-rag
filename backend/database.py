@@ -67,6 +67,16 @@ class Establishment(Base):
     status = Column(String, default="active") # active, inactive
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class UserBackoffice(Base):
+    __tablename__ = "user_backoffice"
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    role = Column(String, default="SYSTEM_ADMIN") # SYSTEM_ADMIN, SUPPORT
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class User(Base):
     __tablename__ = "users"
 

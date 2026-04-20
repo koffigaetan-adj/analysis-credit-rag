@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 import shutil
 import uuid
 import random
-from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment
+from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment, UserBackoffice
 from email_service import send_email_sync
 
 # Paramètres Sécurité & JWT (à configurer via .env en prod)
@@ -27,6 +27,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # --- MODÈLES (Pydantic) ---
 class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class BackofficeLoginRequest(BaseModel):
     email: str
     password: str
 
@@ -150,6 +154,26 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
+def get_current_backoffice_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Impossible de valider les identifiants.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        token_type = payload.get("type")
+        if user_id is None or token_type != "backoffice":
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    user = db.query(UserBackoffice).filter(UserBackoffice.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
 # -- MIDDLEWARE DE ROLE --
 def check_role(allowed_roles: List[str]):
     """ Middleware pour vérifier si le rôle de l'utilisateur correspond aux permissions """
@@ -233,6 +257,30 @@ def send_login_alert_async(user_email: str, first_name: str, last_name: str, ip_
     send_email_sync(user_email, "Kaïs Analytics - Nouvelle connexion détectée", login_html)
 
 # --- ROUTES ---
+
+@router.post("/backoffice/login")
+def backoffice_login(req: BackofficeLoginRequest, db: Session = Depends(get_db)):
+    user = db.query(UserBackoffice).filter(UserBackoffice.email == req.email).first()
+    if not user or not verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect.")
+    
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Compte suspendu.")
+        
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.id, "type": "backoffice", "role": user.role}, expires_delta=access_token_expires
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_info": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role
+        }
+    }
 
 @router.post("/login")
 def login(request: Request, login_req: LoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -1008,10 +1056,14 @@ class CreateEstablishmentRequest(BaseModel):
     name: str
     address: str
 
+class UpdateEstablishmentRequest(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    status: Optional[str] = None
+
 @router.get("/establishments")
 def get_establishments(
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+    db: Session = Depends(get_db)
 ):
     est = db.query(Establishment).all()
     return [{
@@ -1026,7 +1078,7 @@ def get_establishments(
 def create_establishment(
     req: CreateEstablishmentRequest,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
 ):
     existing = db.query(Establishment).filter(Establishment.name == req.name).first()
     if existing:
@@ -1052,3 +1104,355 @@ def create_establishment(
              "created_at": new_est.created_at
         }
     }
+
+@router.put("/establishments/{est_id}")
+def update_establishment(
+    est_id: str,
+    req: UpdateEstablishmentRequest,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    est = db.query(Establishment).filter(Establishment.id == est_id).first()
+    if not est:
+        raise HTTPException(status_code=404, detail="Établissement introuvable.")
+    
+    if req.name and req.name != est.name:
+        existing = db.query(Establishment).filter(Establishment.name == req.name).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Ce nom d'établissement est déjà utilisé.")
+        est.name = req.name
+        
+    if req.address is not None:
+        est.address = req.address
+    if req.status is not None:
+        est.status = req.status
+        
+    db.commit()
+    return {"message": "Établissement mis à jour avec succès."}
+
+# --- BACKOFFICE USER MANAGEMENT ---
+@router.get("/backoffice/users")
+def get_backoffice_users(
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    users = db.query(User).all()
+    return [{
+        "id": u.id,
+        "first_name": u.first_name,
+        "last_name": u.last_name,
+        "email": u.email,
+        "role": u.role,
+        "is_active": u.is_active,
+        "establishment": u.establishment,
+        "status": "active" if u.is_active else "inactive",
+        "created_at": u.created_at
+    } for u in users]
+
+@router.put("/backoffice/users/{user_id}")
+def update_backoffice_user(
+    user_id: str,
+    req: AdminCreateUserRequest, 
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+        
+    user.first_name = req.first_name
+    user.last_name = req.last_name
+    user.role = req.role
+    user.establishment = req.establishment
+    if req.email != user.email:
+         existing = db.query(User).filter(User.email == req.email).first()
+         if existing:
+              raise HTTPException(status_code=400, detail="Email déjà utilisé")
+         user.email = req.email
+         
+    db.commit()
+    return {"message": "Utilisateur mis à jour."}
+
+@router.put("/backoffice/users/{user_id}/toggle-status")
+def toggle_backoffice_user_status(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+        
+    user.is_active = not user.is_active
+    db.commit()
+    return {"message": "Statut modifié"}
+
+@router.post("/account-requests/{request_id}/reject")
+def reject_request_endpoint(
+    request_id: int,
+    rejection: RejectAccountRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(check_role(["SUPER_ADMIN"]))
+):
+    acc_req = db.query(AccountRequest).filter(AccountRequest.id == request_id).first()
+    if not acc_req:
+        raise HTTPException(status_code=404, detail="Demande introuvable.")
+        
+    if acc_req.status != "PENDING":
+        raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée.")
+
+    # Marquer la demande comme refusée
+    acc_req.status = "REJECTED"
+    acc_req.rejection_reason = rejection.reason
+    db.commit()
+    
+    # Envoyer un email d'explication au demandeur
+    html_content = f"""
+    <html>
+      <body>
+        <h3>Bonjour {acc_req.first_name} {acc_req.last_name},</h3>
+        <p>Suite à votre demande de création de compte sur <strong>Kaïs Analytics</strong>, nous vous informons que celle-ci n'a malheureusement pas pu être retenue.</p>
+        <div style="background-color: #f8fafc; padding: 15px 30px; border-left: 4px solid #ef4444; margin: 20px 0;">
+            <b>Motif :</b> {rejection.reason}
+        </div>
+        <p>Pour toute question ou demande de réévaluation, n'hésitez pas à répondre directement à ce mail.</p>
+        <br>
+        <p>L'équipe Kaïs</p>
+      </body>
+    </html>
+    """
+    background_tasks.add_task(send_email_sync, acc_req.email, "Kaïs Analytics - Mise à jour de votre demande", html_content)
+
+    return {"message": "Demande refusée. Le demandeur a été notifié par email."}
+
+
+@router.get("/notifications")
+def get_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Les SUPER_ADMIN voient les notifications globales (user_id IS NULL) ET leurs notifs perso
+    if current_user.role == "SUPER_ADMIN":
+        notifs = db.query(Notification).filter(
+            (Notification.user_id == current_user.id) | (Notification.user_id == None)
+        ).order_by(Notification.created_at.desc()).all()
+    else:
+        notifs = db.query(Notification).filter(
+            Notification.user_id == current_user.id
+        ).order_by(Notification.created_at.desc()).all()
+        
+    return [
+        {
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "type": n.type,
+            "is_read": n.is_read,
+            "created_at": n.created_at
+        } for n in notifs
+    ]
+
+@router.post("/notifications")
+def create_notification(
+    request: CreateNotificationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_notif = Notification(
+        user_id=current_user.id,
+        title=request.title,
+        message=request.message,
+        type=request.type
+    )
+    db.add(new_notif)
+    db.commit()
+    return {"message": "Notification créée."}
+
+@router.put("/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification introuvable.")
+        
+    if notif.user_id is not None and notif.user_id != current_user.id:
+        if current_user.role != "SUPER_ADMIN":
+            raise HTTPException(status_code=403, detail="Non autorisé.")
+            
+    notif.is_read = True
+    db.commit()
+    return {"message": "Notification lue."}
+
+@router.delete("/notifications/{notification_id}")
+def delete_notification(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification introuvable.")
+        
+    if notif.user_id is not None and notif.user_id != current_user.id:
+        if current_user.role != "SUPER_ADMIN":
+            raise HTTPException(status_code=403, detail="Non autorisé.")
+            
+    db.delete(notif)
+    db.commit()
+    return {"message": "Notification supprimée."}
+
+@router.delete("/notifications")
+def clear_all_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role == "SUPER_ADMIN":
+        # Delete both personal and global notifications shown to Super Admin
+        db.query(Notification).filter(
+            (Notification.user_id == current_user.id) | (Notification.user_id == None)
+        ).delete(synchronize_session=False)
+    else:
+        db.query(Notification).filter(Notification.user_id == current_user.id).delete(synchronize_session=False)
+        
+    db.commit()
+    return {"message": "Toutes les notifications ont été supprimées."}
+
+# --- ETABLISSEMENTS ---
+class CreateEstablishmentRequest(BaseModel):
+    name: str
+    address: str
+
+class UpdateEstablishmentRequest(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    status: Optional[str] = None
+
+@router.get("/establishments")
+def get_establishments(
+    db: Session = Depends(get_db)
+):
+    est = db.query(Establishment).all()
+    return [{
+        "id": e.id,
+        "name": e.name,
+        "address": e.address,
+        "status": e.status,
+        "created_at": e.created_at
+    } for e in est]
+
+@router.post("/establishments")
+def create_establishment(
+    req: CreateEstablishmentRequest,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    existing = db.query(Establishment).filter(Establishment.name == req.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Un établissement avec ce nom existe déjà.")
+    
+    new_est = Establishment(
+        id=str(uuid.uuid4()),
+        name=req.name,
+        address=req.address,
+        status="active"
+    )
+    db.add(new_est)
+    db.commit()
+    db.refresh(new_est)
+    
+    return {
+        "message": "Établissement créé avec succès.",
+        "establishment": {
+             "id": new_est.id,
+             "name": new_est.name,
+             "address": new_est.address,
+             "status": new_est.status,
+             "created_at": new_est.created_at
+        }
+    }
+
+@router.put("/establishments/{est_id}")
+def update_establishment(
+    est_id: str,
+    req: UpdateEstablishmentRequest,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    est = db.query(Establishment).filter(Establishment.id == est_id).first()
+    if not est:
+        raise HTTPException(status_code=404, detail="Établissement introuvable.")
+    
+    if req.name and req.name != est.name:
+        existing = db.query(Establishment).filter(Establishment.name == req.name).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Ce nom d'établissement est déjà utilisé.")
+        est.name = req.name
+        
+    if req.address is not None:
+        est.address = req.address
+    if req.status is not None:
+        est.status = req.status
+        
+    db.commit()
+    return {"message": "Établissement mis à jour avec succès."}
+
+# --- BACKOFFICE USER MANAGEMENT ---
+@router.get("/backoffice/users")
+def get_backoffice_users(
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    users = db.query(User).all()
+    return [{
+        "id": u.id,
+        "first_name": u.first_name,
+        "last_name": u.last_name,
+        "email": u.email,
+        "role": u.role,
+        "is_active": u.is_active,
+        "establishment": u.establishment,
+        "status": "active" if u.is_active else "inactive",
+        "created_at": u.created_at
+    } for u in users]
+
+@router.put("/backoffice/users/{user_id}")
+def update_backoffice_user(
+    user_id: str,
+    req: AdminCreateUserRequest,  # Replacing role, establishment, etc
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+        
+    user.first_name = req.first_name
+    user.last_name = req.last_name
+    user.role = req.role
+    user.establishment = req.establishment
+    if req.email != user.email:
+         existing = db.query(User).filter(User.email == req.email).first()
+         if existing:
+              raise HTTPException(status_code=400, detail="Email déjà utilisé")
+         user.email = req.email
+         
+    db.commit()
+    return {"message": "Utilisateur mis à jour."}
+
+@router.put("/backoffice/users/{user_id}/toggle-status")
+def toggle_backoffice_user_status(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+        
+    user.is_active = not user.is_active
+    db.commit()
+    return {"message": "Statut modifié"}

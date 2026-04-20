@@ -5,14 +5,20 @@ import {
   ArrowLeft, Lock, Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Establishment, TeamMember } from '../types';
 
 type TabType = 'dashboard' | 'establishments' | 'users';
 
-export default function KaisBackoffice() {
+export default function Backoffice() {
   const navigate = useNavigate();
-  const { token, user } = useAuth();
+  const token = localStorage.getItem('backoffice_token');
+  
+  useEffect(() => {
+    if (!token) {
+      navigate('/backoffice/login');
+    }
+  }, [token, navigate]);
   
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   
@@ -42,7 +48,7 @@ export default function KaisBackoffice() {
       
       const [estRes, usrRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/auth/establishments`, { headers }),
-        fetch(`${import.meta.env.VITE_API_URL}/auth/users`, { headers })
+        fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/users`, { headers })
       ]);
       
       if (estRes.ok) {
@@ -113,7 +119,7 @@ export default function KaisBackoffice() {
       const first_name = parts[0] || 'Inconnu';
       const last_name = parts.slice(1).join(' ') || 'Inconnu';
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/users`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +157,7 @@ export default function KaisBackoffice() {
 
   const toggleUserStatus = async (id: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${id}/toggle-status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/users/${id}/toggle-status`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -209,10 +215,14 @@ export default function KaisBackoffice() {
 
         <div className="p-4 border-t border-slate-800">
           <button 
-            onClick={() => navigate('/dashboard')}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800/50 transition-all"
+            onClick={() => {
+              localStorage.removeItem('backoffice_token');
+              localStorage.removeItem('backoffice_user');
+              navigate('/backoffice/login');
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800/50 transition-all font-bold text-xs"
           >
-            <ArrowLeft className="w-4 h-4" /> Retour à l'App
+            <Lock className="w-4 h-4" /> Déconnexion
           </button>
         </div>
       </aside>
