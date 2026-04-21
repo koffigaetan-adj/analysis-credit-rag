@@ -192,12 +192,12 @@ export default function NewAnalysis() {
         </h1>
         <div className="mt-6 flex justify-center items-center gap-6">
           <div className={`flex items-center gap-3 transition-colors ${step >= 1 ? 'text-primary' : 'text-slate-300 dark:text-slate-700'}`}>
-            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 1 ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-800'}`}>1</span>
+            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 1 ? 'border-primary bg-primary-light' : 'border-slate-200 dark:border-slate-800'}`}>1</span>
             <span className="text-sm font-medium">Anamnèse</span>
           </div>
           <div className="w-12 h-px bg-slate-200 dark:bg-slate-800"></div>
           <div className={`flex items-center gap-3 transition-colors ${step >= 2 ? 'text-primary' : 'text-slate-300 dark:text-slate-700'}`}>
-            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 2 ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-800'}`}>2</span>
+            <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 2 ? 'border-primary bg-primary-light' : 'border-slate-200 dark:border-slate-800'}`}>2</span>
             <span className="text-sm font-medium">Documents</span>
           </div>
         </div>
@@ -308,7 +308,7 @@ export default function NewAnalysis() {
             </div>
           </div>
           <div className="mt-12 flex justify-end">
-            <button onClick={validateStep1} className="w-full sm:w-auto justify-center bg-blue-600 uppercase text-white px-10 py-4 rounded-2xl text-xs font-black  tracking-widest hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 flex items-center gap-3 group">
+            <button onClick={validateStep1} className="w-full sm:w-auto justify-center btn-primary uppercase px-10 py-4 rounded-2xl text-xs font-black tracking-widest transition-all duration-300 flex items-center gap-3 group">
               Suivant <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -325,7 +325,7 @@ export default function NewAnalysis() {
                 Profil : {activeCategory === 'entreprise' ? 'PRO' : 'PART'} — {currentDocs.length} pièces
               </p>
             </div>
-            <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors">
+            <div className="px-4 py-2 bg-primary-light text-primary rounded-full text-[10px] font-black uppercase tracking-widest border border-primary shadow-sm transition-colors">
               {Object.keys(files).length} / {currentDocs.length} Fournis
             </div>
           </div>
@@ -383,7 +383,7 @@ export default function NewAnalysis() {
           <div className="flex flex-col items-center gap-3">
             <p>Notre IA analyse actuellement les documents financiers et structure le dossier de crédit de <span className="font-bold text-slate-700 dark:text-slate-200">{clientInfo.fullName || 'ce client'}</span>.</p>
             <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
-              <div className="h-full bg-blue-500 w-1/2 animate-[pulse_2s_ease-in-out_infinite] blur-[1px]" />
+              <div className="h-full btn-primary w-1/2 animate-[pulse_2s_ease-in-out_infinite] blur-[1px]" />
             </div>
             <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-2">Extraction OCR & Calcul des Ratios...</p>
           </div>

@@ -1164,6 +1164,72 @@ class UpdateBackofficeUserRequest(BaseModel):
     sexe: Optional[str] = "M"
     poste: Optional[str] = "Data Analyst"
 
+class BackofficeCreateUserRequest(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    password: str
+    role: str
+    establishment: Optional[str] = None
+    sexe: Optional[str] = "M"
+    poste: Optional[str] = "Data Analyst"
+
+@router.post("/backoffice/users")
+def backoffice_create_user(
+    request: BackofficeCreateUserRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    # Vérification email
+    existing_user = db.query(User).filter(User.email == request.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
+
+    new_user = User(
+        id=str(uuid.uuid4()),
+        first_name=request.first_name,
+        last_name=request.last_name,
+        sexe=request.sexe or "M",
+        poste=request.poste or "Data Analyst",
+        establishment=request.establishment,
+        email=request.email,
+        password_hash=get_password_hash(request.password),
+        role=request.role,
+        is_first_login=True
+    )
+    db.add(new_user)
+    db.commit()
+
+    # Email de bienvenue
+    html_content = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333;">
+        <h2>Bienvenue sur Kaïs Analytics</h2>
+        <p>Bonjour <b>{request.first_name} {request.last_name}</b>,</p>
+        <p>Votre compte a été créé. Voici vos identifiants :</p>
+        <ul>
+          <li><strong>Email :</strong> {request.email}</li>
+          <li><strong>Mot de passe provisoire :</strong> {request.password}</li>
+        </ul>
+        <p>Connectez-vous et changez votre mot de passe dès la première connexion.</p>
+      </body>
+    </html>
+    """
+    background_tasks.add_task(send_email, request.email, "Vos identifiants Kaïs Analytics", html_content)
+
+    return {
+        "message": "Compte créé avec succès.",
+        "user": {
+            "id": new_user.id,
+            "first_name": new_user.first_name,
+            "last_name": new_user.last_name,
+            "email": new_user.email,
+            "role": new_user.role,
+            "establishment": new_user.establishment
+        }
+    }
+
 @router.put("/backoffice/users/{user_id}")
 def update_backoffice_user(
     user_id: str,

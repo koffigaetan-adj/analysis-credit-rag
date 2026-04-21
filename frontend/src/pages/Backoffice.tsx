@@ -200,7 +200,7 @@ export default function Backoffice() {
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Erreur lors de la mise à jour'); }
       } else {
-        const res = await fetch(`${API}/auth/users`, {
+        const res = await fetch(`${API}/auth/backoffice/users`, {
           method: 'POST', headers,
           body: JSON.stringify({
             first_name: usrForm.first_name,
@@ -208,12 +208,12 @@ export default function Backoffice() {
             email: usrForm.email,
             password: usrForm.tempPwd || 'TempPass123!',
             role: usrForm.role,
-            establishment: usrForm.establishment,
+            establishment: usrForm.establishment || null,
             sexe: 'M',
             poste: 'Data Analyst'
           })
         });
-        if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Erreur lors de la création'); }
       }
       await fetchData();
       setShowUsrModal(false);
