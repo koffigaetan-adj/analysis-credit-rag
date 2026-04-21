@@ -573,7 +573,8 @@ def get_all_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(check_role(["SUPER_ADMIN", "ADMIN"]))
 ):
-    users = db.query(User).all()
+    # Restreindre aux utilisateurs du même établissement
+    users = db.query(User).filter(User.establishment == current_user.establishment).all()
     
     # Filtrer les utilisateurs selon le rôle de l'appelant
     if current_user.role == "ADMIN":
@@ -607,6 +608,9 @@ def admin_create_user(
     # Restriction création
     if current_admin.role == "ADMIN" and request.role != "ANALYST":
         raise HTTPException(status_code=403, detail="Un Administrateur ne peut créer que des Analystes.")
+        
+    # Un admin / super admin client ne peut créer que dans son propre établissement
+    request.establishment = current_admin.establishment
     
     # Vérification email
     existing_user = db.query(User).filter(User.email == request.email).first()
@@ -660,6 +664,10 @@ def admin_update_user(
     if target_user.role == "SUPER_ADMIN" and request.role != "SUPER_ADMIN":
          raise HTTPException(status_code=403, detail="Le rôle d'un Super Administrateur ne peut pas être rétrogradé.")
     
+    # Sécurité : Un admin (même super admin client) ne peut agir que sur son établissement
+    if target_user.establishment != current_admin.establishment:
+         raise HTTPException(status_code=403, detail="Vous ne pouvez pas modifier un membre d'un autre établissement.")
+         
     # Correction : On permet à tout Admin de mettre à jour sauf vers SUPER_ADMIN ou ADMIN (si l'appelant est seulement ADMIN)
     if request.role in ["SUPER_ADMIN", "ADMIN"] and current_admin.role != "SUPER_ADMIN":
          raise HTTPException(status_code=403, detail="Seul un Super Administrateur peut accorder ces rôles.")
@@ -680,9 +688,6 @@ def admin_update_user(
     target_user.last_name = request.last_name
     target_user.sexe = request.sexe
     target_user.poste = request.poste
-    
-    if current_admin.role == "SUPER_ADMIN" and request.establishment is not None:
-        target_user.establishment = request.establishment
         
     target_user.email = request.email
     db.commit()
@@ -700,6 +705,10 @@ def admin_delete_user(
     # Sécurité par mot de passe obligatoire
     if not verify_password(request.password, current_admin.password_hash):
         raise HTTPException(status_code=400, detail="Mot de passe administrateur incorrect. Action annulée.")
+
+    # Sécurité : Un admin ne peut agir que sur son établissement
+    if target_user.establishment != current_admin.establishment:
+         raise HTTPException(status_code=403, detail="Vous ne pouvez pas supprimer un membre d'un autre établissement.")
 
     # Empêcher l'auto-suppression
     if target_user.id == current_admin.id:
@@ -1216,7 +1225,7 @@ def backoffice_create_user(
       </body>
     </html>
     """
-    background_tasks.add_task(send_email, request.email, "Vos identifiants Kaïs Analytics", html_content)
+    background_tasks.add_task(send_email_sync, request.email, "Vos identifiants Kaïs Analytics", html_content)
 
     return {
         "message": "Compte créé avec succès.",
