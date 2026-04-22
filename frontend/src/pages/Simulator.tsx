@@ -1,483 +1,398 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, TrendingDown, TrendingUp, DollarSign, Activity } from 'lucide-react';
-
-// ─── Design: Dark financial terminal · obsidian + neon gold ───────────────────
-
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
-
-  :root {
-    --bg:       #0B0F19; /* BG main de Kaïs Analytics */
-    --s1:       #0F1523; /* Surface 1 */
-    --s2:       #121927; /* Surface 2 */
-    --border:   rgba(255,255,255,0.06);
-    --borderHi: rgba(255,255,255,0.15);
-    
-    /* Intégration de la couleur dynamique de l'établissement */
-    --gold:     var(--kais-primary);
-    --goldDim:  color-mix(in srgb, var(--kais-primary) 12%, transparent);
-    --goldGlow: color-mix(in srgb, var(--kais-primary) 22%, transparent);
-    
-    /* Couleurs de statut */
-    --green:    #10b981; /* emerald-500 */
-    --red:      #f43f5e; /* rose-500 */
-    --amber:    #f59e0b; /* amber-500 */
-    
-    /* Textes façon Slate */
-    --tx1:      #f8fafc; /* slate-50 */
-    --tx2:      #94a3b8; /* slate-400 */
-    --tx3:      #64748b; /* slate-500 */
-  }
-  .r *{box-sizing:border-box;margin:0;padding:0}
-  .r{
-    font-family:'Syne',sans-serif;
-    background:var(--bg);
-    color:var(--tx1);
-    min-height:100vh;
-    position:relative;
-  }
-
-  /* bg glows */
-  .r::before,.r::after{
-    content:'';position:fixed;border-radius:50%;pointer-events:none;z-index:0;
-  }
-  .r::before{
-    top:-25%;right:-15%;width:650px;height:650px;
-    background:radial-gradient(circle, color-mix(in srgb, var(--kais-primary) 6%, transparent) 0%, transparent 65%);
-  }
-  .r::after{
-    bottom:-20%;left:-10%;width:500px;height:500px;
-    background:radial-gradient(circle,rgba(16,185,129,0.025) 0%,transparent 65%);
-  }
-
-  .wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:38px 28px 80px}
-
-  /* ── HEADER ── */
-  .hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:44px;animation:fadeUp .45s ease both}
-  .eyebrow{
-    font-family:'JetBrains Mono',monospace;
-    font-size:9.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
-    color:var(--gold);display:flex;align-items:center;gap:8px;margin-bottom:10px;
-  }
-  .eyebrow::before{content:'';width:18px;height:1px;background:var(--gold)}
-  .htitle{font-size:34px;font-weight:800;letter-spacing:-.025em;line-height:.95}
-  .hsub{font-size:12.5px;color:var(--tx2);margin-top:10px;line-height:1.65;max-width:340px;font-weight:400}
-  .backbtn{
-    display:flex;align-items:center;gap:7px;
-    padding:9px 16px;background:var(--s1);border:1px solid var(--borderHi);
-    border-radius:8px;color:var(--tx2);font-family:'Syne',sans-serif;
-    font-size:11px;font-weight:600;letter-spacing:.07em;cursor:pointer;
-    text-transform:uppercase;transition:all .2s;
-  }
-  .backbtn:hover{color:var(--gold);border-color:var(--gold);background:var(--goldDim)}
-
-  /* ── LAYOUT ── */
-  .grid{display:grid;grid-template-columns:420px 1fr;gap:7px}
-  @media(max-width:960px){.grid{grid-template-columns:1fr}}
-
-  /* ── PANEL ── */
-  .p{
-    background:var(--s1);border:1px solid var(--border);
-    border-radius:16px;overflow:hidden;position:relative;
-    transition:border-color .25s;
-  }
-  .p:hover{border-color:var(--borderHi)}
-  .pi{padding:26px 28px}
-
-  /* ── LEFT COLUMN ── */
-  .lcol{display:flex;flex-direction:column;gap:7px}
-  .ptitle{
-    font-family:'JetBrains Mono',monospace;
-    font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--tx3);margin-bottom:22px;display:flex;align-items:center;gap:7px;
-  }
-  .ptitle-icon{color:var(--gold);opacity:.75}
-
-  /* sliders */
-  .si{margin-bottom:19px}
-  .si:last-child{margin-bottom:0}
-  .srow{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .slabel{font-size:12px;font-weight:600;color:var(--tx2)}
-  .sval{
-    font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
-    color:var(--gold);background:var(--goldDim);
-    padding:2px 8px;border-radius:4px;border:1px solid rgba(240,180,41,.18);
-  }
-  input[type=range]{
-    -webkit-appearance:none;width:100%;height:2px;
-    background:rgba(255,255,255,.07);border-radius:1px;outline:none;cursor:pointer;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
-    background:var(--gold);border:2px solid var(--bg);
-    box-shadow:0 0 7px var(--goldGlow);cursor:pointer;
-    transition:transform .15s,box-shadow .15s;
-  }
-  input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.35);box-shadow:0 0 14px var(--goldGlow)}
-
-  /* ── RIGHT COLUMN ── */
-  .rcol{display:flex;flex-direction:column;gap:7px}
-
-  /* PD hero */
-  .pd-hero{background:var(--s2);border-color:var(--borderHi)}
-  .pd-body{
-    padding:32px 34px;display:flex;align-items:center;gap:36px;
-    justify-content:space-between;flex-wrap:wrap;
-  }
-  .badge{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:4px 11px;border-radius:4px;border:1px solid;
-    font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
-    letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;
-    transition:all .45s;
-  }
-  .badge.safe{background:rgba(16,185,129,.07);color:var(--green);border-color:rgba(16,185,129,.25)}
-  .badge.warn{background:rgba(245,158,11,.07);color:var(--amber);border-color:rgba(245,158,11,.25)}
-  .badge.danger{background:rgba(244,63,94,.07);color:var(--red);border-color:rgba(244,63,94,.25)}
-  path {
-    stroke-width: 1.5; /* affiner pour garder l'élégance Kaïs */
-  }
-  .badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.6s infinite}
-  @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.65)}}
-
-  .pd-num{
-    font-family:'JetBrains Mono',monospace;
-    font-size:82px;font-weight:700;line-height:.88;letter-spacing:-.04em;
-    transition:color .45s;
-  }
-  .pd-num.safe{color:var(--green)}
-  .pd-num.warn{color:var(--amber)}
-  .pd-num.danger{color:var(--red)}
-  .pd-unit{font-size:26px;font-weight:300;opacity:.45;margin-left:2px}
-  .pd-desc{font-size:11.5px;color:var(--tx2);margin-top:11px;line-height:1.5}
-
-  /* score gauge */
-  .gauge-side{min-width:260px}
-  .g-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
-  .g-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx2);letter-spacing:.1em;text-transform:uppercase}
-  .g-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)}
-  .g-track{height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
-  .g-fill{height:100%;border-radius:3px;transition:width .65s cubic-bezier(.4,0,.2,1),background .45s}
-  .g-fill.safe{background:linear-gradient(90deg,#009955,var(--green))}
-  .g-fill.warn{background:linear-gradient(90deg,#c06000,var(--amber))}
-  .g-fill.danger{background:linear-gradient(90deg,#aa1030,var(--red))}
-  .g-ticks{display:flex;justify-content:space-between;margin-top:5px}
-  .g-tick{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3)}
-
-  .segs{display:flex;gap:3px;margin-top:18px}
-  .seg{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.04);transition:background .35s}
-
-  .mini-rats{display:flex;gap:10px;margin-top:18px}
-  .mini-rat{
-    flex:1;padding:9px 10px;background:rgba(255,255,255,.025);
-    border-radius:8px;border:1px solid var(--border);
-  }
-  .mr-key{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3);letter-spacing:.1em;margin-bottom:4px}
-  .mr-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700}
-
-  /* KPI row */
-  .krow{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-  .kpi{padding:22px 24px}
-  .ktop{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
-  .kicon{
-    width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
-    border:1px solid;transition:all .3s;
-  }
-  .kicon.good{background:rgba(16,185,129,.07);border-color:rgba(16,185,129,.2);color:var(--green)}
-  .kicon.mid{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.2);color:var(--amber)}
-  .kicon.bad{background:rgba(244,63,94,.07);border-color:rgba(244,63,94,.2);color:var(--red)}
-  .ktag{
-    font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--tx3);
-    padding:3px 6px;background:rgba(255,255,255,.03);border-radius:3px;border:1px solid var(--border);
-  }
-  .kval{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;line-height:1;letter-spacing:-.025em;transition:color .35s}
-  .kname{font-size:11px;color:var(--tx2);margin-top:6px;font-weight:500}
-  .kbar{height:2px;background:rgba(255,255,255,.05);border-radius:1px;margin-top:14px;overflow:hidden}
-  .kbar-fill{height:100%;border-radius:1px;transition:width .65s cubic-bezier(.4,0,.2,1)}
-
-  /* EBITDA */
-  .eb-panel{padding:22px 24px}
-  .eb-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
-  .eb-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px}
-  .eb-amount{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;transition:color .4s}
-  .eb-sub{font-size:11px;color:var(--tx2);margin-top:4px}
-  .eb-bars{display:flex;align-items:flex-end;gap:5px;height:48px}
-  .eb-b{width:20px;border-radius:3px 3px 0 0;transition:height .55s cubic-bezier(.4,0,.2,1),background .4s}
-
-  /* CF CHART */
-  .cf-panel{flex:1;padding:24px 26px}
-  .cf-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-  .cf-label{font-size:12px;font-weight:700;color:var(--tx2)}
-  .cf-tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--tx3);padding:3px 8px;background:rgba(255,255,255,.03);border-radius:3px;border:1px solid var(--border)}
-  .cf-chart{display:flex;align-items:flex-end;gap:7px;height:120px;position:relative;margin-bottom:4px}
-  .cf-chart::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--borderHi)}
-  .cf-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
-  .cf-bar{
-    width:100%;max-width:48px;border-radius:4px 4px 0 0;
-    transition:height .65s cubic-bezier(.4,0,.2,1),background .4s;
-    position:relative;
-  }
-  .cf-bar::before{
-    content:attr(data-v);
-    position:absolute;top:-16px;left:50%;transform:translateX(-50%);
-    font-family:'JetBrains Mono',monospace;font-size:7.5px;color:var(--tx2);
-    white-space:nowrap;
-  }
-  .cf-xlabels{display:flex;gap:7px}
-  .cf-xl{flex:1;font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--tx3);text-align:center}
-  .cf-note{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-align:center;margin-top:10px}
-
-  /* animations */
-  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-  .p{animation:fadeUp .4s ease both}
-  .p:nth-child(1){animation-delay:.06s}
-  .p:nth-child(2){animation-delay:.1s}
-  .p:nth-child(3){animation-delay:.14s}
-  .p:nth-child(4){animation-delay:.18s}
-  .p:nth-child(5){animation-delay:.22s}
-  .p:nth-child(6){animation-delay:.26s}
-  .p:nth-child(7){animation-delay:.3s}
-`;
-
-const fmtEuro = (n: number) => {
-  const abs = Math.abs(n);
-  const sign = n < 0 ? '−' : '';
-  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)}M €`;
-  if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}K €`;
-  return `${sign}${Math.round(abs)} €`;
-};
-
-type CLS = 'safe' | 'warn' | 'danger';
-const pdCls = (pd: number): CLS => pd <= 5 ? 'safe' : pd <= 15 ? 'warn' : 'danger';
-const dscrCls = (d: number) => d >= 1.5 ? 'good' : d >= 1.0 ? 'mid' : 'bad';
-const levCls = (l: number) => l <= 3 ? 'good' : l <= 5 ? 'mid' : 'bad';
-
-const Slider = ({ label, value, min, max, step, unit, onChange }: any) => (
-  <div className="si">
-    <div className="srow">
-      <span className="slabel">{label}</span>
-      <span className="sval">{value.toLocaleString('fr-FR')} {unit}</span>
-    </div>
-    <input type="range" min={min} max={max} step={step} value={value}
-      onChange={e => onChange(Number(e.target.value))} />
-  </div>
-);
+import { ArrowRight, Activity, Percent, Banknote, ShieldAlert, TrendingDown, TrendingUp, Settings2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Plot from 'react-plotly.js';
 
 export default function Simulator() {
-  const [ca, setCa] = useState(1_000_000);
-  const [marge, setMarge] = useState(12);
-  const [detteBase, setDetteBase] = useState(200_000);
-  const [montantPret, setMontantPret] = useState(150_000);
-  const [taux, setTaux] = useState(5.5);
-  const [duree, setDuree] = useState(60);
+  const navigate = useNavigate();
 
-  const [score, setScore] = useState(50);
-  const [pd, setPd] = useState(10);
-  const [dscr, setDscr] = useState(1.5);
-  const [levier, setLevier] = useState(3.0);
-  const [ebitda, setEbitda] = useState(0);
-  const [cashFlows, setCashFlows] = useState<number[]>([]);
+  // --- ÉTATS (SLIDERS) ---
+  const [ca, setCa] = useState<number>(1000000);
+  const [marge, setMarge] = useState<number>(12); // en %
+  const [detteBase, setDetteBase] = useState<number>(200000);
 
+  const [montantPret, setMontantPret] = useState<number>(150000);
+  const [taux, setTaux] = useState<number>(5.5); // en %
+  const [duree, setDuree] = useState<number>(60); // en mois
+
+  // --- RÉSULTATS CALCULÉS ---
+  const [score, setScore] = useState<number>(50);
+  const [pd, setPd] = useState<number>(10);
+  const [dscr, setDscr] = useState<number>(1.5);
+  const [levier, setLevier] = useState<number>(3.0);
+  const [ebitda, setEbitda] = useState<number>(0);
+
+  // Moteur de calcul en temps réel
   useEffect(() => {
-    const eb = ca * (marge / 100);
-    setEbitda(eb);
-    const rm = (taux / 100) / 12;
-    const men = rm === 0 ? montantPret / duree : (montantPret * rm) / (1 - Math.pow(1 + rm, -duree));
-    const ann = men * 12;
-    const dTot = detteBase + montantPret;
-    const d = ann > 0 ? eb / ann : 99;
-    const l = eb > 0 ? dTot / eb : 99;
-    setDscr(d); setLevier(l);
+    // 1. Calculs financiers
+    const calculatedEbitda = ca * (marge / 100);
+    setEbitda(calculatedEbitda);
 
-    let s = 60;
-    if (d < 1.0) s -= 40; else if (d < 1.2) s -= 20; else if (d >= 2.0) s += 20; else if (d >= 1.5) s += 10;
-    if (l > 6) s -= 30; else if (l > 4) s -= 15; else if (l < 2) s += 20;
-    if (marge < 3) s -= 20; else if (marge > 15) s += 15;
-    if (dTot > ca) s -= 15;
-    s = Math.max(0, Math.min(100, s));
-    setScore(s);
-    setPd(Math.max(0.1, Math.min(99.9, 100 * Math.exp(-0.06 * s))));
+    const txMensuel = (taux / 100) / 12;
+    const mensualite = txMensuel === 0
+        ? (montantPret / duree)
+        : (montantPret * txMensuel) / (1 - Math.pow(1 + txMensuel, -duree));
 
-    setCashFlows(Array.from({ length: 5 }, (_, i) => eb * Math.pow(1.03, i) - ann * Math.pow(0.97, i)));
+    const annuite = mensualite * 12;
+    const detteTotale = detteBase + montantPret;
+
+    const calculatedDscr = annuite > 0 ? calculatedEbitda / annuite : 99;
+    setDscr(calculatedDscr);
+
+    const calculatedLevier = calculatedEbitda > 0 ? detteTotale / calculatedEbitda : 99;
+    setLevier(calculatedLevier);
+
+    // 2. Logic Scoring
+    let currentScore = 60;
+    if (calculatedDscr < 1.0) currentScore -= 40;
+    else if (calculatedDscr < 1.2) currentScore -= 20;
+    else if (calculatedDscr >= 2.0) currentScore += 20;
+    else if (calculatedDscr >= 1.5) currentScore += 10;
+    if (calculatedLevier > 6) currentScore -= 30;
+    else if (calculatedLevier > 4) currentScore -= 15;
+    else if (calculatedLevier < 2) currentScore += 20;
+    if (marge < 3) currentScore -= 20;
+    else if (marge > 15) currentScore += 15;
+    if (detteTotale > ca) currentScore -= 15;
+    currentScore = Math.max(0, Math.min(100, currentScore));
+    setScore(currentScore);
+
+    const calculatedPd = Math.max(0.1, Math.min(99.9, 100 * Math.exp(-0.06 * currentScore)));
+    setPd(calculatedPd);
+
   }, [ca, marge, detteBase, montantPret, taux, duree]);
 
-  const cls = pdCls(pd);
-  const badgeLabel = { safe: 'RISQUE FAIBLE', warn: 'SURVEILLANCE', danger: 'RISQUE ÉLEVÉ' }[cls];
-  const maxCF = Math.max(...cashFlows.map(Math.abs), 1);
+
+  // Composant Slider Réutilisable (identique à l'original)
+  const RangeSlider = ({ label, value, min, max, step, unit, onChange, icon: Icon }: any) => (
+    <div className="mb-6">
+      <div className="flex justify-between items-center mb-2">
+        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+           <Icon className="w-5 h-5 icon-primary" /> {label}
+        </label>
+        <span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg">
+          {value.toLocaleString('fr-FR')} {unit}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+      />
+    </div>
+  );
+
+  // ─── Helpers couleur ────────────────────────────────────────────────────────
+  const pdColorClass = pd > 15 ? 'danger' : pd > 5 ? 'warn' : 'safe';
+  const pdColor      = pd > 15 ? '#f43f5e' : pd > 5 ? '#f59e0b' : '#10b981';
+  const scoreColor   = score < 50 ? '#f43f5e' : score < 70 ? '#f59e0b' : '#10b981';
+  const dscrColor    = dscr < 1.0 ? '#f43f5e' : dscr < 1.2 ? '#f59e0b' : '#10b981';
+  const levierColor  = levier > 6 ? '#f43f5e' : levier > 4 ? '#f59e0b' : '#10b981';
+
+  // Segments de jauge (20 segments)
+  const segments = Array.from({ length: 20 }, (_, i) => ({
+    active: score >= (i + 1) * 5,
+  }));
 
   return (
-    <div className="r">
-      <style>{CSS}</style>
-      <div className="wrap">
+    <div className="max-w-7xl mx-auto px-4 pb-20 mt-8 animate-fade-in font-sans">
 
-        {/* HEADER */}
-        <div className="hdr">
-          <div>
-            <div className="eyebrow">Analyse de crédit · Module actif</div>
-            <h1 className="htitle">Simulateur<br/>de Risque</h1>
-            <p className="hsub">Stress-testez la solvabilité d'un emprunteur en temps réel avec projection sur 5 ans.</p>
+      {/* HEADER — identique */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+            <Activity className="w-5 h-5 icon-primary" /> Simulateur de Crédit
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">
+            Simulez instantanément différents scénarios économiques pour tester la robustesse des emprunteurs.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+        >
+          Retour <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        {/* COLONNE GAUCHE: SLIDERS — identique */}
+        <div className="lg:col-span-5 space-y-8">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
+              <Settings2 className="w-5 h-5 text-indigo-500" /> Données de l'Entreprise
+            </h2>
+            <RangeSlider label="Chiffre d'Affaires" value={ca} min={10000} max={5000000} step={10000} unit="€" onChange={setCa} icon={Banknote} />
+            <RangeSlider label="Marge EBITDA" value={marge} min={-10} max={40} step={1} unit="%" onChange={setMarge} icon={Percent} />
+            <RangeSlider label="Dette existante" value={detteBase} min={0} max={2000000} step={10000} unit="€" onChange={setDetteBase} icon={TrendingDown} />
           </div>
-          <button className="backbtn"><ArrowLeft size={12} /> Dashboard</button>
+
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
+              <TrendingUp className="w-5 h-5 text-emerald-500" /> Scénario de Financement
+            </h2>
+            <RangeSlider label="Montant Demandé" value={montantPret} min={0} max={1000000} step={10000} unit="€" onChange={setMontantPret} icon={Banknote} />
+            <RangeSlider label="Durée d'amortissement" value={duree} min={12} max={120} step={12} unit="mois" onChange={setDuree} icon={Activity} />
+            <RangeSlider label="Taux d'intérêt" value={taux} min={0} max={15} step={0.1} unit="%" onChange={setTaux} icon={Percent} />
+          </div>
         </div>
 
-        <div className="grid">
+        {/* COLONNE DROITE: RÉSULTATS */}
+        <div className="lg:col-span-7 space-y-8">
 
-          {/* ─── LEFT: SLIDERS ─── */}
-          <div className="lcol">
-            <div className="p pi">
-              <div className="ptitle"><span className="ptitle-icon"><DollarSign size={12} /></span>Données entreprise</div>
-              <Slider label="Chiffre d'Affaires" value={ca} min={10000} max={5000000} step={10000} unit="€" onChange={setCa} />
-              <Slider label="Marge EBITDA" value={marge} min={-10} max={40} step={1} unit="%" onChange={setMarge} />
-              <Slider label="Dette existante" value={detteBase} min={0} max={2000000} step={10000} unit="€" onChange={setDetteBase} />
-            </div>
+          {/* ── Main KPI — redesigné ── */}
+          <div className={`rounded-3xl p-8 border shadow-xl transition-all duration-500 relative overflow-hidden backdrop-blur-xl transform hover:-translate-y-1 ${
+            pd > 15 ? 'bg-rose-50/90 border-rose-200 dark:bg-rose-900/40 dark:border-rose-800/40' :
+            pd > 5  ? 'bg-orange-50/90 border-orange-200 dark:bg-orange-900/40 dark:border-orange-800/40' :
+            'bg-emerald-50/90 border-emerald-200 dark:bg-emerald-900/40 dark:border-emerald-800/40'
+          }`}>
+            <ShieldAlert className={`absolute -right-10 -top-10 w-64 h-64 opacity-[0.03] ${pd > 10 ? 'text-rose-500' : 'text-emerald-500'}`} />
 
-            <div className="p pi">
-              <div className="ptitle"><span className="ptitle-icon"><TrendingUp size={12} /></span>Scénario de financement</div>
-              <Slider label="Montant demandé" value={montantPret} min={0} max={1000000} step={10000} unit="€" onChange={setMontantPret} />
-              <Slider label="Durée d'amortissement" value={duree} min={12} max={120} step={12} unit="mois" onChange={setDuree} />
-              <Slider label="Taux d'intérêt" value={taux} min={0} max={15} step={0.1} unit="%" onChange={setTaux} />
-            </div>
-
-            {/* EBITDA mini */}
-            <div className="p eb-panel">
-              <div className="eb-row">
-                <div>
-                  <div className="eb-label">EBITDA annuel</div>
-                  <div className="eb-amount" style={{ color: ebitda >= 0 ? 'var(--gold)' : 'var(--red)' }}>{fmtEuro(ebitda)}</div>
-                  <div className="eb-sub">{marge}% du chiffre d'affaires · {fmtEuro(ca)} CA</div>
-                </div>
-                <div className="eb-bars">
-                  {[.35,.55,.75,1,.85].map((r, i) => (
-                    <div key={i} className="eb-b" style={{
-                      height: Math.abs(r) * 44,
-                      background: ebitda >= 0
-                        ? `linear-gradient(180deg, var(--kais-primary) 0%, color-mix(in srgb, var(--kais-primary) 30%, transparent) 100%)`
-                        : 'var(--red)',
-                    }} />
-                  ))}
-                </div>
+            <div className="relative z-10">
+              {/* Titre + badge statut */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  Probabilité de Défaut (1 an)
+                </h3>
+                <span
+                  className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border"
+                  style={{
+                    color: pdColor,
+                    borderColor: pdColor + '55',
+                    background: pdColor + '15',
+                  }}
+                >
+                  {pd > 15 ? '⚠ Risque élevé' : pd > 5 ? '~ Surveillance' : '✓ Risque faible'}
+                </span>
               </div>
-            </div>
-          </div>
 
-          {/* ─── RIGHT: RESULTS ─── */}
-          <div className="rcol">
-
-            {/* PD HERO */}
-            <div className="p pd-hero">
-              <div className="pd-body">
-                <div>
-                  <div className={`badge ${cls}`}><span className="badge-dot" />{badgeLabel}</div>
-                  <div className={`pd-num ${cls}`}>
-                    {pd.toFixed(1)}<span className="pd-unit">%</span>
-                  </div>
-                  <div className="pd-desc">Probabilité de défaut estimée sur 12 mois</div>
+              {/* Chiffre PD + arc gauge SVG */}
+              <div className="flex items-center gap-8">
+                {/* Arc gauge */}
+                <div className="relative flex-shrink-0" style={{ width: 140, height: 80 }}>
+                  <svg width="140" height="80" viewBox="0 0 140 80">
+                    {/* Track */}
+                    <path
+                      d="M 10 75 A 60 60 0 0 1 130 75"
+                      fill="none" stroke="currentColor"
+                      strokeWidth="10" strokeLinecap="round"
+                      className="text-slate-200 dark:text-slate-700"
+                    />
+                    {/* Fill — stroke-dasharray trick */}
+                    <path
+                      d="M 10 75 A 60 60 0 0 1 130 75"
+                      fill="none"
+                      stroke={pdColor}
+                      strokeWidth="10" strokeLinecap="round"
+                      strokeDasharray={`${(pd / 100) * 188} 188`}
+                      style={{ transition: 'stroke-dasharray 0.7s cubic-bezier(.4,0,.2,1), stroke 0.5s' }}
+                      filter={`drop-shadow(0 0 6px ${pdColor}88)`}
+                    />
+                    {/* Valeur centrale */}
+                    <text x="70" y="68" textAnchor="middle" fontSize="22" fontWeight="800"
+                      fill={pdColor} style={{ transition: 'fill 0.5s', fontFamily: 'inherit' }}>
+                      {pd.toFixed(1)}%
+                    </text>
+                  </svg>
                 </div>
 
-                <div className="gauge-side">
-                  <div className="g-top">
-                    <span className="g-label">Score de solvabilité</span>
-                    <span className="g-val">{score}<span style={{ fontSize: 11, opacity: .4, fontWeight: 400 }}>/100</span></span>
-                  </div>
-                  <div className="g-track">
-                    <div className={`g-fill ${cls}`} style={{ width: `${score}%` }} />
-                  </div>
-                  <div className="g-ticks">{['0','25','50','75','100'].map(v => <span key={v} className="g-tick">{v}</span>)}</div>
-
-                  <div className="segs">
-                    {Array.from({ length: 20 }, (_, i) => {
-                      const active = score >= (i + 1) * 5;
-                      return <div key={i} className="seg" style={active ? {
-                        background: score < 50 ? 'var(--red)' : score < 70 ? 'var(--amber)' : 'var(--green)'
-                      } : {}} />;
-                    })}
+                {/* Score barre + segments */}
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Score</span>
+                    <span className="text-lg font-black" style={{ color: scoreColor }}>{score}<span className="text-sm font-normal text-slate-400">/100</span></span>
                   </div>
 
-                  <div className="mini-rats">
-                    {[
-                      { k: 'DSCR', v: dscr > 50 ? '>50' : dscr.toFixed(2), ok: dscr >= 1.2 },
-                      { k: 'LEVIER', v: levier > 50 ? '>50' : `${levier.toFixed(1)}x`, ok: levier <= 4 },
-                      { k: 'MARGE', v: `${marge}%`, ok: marge > 5 },
-                    ].map(({ k, v, ok }) => (
-                      <div key={k} className="mini-rat">
-                        <div className="mr-key">{k}</div>
-                        <div className="mr-val" style={{ color: ok ? 'var(--green)' : 'var(--red)' }}>{v}</div>
-                      </div>
+                  {/* Barre principale */}
+                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-3" style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700 ease-out"
+                      style={{
+                        width: `${score}%`,
+                        background: `linear-gradient(90deg, ${scoreColor}99, ${scoreColor})`,
+                        boxShadow: `0 0 8px ${scoreColor}66`,
+                      }}
+                    />
+                  </div>
+
+                  {/* Segments de jauge */}
+                  <div className="flex gap-[2px]">
+                    {segments.map((seg, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-sm transition-all duration-300"
+                        style={{
+                          height: i % 4 === 0 ? 8 : 5,
+                          background: seg.active ? scoreColor : 'rgba(0,0,0,0.08)',
+                          opacity: seg.active ? (0.4 + (i / 20) * 0.6) : 1,
+                          boxShadow: seg.active ? `0 0 4px ${scoreColor}55` : 'none',
+                          transition: 'background 0.4s, box-shadow 0.4s',
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Ticks */}
+                  <div className="flex justify-between mt-1">
+                    {['0', '25', '50', '75', '100'].map(v => (
+                      <span key={v} className="text-[9px] text-slate-400 font-mono">{v}</span>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* KPI ROW */}
-            <div className="krow">
-              <div className="p kpi">
-                <div className="ktop">
-                  <div className={`kicon ${dscrCls(dscr)}`}><Activity size={15} /></div>
-                  <span className="ktag">DSCR</span>
-                </div>
-                <div className="kval" style={{ color: dscr < 1 ? 'var(--red)' : dscr < 1.2 ? 'var(--amber)' : 'var(--green)' }}>
-                  {dscr > 50 ? '>50' : dscr.toFixed(2)}<span style={{ fontSize: 13, opacity: .45 }}>x</span>
-                </div>
-                <div className="kname">Debt Service Coverage Ratio</div>
-                <div className="kbar">
-                  <div className="kbar-fill" style={{
-                    width: `${Math.min(100, (dscr / 3) * 100)}%`,
-                    background: dscr < 1.2 ? 'var(--red)' : 'var(--green)',
-                  }} />
-                </div>
-              </div>
-
-              <div className="p kpi">
-                <div className="ktop">
-                  <div className={`kicon ${levCls(levier)}`}><TrendingDown size={15} /></div>
-                  <span className="ktag">LEVIER</span>
-                </div>
-                <div className="kval" style={{ color: levier > 6 ? 'var(--red)' : levier > 4 ? 'var(--amber)' : 'var(--green)' }}>
-                  {levier > 50 ? '>50' : levier.toFixed(1)}<span style={{ fontSize: 13, opacity: .45 }}>x</span>
-                </div>
-                <div className="kname">Dette totale / EBITDA</div>
-                <div className="kbar">
-                  <div className="kbar-fill" style={{
-                    width: `${Math.min(100, (levier / 8) * 100)}%`,
-                    background: levier > 4 ? 'var(--red)' : 'var(--green)',
-                  }} />
-                </div>
-              </div>
-            </div>
-
-            {/* CASH FLOW CHART */}
-            <div className="p cf-panel">
-              <div className="cf-title">
-                <span className="cf-label">Cash Flow Libre — projection 5 ans</span>
-                <span className="cf-tag">INDICATIF</span>
-              </div>
-              <div className="cf-chart">
-                {cashFlows.map((cf, i) => {
-                  const h = Math.max(5, (Math.abs(cf) / maxCF) * 96);
-                  const pos = cf >= 0;
-                  return (
-                    <div key={i} className="cf-col">
-                      <div className="cf-bar"
-                        data-v={fmtEuro(cf)}
-                        style={{
-                          height: h,
-                          background: pos
-                            ? 'linear-gradient(180deg,rgba(16,185,129,.88) 0%,rgba(16,185,129,.18) 100%)'
-                            : 'linear-gradient(180deg,rgba(244,63,94,.88) 0%,rgba(244,63,94,.18) 100%)',
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="cf-xlabels">
-                {['A1','A2','A3','A4','A5'].map(l => <span key={l} className="cf-xl">{l}</span>)}
-              </div>
-              <p className="cf-note">Marge disponible après service de la dette simulé · Croissance CA +3%/an</p>
-            </div>
-
           </div>
+
+          {/* ── Sub KPIs — redesignés ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* DSCR */}
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Ratio DSCR</p>
+                  <div className="text-2xl font-bold" style={{ color: dscrColor }}>
+                    {dscr > 50 ? '> 50' : dscr.toFixed(2)}x
+                  </div>
+                </div>
+                <div className={`p-3 rounded-2xl ${dscr < 1.2 ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                  <Activity className="w-6 h-6" />
+                </div>
+              </div>
+              {/* Barre de progression stylée */}
+              <div className="space-y-1">
+                <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.min(100, (Math.min(dscr, 3) / 3) * 100)}%`,
+                      background: `linear-gradient(90deg, ${dscrColor}88, ${dscrColor})`,
+                      boxShadow: `0 0 6px ${dscrColor}44`,
+                    }}
+                  />
+                </div>
+                {/* Repères */}
+                <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+                  <span>0</span>
+                  <span style={{ color: '#f59e0b' }}>1.2×</span>
+                  <span style={{ color: '#10b981' }}>2.0×</span>
+                  <span>3×</span>
+                </div>
+              </div>
+            </div>
+
+            {/* LEVIER */}
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Levier (Dette/EBITDA)</p>
+                  <div className="text-2xl font-bold" style={{ color: levierColor }}>
+                    {levier > 50 ? '> 50' : levier.toFixed(1)}x
+                  </div>
+                </div>
+                <div className={`p-3 rounded-2xl ${levier > 4 ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                  <TrendingDown className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.min(100, (Math.min(levier, 8) / 8) * 100)}%`,
+                      background: `linear-gradient(90deg, ${levierColor}88, ${levierColor})`,
+                      boxShadow: `0 0 6px ${levierColor}44`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+                  <span>0</span>
+                  <span style={{ color: '#10b981' }}>2×</span>
+                  <span style={{ color: '#f59e0b' }}>4×</span>
+                  <span style={{ color: '#f43f5e' }}>6×+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Graphique Plotly — paramètres visuels améliorés, logique identique ── */}
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Trajectoire du Cash Flow Libre</h3>
+            <div className="h-64 w-full">
+              <Plot
+                data={[
+                  {
+                    x: ['Année 1', 'Année 2', 'Année 3', 'Année 4', 'Année 5'],
+                    y: Array.from({ length: 5 }, (_, i) =>
+                      ebitda - (((montantPret / duree) * 12) * Math.pow(0.9, i))
+                    ),
+                    type: 'bar',
+                    marker: {
+                      color: Array.from({ length: 5 }, (_, i) => {
+                        const val = ebitda - (((montantPret / duree) * 12) * Math.pow(0.9, i));
+                        return val >= 0
+                          ? (dscr > 1.2 ? '#10b981' : '#f59e0b')
+                          : '#f43f5e';
+                      }),
+                      opacity: 0.88,
+                      line: { width: 0 },
+                    },
+                    // Arrondir les coins (Plotly supporte via customdata trick — on garde simple)
+                  }
+                ]}
+                layout={{
+                  autosize: true,
+                  margin: { t: 18, l: 52, r: 12, b: 36 },
+                  paper_bgcolor: 'transparent',
+                  plot_bgcolor: 'transparent',
+                  font: { color: '#94a3b8', size: 11 },
+                  bargap: 0.35,
+                  xaxis: {
+                    showgrid: false,
+                    zeroline: false,
+                    tickfont: { size: 11, color: '#94a3b8' },
+                    showline: false,
+                  },
+                  yaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(148,163,184,0.12)',
+                    gridwidth: 1,
+                    zeroline: true,
+                    zerolinecolor: 'rgba(148,163,184,0.35)',
+                    zerolinewidth: 1.5,
+                    tickfont: { size: 10, color: '#94a3b8' },
+                    showline: false,
+                  },
+                  hoverlabel: {
+                    bgcolor: '#1e293b',
+                    bordercolor: 'rgba(255,255,255,0.1)',
+                    font: { color: '#f1f5f9', size: 12 },
+                  },
+                  shapes: [
+                    // Ligne zéro mise en valeur
+                    {
+                      type: 'line',
+                      x0: -0.5, x1: 4.5,
+                      y0: 0, y1: 0,
+                      line: { color: 'rgba(148,163,184,0.3)', width: 1, dash: 'dot' },
+                    }
+                  ],
+                }}
+                useResizeHandler
+                style={{ width: '100%', height: '100%' }}
+                config={{ displayModeBar: false, responsive: true }}
+              />
+            </div>
+            <p className="text-xs text-slate-400 mt-4 text-center">
+              Simulation indicative de la marge disponible après amortissement du prêt testé.
+            </p>
+          </div>
+
         </div>
       </div>
     </div>
