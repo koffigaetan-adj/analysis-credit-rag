@@ -15,7 +15,7 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
 REPLY_TO = "no-reply@kaisanalytics.com"
 FROM_NAME = os.getenv("FROM_NAME", "Kaïs Analytics")
 
-def send_email_sync(to_email: str, subject: str, html_content: str):
+def send_email_sync(to_email: str, subject: str, html_content: str, attachment_name: str = None, attachment_data: bytes = None):
     """
     Fonction synchrone pour envoyer un email via SMTP.
     Retourne True si l'envoi a réussi, False sinon.
@@ -31,7 +31,7 @@ def send_email_sync(to_email: str, subject: str, html_content: str):
         return True
 
     try:
-        msg = MIMEMultipart("related")
+        msg = MIMEMultipart("mixed")
         msg['Subject'] = subject
         msg['From'] = f"{FROM_NAME} <{REPLY_TO}>" if FROM_NAME else REPLY_TO
         msg['Reply-To'] = REPLY_TO
@@ -57,9 +57,9 @@ def send_email_sync(to_email: str, subject: str, html_content: str):
         </html>
         """
 
-        # Attach HTML content
-        part = MIMEText(template_html, 'html')
-        msg.attach(part)
+        # Sous-partie pour l'email principal et l'image inline (logo)
+        body_part = MIMEMultipart("related")
+        body_part.attach(MIMEText(template_html, 'html'))
         
         # Attach embedded Logo
         logo_path = os.path.join(os.path.dirname(__file__), "images", "logomail.png")
@@ -69,7 +69,19 @@ def send_email_sync(to_email: str, subject: str, html_content: str):
             image = MIMEImage(img_data, name=os.path.basename(logo_path))
             image.add_header('Content-ID', '<logomail>')
             image.add_header('Content-Disposition', 'inline', filename='logomail.png')
-            msg.attach(image)
+            body_part.attach(image)
+        
+        msg.attach(body_part)
+
+        # Pièce jointe optionnelle du formulaire de contact
+        if attachment_name and attachment_data:
+            from email.mime.base import MIMEBase
+            from email import encoders
+            file_part = MIMEBase('application', 'octet-stream')
+            file_part.set_payload(attachment_data)
+            encoders.encode_base64(file_part)
+            file_part.add_header('Content-Disposition', f'attachment; filename="{attachment_name}"')
+            msg.attach(file_part)
 
         # Connect and send
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)

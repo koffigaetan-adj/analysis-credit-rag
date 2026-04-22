@@ -669,7 +669,7 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
     db.commit()
     return {"message": "Supprimé"}
 
-def send_contact_email(email: str, subject: str, message: str, attachment_name: typing.Optional[str] = None):
+def send_contact_email(email: str, subject: str, message: str, attachment_name: typing.Optional[str] = None, attachment_data: typing.Optional[bytes] = None):
     target_admin_email = os.getenv("FROM_EMAIL", "gaetan.eyes@gmail.com")
     
     html_content = f"""
@@ -682,10 +682,10 @@ def send_contact_email(email: str, subject: str, message: str, attachment_name: 
         <p>{message.replace(chr(10), '<br>')}</p>
     """
     if attachment_name:
-        html_content += f"<p><em>Une pièce jointe a été fournie : {attachment_name}</em></p>"
+        html_content += f"<p><em>⚠️ Une pièce jointe a été fournie : {attachment_name}</em></p>"
     html_content += "</body></html>"
     
-    send_email_sync(target_admin_email, f"Contact Kaïs Analytics : {subject}", html_content)
+    send_email_sync(target_admin_email, f"Contact Kaïs Analytics : {subject}", html_content, attachment_name, attachment_data)
 
     auto_reply_html = f"""
     <html>
@@ -713,9 +713,11 @@ async def handle_contact(
     current_user: database.User = Depends(get_current_user)
 ):
     attachment_name = None
+    attachment_data = None
     if file:
         attachment_name = file.filename
-    background_tasks.add_task(send_contact_email, email, subject, message, attachment_name)
+        attachment_data = await file.read()
+    background_tasks.add_task(send_contact_email, email, subject, message, attachment_name, attachment_data)
     return {"message": "Demande envoyée avec succès."}
 
 class SaveAppRequest(BaseModel):
