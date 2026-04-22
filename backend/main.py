@@ -218,7 +218,7 @@ def build_extraction_prompt(client_info: dict, extracted_text: str) -> str:
         """
 
 
-def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict, ratios_data: dict) -> str:
+def build_interpretation_prompt(client_info: dict, extracted_text: str, score_data: dict, fin_data: dict, ratios_data: dict, establishment: str = None) -> str:
     # ── RAG multi-angles : requêtes ciblées selon le contexte du dossier ───
     amount_float = 0.0
     try:
@@ -237,6 +237,7 @@ def build_interpretation_prompt(client_info: dict, extracted_text: str, score_da
             secteur=secteur,
             score=current_score,
             ratios=ratios_data,
+            establishment=establishment
         )
     except Exception as e:
         print(f"Avertissement RAG multi-angles : {e}")
@@ -349,7 +350,8 @@ async def analyze_dashboard(
     phone: typing.Optional[str] = Form(None),
     apport_personnel: typing.Optional[str] = Form(None),
     files: typing.List[UploadFile] = File(...),
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    current_user: database.User = Depends(get_current_user)
 ):
     full_extracted_text_parts = []
     
@@ -398,12 +400,19 @@ async def analyze_dashboard(
         ratios_data = scoring_result["ratios"]
             
         # PHASE 3: Interprétation IA avec Groq
-        interpretation_prompt = build_interpretation_prompt({
-            "fullName": fullName, 
-            "amount": amount, 
-            "clientType": clientType, 
-            "projectType": projectType
-        }, full_extracted_text, score_data, fin_data, ratios_data)
+        interpretation_prompt = build_interpretation_prompt(
+            {
+                "fullName": fullName, 
+                "amount": amount, 
+                "clientType": clientType, 
+                "projectType": projectType
+            }, 
+            full_extracted_text, 
+            score_data, 
+            fin_data, 
+            ratios_data,
+            current_user.establishment
+        )
         
         interpretation_response = client.chat.completions.create(
             messages=[{"role": "user", "content": interpretation_prompt}],

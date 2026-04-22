@@ -158,6 +158,39 @@ export default function Backoffice() {
     } catch (err) { console.error(err); }
   };
 
+  const handleUploadPolicy = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingEst) return;
+    setIsSubmitting(true);
+    setEstError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/auth/establishments/${editingEst.id}/policy`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }, // no Content-Type for FormData
+        body: formData
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+      alert(`Politique RAG mise à jour avec succès pour ${editingEst.name} !`);
+    } catch (err: any) { setEstError(err.message); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const handleDeletePolicy = async () => {
+    if (!editingEst || !confirm("Réinitaliser la politique aux règles par défaut ?")) return;
+    setIsSubmitting(true);
+    setEstError('');
+    try {
+      const res = await fetch(`${API}/auth/establishments/${editingEst.id}/policy`, {
+        method: 'DELETE', headers
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+      alert(`Politique RAG réinitialisée pour ${editingEst.name} !`);
+    } catch (err: any) { setEstError(err.message); }
+    finally { setIsSubmitting(false); }
+  };
+
   // --- Handlers Utilisateur ---
   const openNewUsrModal = () => {
     setEditingUsr(null);
@@ -624,6 +657,24 @@ export default function Backoffice() {
                 <p className="text-slate-600 text-[10px] mt-1.5">Cette couleur sera appliquée automatiquement pour tous les membres de cet établissement.</p>
               </div>
 
+              {editingEst && (
+                <div className="border-t border-slate-700/50 pt-4 mt-2">
+                  <label className="block text-xs font-medium text-slate-300 mb-2">Politique de Crédit (RAG IA)</label>
+                  <p className="text-[10px] text-slate-500 mb-3 leading-tight">
+                    Ajoutez un document (PDF/TXT) contenant les règles d'octroi de crédit. L'Intelligence Artificielle s'appuiera dessus pour analyser tous les dossiers de cette agence.
+                  </p>
+                  <div className="flex gap-2">
+                    <label className="flex-1 text-center cursor-pointer px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition-colors border border-slate-600">
+                      Uploader un fichier
+                      <input type="file" accept=".pdf,.txt" className="hidden" onChange={handleUploadPolicy} disabled={isSubmitting} />
+                    </label>
+                    <button type="button" onClick={handleDeletePolicy} disabled={isSubmitting}
+                      className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-medium rounded-lg transition-colors border border-rose-500/20">
+                      Réinitialiser
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowEstModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">Annuler</button>

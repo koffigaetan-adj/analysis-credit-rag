@@ -13,6 +13,7 @@ import uuid
 import random
 from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment, UserBackoffice
 from email_service import send_email_sync
+import rag_engine
 
 # Paramètres Sécurité & JWT (à configurer via .env en prod)
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "une_cle_secrete_tres_complexe_ici_123!")
@@ -1144,6 +1145,53 @@ def update_establishment(
         
     db.commit()
     return {"message": "Établissement mis à jour avec succès."}
+
+@router.post("/establishments/{est_id}/policy")
+async def upload_establishment_policy(
+    est_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    est = db.query(Establishment).filter(Establishment.id == est_id).first()
+    if not est:
+        raise HTTPException(status_code=404, detail="Établissement introuvable.")
+
+    # Save file temporarily
+    temp_file_path = f"temp_policy_{est_id}_{file.filename}"
+    with open(temp_file_path, "wb") as buffer:
+        buffer.write(await file.read())
+
+    try:
+        # Index into RAG specifically for this establishment name
+        success = rag_engine.process_bank_rules(temp_file_path, establishment=est.name)
+        if not success:
+             raise HTTPException(status_code=500, detail="L'indexation a échoué.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
+    return {"message": f"Politique RAG mise à jour pour {est.name}"}
+
+@router.delete("/establishments/{est_id}/policy")
+def delete_establishment_policy(
+    est_id: str,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    est = db.query(Establishment).filter(Establishment.id == est_id).first()
+    if not est:
+        raise HTTPException(status_code=404, detail="Établissement introuvable.")
+
+    try:
+        supabase_client = rag_engine._get_supabase_client()
+        supabase_client.table("documents").delete().eq("metadata->>establishment", est.name).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"message": f"Politique RAG réinitialisée pour {est.name}"}
 
 # --- BACKOFFICE USER MANAGEMENT ---
 @router.get("/backoffice/users")

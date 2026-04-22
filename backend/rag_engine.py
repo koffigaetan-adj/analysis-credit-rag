@@ -52,12 +52,11 @@ def _load_documents(file_path: str):
     return loader.load()
 
 
-def process_bank_rules(file_path: str) -> bool:
+def process_bank_rules(file_path: str, establishment: str = "Kaïs Bank") -> bool:
     """
-    Ingère la politique de crédit dans Supabase pgvector.
-    Utilise des appels directs au client Supabase (sans SupabaseVectorStore).
+    Ingère la politique de crédit dans Supabase pgvector pour un établissement donné.
     """
-    print(f"--- Début de l'indexation : {file_path} ---")
+    print(f"--- Début de l'indexation pour {establishment} : {file_path} ---")
     supabase_client = _get_supabase_client()
     embeddings = _get_embeddings()
 
@@ -71,10 +70,10 @@ def process_bank_rules(file_path: str) -> bool:
     )
     texts = text_splitter.split_documents(documents)
 
-    # Supprimer tous les enregistrements existants
+    # Supprimer tous les enregistrements existants pour cet établissement
     try:
-        print(f"Suppression des anciens chunks et re-indexation de {len(texts)} chunks dans Supabase...")
-        supabase_client.table("documents").delete().neq("content", "").execute()
+        print(f"Suppression des anciens chunks de {establishment} et re-indexation de {len(texts)} chunks...")
+        supabase_client.table("documents").delete().eq("metadata->>establishment", establishment).execute()
         print("Anciens chunks supprimés.")
     except Exception as e:
         print(f"Erreur lors de la suppression des anciens chunks : {e}")
@@ -87,6 +86,7 @@ def process_bank_rules(file_path: str) -> bool:
     # Insertion directe dans Supabase
     rows = []
     for doc, embedding in zip(texts, text_embeddings):
+        doc.metadata["establishment"] = establishment
         rows.append({
             "content": doc.page_content,
             "metadata": doc.metadata,
@@ -98,23 +98,27 @@ def process_bank_rules(file_path: str) -> bool:
     return True
 
 
-def _retrieve_single_query(query: str, k: int = 3) -> list[dict]:
+def _retrieve_single_query(query: str, k: int = 3, establishment: str = None) -> list[dict]:
     """
     Effectue un retrieval pour une requête donnée.
-    Retourne une liste de dicts {content, similarity} ou [] si erreur.
+    Filtre par établissement si fourni.
     """
     try:
         supabase_client = _get_supabase_client()
         embeddings = _get_embeddings()
 
         query_embedding = embeddings.embed_query(query)
+        
+        filter_dict = {}
+        if establishment:
+            filter_dict["establishment"] = establishment
 
         result = supabase_client.rpc(
             "match_documents",
             {
                 "query_embedding": query_embedding,
                 "match_count": k,
-                "filter": {},
+                "filter": filter_dict,
             },
         ).execute()
 
@@ -128,12 +132,12 @@ def _retrieve_single_query(query: str, k: int = 3) -> list[dict]:
         return []
 
 
-def retrieve_relevant_rules(query: str, k: int = 5) -> str:
+def retrieve_relevant_rules(query: str, k: int = 5, establishment: str = None) -> str:
     """
     Retrieval simple (rétrocompatibilité) — utilisé par le chat.
     Retourne une chaîne de texte avec les règles pertinentes.
     """
-    chunks = _retrieve_single_query(query, k=k)
+    chunks = _retrieve_single_query(query, k=k, establishment=establishment)
     if not chunks:
         return ""
     return "\n\n".join(
@@ -147,6 +151,7 @@ def retrieve_rules_for_analysis(
     secteur: str = "Inconnu",
     score: int = 0,
     ratios: dict = None,
+    establishment: str = None,
 ) -> str:
     """
     Retrieval MULTI-ANGLES pour une analyse de dossier crédit.
@@ -174,29 +179,29 @@ def retrieve_rules_for_analysis(
 
     # ── Requête 1 : Critères d'éligibilité selon le type de client ──────────
     q1 = f"critères éligibilité {client_type} revenus endettement situation professionnelle"
-    add_chunks(_retrieve_single_query(q1, k=3), "Critères client")
+    add_chunks(_retrieve_single_query(q1, k=3, establishment=establishment), "Critères client")
 
     # ── Requête 2 : Règles spécifiques au secteur d'activité ─────────────────
     if secteur and secteur.lower() not in ["inconnu", "unknown", ""]:
         q2 = f"secteur {secteur} conditions vigilance refus bonification"
-        add_chunks(_retrieve_single_query(q2, k=2), f"Secteur {secteur}")
+        add_chunks(_retrieve_single_query(q2, k=2, establishment=establishment), f"Secteur {secteur}")
 
     # ── Requête 3 : Garanties et sûretés selon le montant ───────────────────
     q3 = f"garanties sûretés hypothèque caution montant {int(amount)}€ obligations"
-    add_chunks(_retrieve_single_query(q3, k=2), "Garanties")
+    add_chunks(_retrieve_single_query(q3, k=2, establishment=establishment), "Garanties")
 
     # ── Requête 4 : Grille de décision et niveaux de délégation ─────────────
     q4 = "grille décision score délégation comité crédit refus dérogation"
-    add_chunks(_retrieve_single_query(q4, k=2), "Décision")
+    add_chunks(_retrieve_single_query(q4, k=2, establishment=establishment), "Décision")
 
     # ── Requête 5 : Dérogation (uniquement si score limite 40-54) ────────────
     if 40 <= score <= 54:
         q5 = "dérogation score limite conditions directeur crédit incidents paiement"
-        add_chunks(_retrieve_single_query(q5, k=2), "Dérogation")
+        add_chunks(_retrieve_single_query(q5, k=2, establishment=establishment), "Dérogation")
 
     # ── Requête 6 : Plafonds et durées ───────────────────────────────────────
     q6 = f"plafond maximum financement durée {client_type}"
-    add_chunks(_retrieve_single_query(q6, k=2), "Plafonds")
+    add_chunks(_retrieve_single_query(q6, k=2, establishment=establishment), "Plafonds")
 
     if not all_chunks:
         return _get_fallback_rules(client_type)
