@@ -22,3 +22,4 @@ supabase
 i18next
 pyotp
 qrcode
+Pillow

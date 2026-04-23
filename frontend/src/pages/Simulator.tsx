@@ -156,11 +156,11 @@ export default function Simulator() {
             <div className="relative z-10">
               {/* Titre + badge statut */}
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <h3 className="text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">
                   Probabilité de Défaut (1 an)
                 </h3>
                 <span
-                  className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border"
+                  className="text-xs font-medium uppercase tracking-wider px-3 py-1 rounded-full border"
                   style={{
                     color: pdColor,
                     borderColor: pdColor + '55',
