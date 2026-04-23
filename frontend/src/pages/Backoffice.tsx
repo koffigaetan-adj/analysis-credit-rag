@@ -34,9 +34,18 @@ interface Member {
 export default function Backoffice() {
   const navigate = useNavigate();
   const token = localStorage.getItem('backoffice_token');
-  const backofficeUser = (() => {
+  const [backofficeUser, setBackofficeUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('backoffice_user') || '{}'); } catch { return {}; }
-  })();
+  });
+
+  const refreshUserInfo = () => {
+    try {
+      const updated = JSON.parse(localStorage.getItem('backoffice_user') || '{}');
+      setBackofficeUser(updated);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Dynamically update tab title + favicon for backoffice
   useEffect(() => {
@@ -315,10 +324,15 @@ export default function Backoffice() {
         <div className="p-3 border-t border-slate-800 space-y-1">
           <button
             onClick={() => setShow2FAModal(true)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-sm"
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm ${backofficeUser.two_factor_enabled ? 'text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60'}`}
           >
-            <ShieldCheck className="w-4 h-4" />
-            Sécurité 2FA
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-4 h-4" />
+              Sécurité 2FA
+            </div>
+            {backofficeUser.two_factor_enabled && (
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            )}
           </button>
           <button
             onClick={logout}
@@ -780,7 +794,7 @@ export default function Backoffice() {
       )}
       <TwoFactorSettingsModal
         isOpen={show2FAModal}
-        onClose={() => setShow2FAModal(false)}
+        onClose={() => { setShow2FAModal(false); refreshUserInfo(); }}
         isBackoffice={true}
       />
     </div>

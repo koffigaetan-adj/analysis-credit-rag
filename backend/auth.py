@@ -271,7 +271,7 @@ def send_login_alert_async(user_email: str, first_name: str, last_name: str, ip_
 # --- ROUTES ---
 
 @router.post("/backoffice/login")
-def backoffice_login(req: BackofficeLoginRequest, db: Session = Depends(get_db)):
+def backoffice_login(request: Request, req: BackofficeLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(UserBackoffice).filter(UserBackoffice.email == req.email).first()
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect.")
@@ -280,6 +280,15 @@ def backoffice_login(req: BackofficeLoginRequest, db: Session = Depends(get_db))
         raise HTTPException(status_code=403, detail="Compte suspendu.")
     
     if user.two_factor_enabled:
+        # Envoi de l'alerte de mot de passe valide
+        ip_address = request.client.host if request.client else "Inconnue"
+        forwarded_for = request.headers.get("x-forwarded-for")
+        if forwarded_for:
+            ip_address = forwarded_for.split(",")[0].strip()
+        user_agent = request.headers.get("user-agent", "Inconnu")
+        login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        background_tasks.add_task(send_login_alert_async, user.email, user.name, "", ip_address, user_agent, login_time)
+
         temp_token_expires = timedelta(minutes=5)
         temp_token = create_access_token(
             data={"sub": user.id, "type": "2fa_pending_backoffice"},
@@ -294,7 +303,7 @@ def backoffice_login(req: BackofficeLoginRequest, db: Session = Depends(get_db))
     access_token = create_access_token(
         data={"sub": user.id, "type": "backoffice", "role": user.role}, expires_delta=access_token_expires
     )
-    return {
+    response_data = {
         "access_token": access_token,
         "token_type": "bearer",
         "requires_2fa": False,
@@ -306,6 +315,17 @@ def backoffice_login(req: BackofficeLoginRequest, db: Session = Depends(get_db))
             "two_factor_enabled": getattr(user, "two_factor_enabled", False)
         }
     }
+    
+    # Envoi de l'alerte de connexion
+    ip_address = request.client.host if request.client else "Inconnue"
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        ip_address = forwarded_for.split(",")[0].strip()
+    user_agent = request.headers.get("user-agent", "Inconnu")
+    login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    background_tasks.add_task(send_login_alert_async, user.email, user.name, "", ip_address, user_agent, login_time)
+    
+    return response_data
 
 @router.post("/login")
 def login(request: Request, login_req: LoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -332,6 +352,15 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
         )
 
     if user.two_factor_enabled:
+        # On envoie quand même l'alerte de mot de passe valide
+        ip_address = request.client.host if request.client else "Inconnue"
+        forwarded_for = request.headers.get("x-forwarded-for")
+        if forwarded_for:
+            ip_address = forwarded_for.split(",")[0].strip()
+        user_agent = request.headers.get("user-agent", "Inconnu")
+        login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        background_tasks.add_task(send_login_alert_async, user.email, user.first_name, user.last_name, ip_address, user_agent, login_time)
+
         temp_token_expires = timedelta(minutes=5)
         temp_token = create_access_token(
             data={"sub": user.id, "type": "2fa_pending"},
@@ -1737,7 +1766,7 @@ def disable_bo_2fa(req: TwoFactorVerifyRequest, db: Session = Depends(get_db), c
 
 # GLOBAL 2FA LOGIN VERIFICATION (Normal & Backoffice)
 @router.post("/2fa/login-verify")
-def login_verify_2fa(req: TwoFactorLoginRequest, db: Session = Depends(get_db)):
+def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(req.temp_token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
@@ -1781,7 +1810,8 @@ def login_verify_2fa(req: TwoFactorLoginRequest, db: Session = Depends(get_db)):
                 "role": user.role,
                 "email": user.email,
                 "avatar_url": getattr(user, "avatar_url", ""),
-                "is_active": user.is_active
+                "is_active": user.is_active,
+                "two_factor_enabled": True
             }
         }
     else:
@@ -1789,6 +1819,7 @@ def login_verify_2fa(req: TwoFactorLoginRequest, db: Session = Depends(get_db)):
             data={"sub": user.id, "type": "backoffice", "role": user.role},
             expires_delta=access_token_expires
         )
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
@@ -1796,7 +1827,8 @@ def login_verify_2fa(req: TwoFactorLoginRequest, db: Session = Depends(get_db)):
                 "id": user.id,
                 "email": user.email,
                 "name": getattr(user, "name", ""),
-                "role": user.role
+                "role": user.role,
+                "two_factor_enabled": True
             }
         }
 

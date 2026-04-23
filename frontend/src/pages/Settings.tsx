@@ -245,6 +245,23 @@ export default function Settings() {
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Établissement</label>
+                  <select
+                    value={establishment}
+                    onChange={(e) => setEstablishment(e.target.value)}
+                    disabled={user?.role !== 'SUPER_ADMIN'}
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
+                  >
+                    {establishments.length === 0 ? (
+                      <option value={establishment}>{establishment}</option>
+                    ) : (
+                      establishments.map((est: any) => (
+                        <option key={est.id} value={est.name}>{est.name}</option>
+                      ))
+                    )}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -297,30 +314,10 @@ export default function Settings() {
           <div className="space-y-1">
             <h2 className="text-sm font-bold uppercase tracking-widest text-slate-900 dark:text-slate-100">Accès & Sécurité</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 pr-4 leading-relaxed">
-              Sécurisez votre compte et gérez l'affiliation de votre établissement.
+              Sécurisez votre compte avec un mot de passe fort et la double authentification.
             </p>
           </div>
           <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase mb-4 tracking-tighter">Établissement</h3>
-              <select
-                value={establishment}
-                onChange={(e) => setEstablishment(e.target.value)}
-                disabled={user?.role !== 'SUPER_ADMIN'}
-                className="w-full mb-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
-              >
-                {establishments.length === 0 ? (
-                  <option value={establishment}>{establishment}</option>
-                ) : (
-                  establishments.map((est: any) => (
-                    <option key={est.id} value={est.name}>{est.name}</option>
-                  ))
-                )}
-              </select>
-              <div className="flex items-center gap-1.5 text-emerald-500 text-[10px] font-bold uppercase mt-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> Licence Pro
-              </div>
-            </div>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase mb-2 tracking-tighter">Mot de passe</h3>
@@ -333,16 +330,21 @@ export default function Settings() {
               </button>
             </div>
 
-            <div className={`border rounded-xl p-5 shadow-sm flex flex-col justify-between transition-colors ${user?.two_factor_enabled ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase mb-2 tracking-tighter">Double Authentification</h3>
-              <p className="text-xs text-slate-500 mb-4 flex-1">
-                {user?.two_factor_enabled ? "La 2FA est actuellement active sur ce compte." : "Ajoutez une couche de sécurité supplémentaire à votre compte."}
+            <div className={`border rounded-xl p-5 shadow-sm flex flex-col justify-between transition-all duration-300 ${user?.two_factor_enabled ? 'bg-emerald-500/5 border-emerald-500/30 ring-1 ring-emerald-500/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">Double Authentification</h3>
+                {user?.two_factor_enabled && (
+                  <span className="bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">Activée</span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mb-4 flex-1 leading-relaxed">
+                {user?.two_factor_enabled ? "Votre compte est protégé par une couche de sécurité supplémentaire (TOTP)." : "Ajoutez une couche de sécurité supplémentaire à votre compte."}
               </p>
               <button
                 onClick={() => setShow2FAModal(true)}
-                className={`flex items-center justify-between w-full text-xs font-bold transition-colors ${user?.two_factor_enabled ? 'text-emerald-600 hover:text-emerald-700' : 'text-blue-600 hover:text-blue-700'}`}
+                className={`flex items-center justify-between w-full text-xs font-bold transition-colors ${user?.two_factor_enabled ? 'text-emerald-500 hover:text-emerald-400' : 'text-blue-600 hover:text-blue-700'}`}
               >
-                {user?.two_factor_enabled ? "Gérer la 2FA (Active)" : "Configurer la 2FA"} <ChevronRight className="w-4 h-4" />
+                {user?.two_factor_enabled ? "Désactiver ou Configurer" : "Configurer la 2FA"} <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
