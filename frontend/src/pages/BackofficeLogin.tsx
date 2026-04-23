@@ -10,6 +10,10 @@ export default function BackofficeLogin() {
   const [showPwd, setShowPwd] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  
+  const [isTwoFactorStep, setIsTwoFactorStep] = useState(false);
+  const [tempToken, setTempToken] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
 
   // Titre & favicon dédiés au backoffice
   useEffect(() => {
@@ -29,19 +33,40 @@ export default function BackofficeLogin() {
     setErrorMsg('');
     setIsLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.detail || 'Identifiants invalides');
+      if (isTwoFactorStep) {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/2fa/login-verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ temp_token: tempToken, code: twoFactorCode.trim() })
+        });
+        if (!res.ok) {
+          const d = await res.json();
+          throw new Error(d.detail || 'Code invalide');
+        }
+        const data = await res.json();
+        localStorage.setItem('backoffice_token', data.access_token);
+        localStorage.setItem('backoffice_user', JSON.stringify(data.user_info));
+        navigate('/backoffice');
+      } else {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (!res.ok) {
+          const d = await res.json();
+          throw new Error(d.detail || 'Identifiants invalides');
+        }
+        const data = await res.json();
+        if (data.requires_2fa) {
+            setIsTwoFactorStep(true);
+            setTempToken(data.temp_token);
+            return;
+        }
+        localStorage.setItem('backoffice_token', data.access_token);
+        localStorage.setItem('backoffice_user', JSON.stringify(data.user_info));
+        navigate('/backoffice');
       }
-      const data = await res.json();
-      localStorage.setItem('backoffice_token', data.access_token);
-      localStorage.setItem('backoffice_user', JSON.stringify(data.user_info));
-      navigate('/backoffice');
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -95,6 +120,38 @@ export default function BackofficeLogin() {
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
+            {isTwoFactorStep ? (
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    Code d'Authentification (6 chiffres)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={twoFactorCode}
+                    onChange={e => setTwoFactorCode(e.target.value)}
+                    placeholder="123456"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all text-center tracking-[0.5em]"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(100,92,165,0.25)',
+                      color: '#e2e0f0',
+                    }}
+                    onFocus={e => (e.target.style.borderColor = '#645CA5')}
+                    onBlur={e => (e.target.style.borderColor = 'rgba(100,92,165,0.25)')}
+                  />
+                  <button
+                      type="button"
+                      onClick={() => { setIsTwoFactorStep(false); setTempToken(''); setErrorMsg(''); }}
+                      className="text-xs mt-3 block w-full text-center transition-colors hover:text-white"
+                      style={{ color: 'rgba(255,255,255,0.3)' }}
+                  >
+                      Retour
+                  </button>
+                </div>
+            ) : (
+                <>
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 Adresse Email
@@ -148,6 +205,8 @@ export default function BackofficeLogin() {
                 </button>
               </div>
             </div>
+            </>
+            )}
 
             <button
               type="submit"
@@ -159,7 +218,7 @@ export default function BackofficeLogin() {
             >
               {isLoading ? 'Connexion en cours...' : (
                 <>
-                  Se connecter
+                  {isTwoFactorStep ? "Vérifier" : "Se connecter"}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </>
               )}

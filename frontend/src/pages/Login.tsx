@@ -185,6 +185,10 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
+  const [isTwoFactorStep, setIsTwoFactorStep] = useState(false);
+  const [tempToken, setTempToken] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -245,6 +249,19 @@ export default function Login() {
         }
         setSuccessMessage("Votre demande de compte a été enregistrée. Elle sera validée par un administrateur.");
         setIsSignUp(false);
+      } else if (isTwoFactorStep) {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/2fa/login-verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ temp_token: tempToken, code: twoFactorCode.trim() })
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Code 2FA invalide");
+        }
+        const data = await response.json();
+        login(data.access_token, data.user_info, data.is_first_login);
+        navigate('/dashboard');
       } else {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
           method: 'POST',
@@ -256,6 +273,12 @@ export default function Login() {
           throw new Error(errorData.detail || 'Erreur lors de la connexion');
         }
         const data = await response.json();
+        if (data.requires_2fa) {
+            setIsTwoFactorStep(true);
+            setTempToken(data.temp_token);
+            setSuccessMessage("Veuillez entrer le code (6 chiffres) généré par votre application d'authentification.");
+            return;
+        }
         login(data.access_token, data.user_info, data.is_first_login);
         navigate('/dashboard');
       }
@@ -364,8 +387,32 @@ export default function Login() {
                 </div>
               )}
 
-              {isSignUp && !isForgotPassword && !isResetPassword && (
+              {isTwoFactorStep ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Code de vérification (6 chiffres)</label>
+                    <input
+                      type="text"
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value)}
+                      placeholder="Ex: 123456"
+                      className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm text-center tracking-widest leading-none outline-none"
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setIsTwoFactorStep(false); setTempToken(''); setError(null); setSuccessMessage(null); }}
+                    className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors"
+                  >
+                    Retour à la connexion
+                  </button>
+                </div>
+              ) : (
                 <>
+                  {isSignUp && !isForgotPassword && !isResetPassword && (
+                    <>
                   <div className="flex gap-3">
                     <div className="space-y-2 flex-1">
                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Prénom</label>
@@ -479,6 +526,8 @@ export default function Login() {
                   />
                 </div>
               )}
+              </>
+            )}
 
               <button
                 type="submit"
@@ -487,7 +536,7 @@ export default function Login() {
               >
                 {isLoading
                   ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <>{isResetPassword ? "Valider le code" : isForgotPassword ? "Recevoir le code" : isSignUp ? "Envoyer la demande" : "Accéder"} <ArrowRight className="w-4 h-4" /></>
+                  : <>{isTwoFactorStep ? "Vérifier l'accès" : isResetPassword ? "Valider le code" : isForgotPassword ? "Recevoir le code" : isSignUp ? "Envoyer la demande" : "Accéder"} <ArrowRight className="w-4 h-4" /></>
                 }
               </button>
 

@@ -11,6 +11,10 @@ from sqlalchemy.orm import Session
 import shutil
 import uuid
 import random
+import pyotp
+import qrcode
+import base64
+from io import BytesIO
 from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment, UserBackoffice
 from email_service import send_email_sync
 import rag_engine
@@ -34,6 +38,13 @@ class LoginRequest(BaseModel):
 class BackofficeLoginRequest(BaseModel):
     email: str
     password: str
+
+class TwoFactorVerifyRequest(BaseModel):
+    code: str
+
+class TwoFactorLoginRequest(BaseModel):
+    temp_token: str
+    code: str
 
 class UpdatePasswordRequest(BaseModel):
     old_password: str
@@ -267,6 +278,17 @@ def backoffice_login(req: BackofficeLoginRequest, db: Session = Depends(get_db))
     
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Compte suspendu.")
+    
+    if user.two_factor_enabled:
+        temp_token_expires = timedelta(minutes=5)
+        temp_token = create_access_token(
+            data={"sub": user.id, "type": "2fa_pending_backoffice"},
+            expires_delta=temp_token_expires
+        )
+        return {
+            "requires_2fa": True,
+            "temp_token": temp_token
+        }
         
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -275,11 +297,13 @@ def backoffice_login(req: BackofficeLoginRequest, db: Session = Depends(get_db))
     return {
         "access_token": access_token,
         "token_type": "bearer",
+        "requires_2fa": False,
         "user_info": {
             "id": user.id,
             "email": user.email,
             "name": user.name,
-            "role": user.role
+            "role": user.role,
+            "two_factor_enabled": getattr(user, "two_factor_enabled", False)
         }
     }
 
@@ -307,6 +331,17 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
             detail="Email ou mot de passe incorrect."
         )
 
+    if user.two_factor_enabled:
+        temp_token_expires = timedelta(minutes=5)
+        temp_token = create_access_token(
+            data={"sub": user.id, "type": "2fa_pending"},
+            expires_delta=temp_token_expires
+        )
+        return {
+            "requires_2fa": True,
+            "temp_token": temp_token
+        }
+
     # 3. Génération JWT
     access_token = create_access_token(
         data={"sub": user.id, "email": user.email, "role": user.role}
@@ -327,6 +362,7 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
     return {
         "access_token": access_token, 
         "token_type": "bearer",
+        "requires_2fa": False,
         "is_first_login": user.is_first_login,
         "user_info": {
             "id": user.id,
@@ -338,7 +374,8 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
             "role": user.role,
             "email": user.email,
             "avatar_url": user.avatar_url,
-            "is_active": user.is_active
+            "is_active": user.is_active,
+            "two_factor_enabled": getattr(user, "two_factor_enabled", False)
         }
     }
 
@@ -1610,3 +1647,156 @@ def toggle_backoffice_user_status(
     user.is_active = not user.is_active
     db.commit()
     return {"message": "Statut modifié"}
+
+# --- TWO FACTOR AUTHENTICATION ---
+
+def generate_qr_b64(uri: str) -> str:
+    qr = qrcode.make(uri)
+    buf = BytesIO()
+    qr.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("utf-8")
+
+@router.post("/2fa/setup")
+def setup_2fa(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.two_factor_enabled:
+        raise HTTPException(status_code=400, detail="La 2FA est déjà activée.")
+    
+    secret = pyotp.random_base32()
+    current_user.two_factor_secret = secret
+    db.commit()
+    
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=current_user.email, issuer_name="Kaïs Analytics")
+    qr_b64 = generate_qr_b64(uri)
+    
+    return {"secret": secret, "qr_code": qr_b64}
+
+@router.post("/2fa/verify-setup")
+def verify_setup_2fa(req: TwoFactorVerifyRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.two_factor_enabled:
+        raise HTTPException(status_code=400, detail="La 2FA est déjà activée.")
+    if not current_user.two_factor_secret:
+        raise HTTPException(status_code=400, detail="Processus de configuration 2FA non initié.")
+        
+    totp = pyotp.TOTP(current_user.two_factor_secret)
+    if totp.verify(req.code):
+        current_user.two_factor_enabled = True
+        db.commit()
+        return {"message": "Double authentification activée avec succès."}
+    else:
+        raise HTTPException(status_code=400, detail="Code invalide.")
+
+@router.post("/2fa/disable")
+def disable_2fa(req: TwoFactorVerifyRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.two_factor_enabled:
+        raise HTTPException(status_code=400, detail="La 2FA n'est pas activée.")
+    
+    totp = pyotp.TOTP(current_user.two_factor_secret)
+    if totp.verify(req.code) or req.code == current_user.password_hash: # Fallback? No, just OTP.
+        pass
+    if totp.verify(req.code):
+        current_user.two_factor_enabled = False
+        current_user.two_factor_secret = None
+        db.commit()
+        return {"message": "Double authentification désactivée."}
+    else:
+        raise HTTPException(status_code=400, detail="Code invalide.")
+
+# BACKOFFICE 2FA
+@router.post("/backoffice/2fa/setup")
+def setup_bo_2fa(db: Session = Depends(get_db), current_user: UserBackoffice = Depends(get_current_backoffice_user)):
+    if current_user.two_factor_enabled:
+        raise HTTPException(status_code=400, detail="La 2FA est déjà activée.")
+    secret = pyotp.random_base32()
+    current_user.two_factor_secret = secret
+    db.commit()
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=current_user.email, issuer_name="Kaïs Analytics BO")
+    return {"secret": secret, "qr_code": generate_qr_b64(uri)}
+
+@router.post("/backoffice/2fa/verify-setup")
+def verify_setup_bo_2fa(req: TwoFactorVerifyRequest, db: Session = Depends(get_db), current_user: UserBackoffice = Depends(get_current_backoffice_user)):
+    if current_user.two_factor_enabled:
+        raise HTTPException(status_code=400, detail="La 2FA est déjà activée.")
+    if not current_user.two_factor_secret:
+        raise HTTPException(status_code=400, detail="Configuration non initiée.")
+    if pyotp.TOTP(current_user.two_factor_secret).verify(req.code):
+        current_user.two_factor_enabled = True
+        db.commit()
+        return {"message": "2FA activée."}
+    raise HTTPException(status_code=400, detail="Code invalide.")
+
+@router.post("/backoffice/2fa/disable")
+def disable_bo_2fa(req: TwoFactorVerifyRequest, db: Session = Depends(get_db), current_user: UserBackoffice = Depends(get_current_backoffice_user)):
+    if not current_user.two_factor_enabled:
+        raise HTTPException(status_code=400, detail="La 2FA n'est pas activée.")
+    if pyotp.TOTP(current_user.two_factor_secret).verify(req.code):
+        current_user.two_factor_enabled = False
+        current_user.two_factor_secret = None
+        db.commit()
+        return {"message": "2FA désactivée."}
+    raise HTTPException(status_code=400, detail="Code invalide.")
+
+# GLOBAL 2FA LOGIN VERIFICATION (Normal & Backoffice)
+@router.post("/2fa/login-verify")
+def login_verify_2fa(req: TwoFactorLoginRequest, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(req.temp_token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        token_type = payload.get("type")
+        if not user_id or token_type not in ["2fa_pending", "2fa_pending_backoffice"]:
+            raise HTTPException(status_code=401, detail="Token temporaire invalide.")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token expiré ou invalide.")
+        
+    user = None
+    if token_type == "2fa_pending":
+        user = db.query(User).filter(User.id == user_id).first()
+    else:
+        user = db.query(UserBackoffice).filter(UserBackoffice.id == user_id).first()
+        
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Utilisateur invalide.")
+    if not user.two_factor_enabled or not user.two_factor_secret:
+        raise HTTPException(status_code=400, detail="2FA non configurée.")
+        
+    if not pyotp.TOTP(user.two_factor_secret).verify(req.code):
+        raise HTTPException(status_code=401, detail="Code 2FA invalide.")
+        
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    if token_type == "2fa_pending":
+        access_token = create_access_token(
+            data={"sub": user.id, "email": user.email, "role": user.role},
+            expires_delta=access_token_expires
+        )
+        return {
+            "access_token": access_token, 
+            "token_type": "bearer",
+            "is_first_login": getattr(user, "is_first_login", False),
+            "user_info": {
+                "id": user.id,
+                "first_name": getattr(user, "first_name", ""),
+                "last_name": getattr(user, "last_name", ""),
+                "sexe": getattr(user, "sexe", "M"),
+                "poste": getattr(user, "poste", ""),
+                "establishment": getattr(user, "establishment", ""),
+                "role": user.role,
+                "email": user.email,
+                "avatar_url": getattr(user, "avatar_url", ""),
+                "is_active": user.is_active
+            }
+        }
+    else:
+        access_token = create_access_token(
+            data={"sub": user.id, "type": "backoffice", "role": user.role},
+            expires_delta=access_token_expires
+        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_info": {
+                "id": user.id,
+                "email": user.email,
+                "name": getattr(user, "name", ""),
+                "role": user.role
+            }
+        }
+

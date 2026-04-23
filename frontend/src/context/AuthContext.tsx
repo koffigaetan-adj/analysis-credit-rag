@@ -10,6 +10,7 @@ interface User {
      email: string;
      role: string;
      avatar_url?: string;
+     two_factor_enabled?: boolean;
 }
 
 interface AuthContextType {

@@ -1,8 +1,9 @@
-﻿import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone, Globe } from 'lucide-react';
+import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone, Globe } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import UpdatePasswordModal from '../components/UpdatePasswordModal';
+import TwoFactorSettingsModal from '../components/TwoFactorSettingsModal';
 
 export default function Settings() {
   const { user, token, login } = useAuth();
@@ -36,6 +37,7 @@ export default function Settings() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
   const [establishments, setEstablishments] = useState<any[]>([]);
 
   useEffect(() => {
@@ -330,6 +332,19 @@ export default function Settings() {
                 Modifier maintenant <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+
+            <div className={`border rounded-xl p-5 shadow-sm flex flex-col justify-between transition-colors ${user?.two_factor_enabled ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase mb-2 tracking-tighter">Double Authentification</h3>
+              <p className="text-xs text-slate-500 mb-4 flex-1">
+                {user?.two_factor_enabled ? "La 2FA est actuellement active sur ce compte." : "Ajoutez une couche de sécurité supplémentaire à votre compte."}
+              </p>
+              <button
+                onClick={() => setShow2FAModal(true)}
+                className={`flex items-center justify-between w-full text-xs font-bold transition-colors ${user?.two_factor_enabled ? 'text-emerald-600 hover:text-emerald-700' : 'text-blue-600 hover:text-blue-700'}`}
+              >
+                {user?.two_factor_enabled ? "Gérer la 2FA (Active)" : "Configurer la 2FA"} <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -445,6 +460,13 @@ export default function Settings() {
       <UpdatePasswordModal
         isOpen={showUpdatePasswordModal}
         onClose={() => setShowUpdatePasswordModal(false)}
+      />
+
+      {/* MODAL : 2FA SETTINGS */}
+      <TwoFactorSettingsModal
+        isOpen={show2FAModal}
+        onClose={() => setShow2FAModal(false)}
+        isBackoffice={false}
       />
     </div>
   );

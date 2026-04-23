@@ -104,7 +104,7 @@ export default function Simulator() {
       {/* HEADER — identique */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+          <h1 className="text-3xl font-medium text-slate-800 dark:text-white flex items-center gap-3">
             <Activity className="w-5 h-5 icon-primary" /> Simulateur de Crédit
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-2">
@@ -124,7 +124,7 @@ export default function Simulator() {
         {/* COLONNE GAUCHE: SLIDERS — identique */}
         <div className="lg:col-span-5 space-y-8">
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
+            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
               <Settings2 className="w-5 h-5 text-indigo-500" /> Données de l'Entreprise
             </h2>
             <RangeSlider label="Chiffre d'Affaires" value={ca} min={10000} max={5000000} step={10000} unit="€" onChange={setCa} icon={Banknote} />
@@ -133,7 +133,7 @@ export default function Simulator() {
           </div>
 
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
+            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
               <TrendingUp className="w-5 h-5 text-emerald-500" /> Scénario de Financement
             </h2>
             <RangeSlider label="Montant Demandé" value={montantPret} min={0} max={1000000} step={10000} unit="€" onChange={setMontantPret} icon={Banknote} />

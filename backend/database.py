@@ -77,6 +77,8 @@ class UserBackoffice(Base):
     name = Column(String, nullable=False)
     role = Column(String, default="SYSTEM_ADMIN") # SYSTEM_ADMIN, SUPPORT
     is_active = Column(Boolean, default=True)
+    two_factor_enabled = Column(Boolean, default=False)
+    two_factor_secret = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class User(Base):
@@ -95,6 +97,8 @@ class User(Base):
     is_first_login = Column(Boolean, default=True)
     organization_id = Column(Integer, nullable=True)
     avatar_url = Column(String, nullable=True)
+    two_factor_enabled = Column(Boolean, default=False)
+    two_factor_secret = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

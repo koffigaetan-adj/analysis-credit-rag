@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Building2, Users, LayoutDashboard,
   Plus, CheckCircle2, XCircle, Edit2,
-  Lock, Loader2, LogOut, AlertTriangle, Search, Filter
+  Lock, Loader2, LogOut, AlertTriangle, Search, Filter, ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
+import TwoFactorSettingsModal from '../components/TwoFactorSettingsModal';
 
 type TabType = 'dashboard' | 'establishments' | 'users';
 
@@ -73,6 +74,7 @@ export default function Backoffice() {
   const [estForm, setEstForm] = useState({ name: '', address: '', primary_color: '#E73919' });
   const [estError, setEstError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
 
   // --- States Utilisateur ---
   const [showUsrModal, setShowUsrModal] = useState(false);
@@ -310,7 +312,14 @@ export default function Backoffice() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-slate-800">
+        <div className="p-3 border-t border-slate-800 space-y-1">
+          <button
+            onClick={() => setShow2FAModal(true)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-sm"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Sécurité 2FA
+          </button>
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all text-sm"
@@ -769,6 +778,11 @@ export default function Backoffice() {
           </div>
         </div>
       )}
+      <TwoFactorSettingsModal
+        isOpen={show2FAModal}
+        onClose={() => setShow2FAModal(false)}
+        isBackoffice={true}
+      />
     </div>
   );
 }

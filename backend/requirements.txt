@@ -20,3 +20,5 @@ bcrypt==4.0.1
 groq
 supabase
 i18next
+pyotp
+qrcode
