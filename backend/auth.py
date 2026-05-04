@@ -1832,3 +1832,70 @@ def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_ta
             }
         }
 
+
+
+# ─── ENDPOINTS LOGS SYSTEME (reserve backoffice) ──────────────────────────────
+
+@router.get("/logs")
+def get_system_logs(
+    level: str = None,
+    logger_name: str = None,
+    limit: int = 200,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    from database import SystemLog
+    from sqlalchemy import desc
+    query = db.query(SystemLog)
+    if level and level != "ALL":
+        query = query.filter(SystemLog.level == level.upper())
+    if logger_name:
+        query = query.filter(SystemLog.logger_name.ilike(f"%{logger_name}%"))
+    total = query.count()
+    logs = query.order_by(desc(SystemLog.created_at)).offset(offset).limit(min(limit, 500)).all()
+    return {
+        "total": total,
+        "logs": [
+            {
+                "id": log.id,
+                "level": log.level,
+                "logger_name": log.logger_name,
+                "message": log.message,
+                "source": log.source,
+                "traceback": log.traceback,
+                "method": log.method,
+                "path": log.path,
+                "status_code": log.status_code,
+                "created_at": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ]
+    }
+
+
+@router.delete("/logs")
+def clear_system_logs(
+    level: str = None,
+    db: Session = Depends(get_db),
+    current_user: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    from database import SystemLog
+    query = db.query(SystemLog)
+    if level and level != "ALL":
+        query = query.filter(SystemLog.level == level.upper())
+    count = query.count()
+    query.delete(synchronize_session=False)
+    db.commit()
+    return {"message": f"{count} log(s) supprimes."}
+
+
+@router.get("/logs/stats")
+def get_logs_stats(
+    db: Session = Depends(get_db),
+    current_user: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    from database import SystemLog
+    from sqlalchemy import func
+    stats = db.query(SystemLog.level, func.count(SystemLog.id)).group_by(SystemLog.level).all()
+    return {level: count for level, count in stats}

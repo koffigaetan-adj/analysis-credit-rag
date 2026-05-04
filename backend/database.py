@@ -141,6 +141,19 @@ class ChatSession(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class SystemLog(Base):
+    __tablename__ = "system_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    level = Column(String, nullable=False, index=True)       # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    logger_name = Column(String, nullable=True)              # Nom du logger (ex: "uvicorn", "root", "main")
+    message = Column(Text, nullable=False)                   # Message du log
+    source = Column(String, nullable=True)                   # Fichier:ligne source
+    traceback = Column(Text, nullable=True)                  # Traceback complet si exception
+    method = Column(String, nullable=True)                   # Méthode HTTP si applicable (GET, POST...)
+    path = Column(String, nullable=True)                     # Endpoint/path si applicable
+    status_code = Column(Integer, nullable=True)             # Code HTTP si applicable
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
 # Création des tables
 Base.metadata.create_all(bind=engine)
 

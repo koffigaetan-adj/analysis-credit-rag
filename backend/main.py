@@ -2,6 +2,9 @@ import os
 import json
 import typing
 import io
+import logging
+import traceback as tb_module
+import time
 import database
 from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +24,64 @@ from email_service import send_email_sync
 # --- 1. CONFIGURATION ---
 load_dotenv()
 app = FastAPI()
+
+# ─── SYSTÈME DE LOGGING EN BASE DE DONNÉES ───────────────────────────────────
+class DatabaseLogHandler(logging.Handler):
+    """Handler Python logging qui écrit les logs dans la table system_logs."""
+    def emit(self, record: logging.LogRecord):
+        try:
+            db = database.SessionLocal()
+            try:
+                traceback_str = None
+                if record.exc_info:
+                    traceback_str = tb_module.format_exception(*record.exc_info)
+                    traceback_str = "".join(traceback_str)
+
+                source = None
+                if record.pathname and record.lineno:
+                    source = f"{os.path.basename(record.pathname)}:{record.lineno}"
+
+                log_entry = database.SystemLog(
+                    level=record.levelname,
+                    logger_name=record.name,
+                    message=self.format(record).split('\n')[0][:2000],  # Max 2000 chars
+                    source=source,
+                    traceback=traceback_str[:5000] if traceback_str else None,
+                )
+                db.add(log_entry)
+                db.commit()
+            finally:
+                db.close()
+        except Exception:
+            pass  # Eviter les boucles infinies si la DB elle-même échoue
+
+def setup_logging():
+    """Configure le logging global pour capturer tous les logs dans la DB."""
+    handler = DatabaseLogHandler()
+    handler.setLevel(logging.WARNING)  # WARNING, ERROR, CRITICAL par défaut
+    formatter = logging.Formatter('%(message)s')
+    handler.setFormatter(formatter)
+
+    # Logger racine
+    root_logger = logging.getLogger()
+    root_logger.addHandler(handler)
+
+    # Logger uvicorn (erreurs serveur)
+    for logger_name in ["uvicorn", "uvicorn.error", "fastapi"]:
+        lg = logging.getLogger(logger_name)
+        lg.addHandler(handler)
+
+    # Logger spécifique INFO pour les actions applicatives
+    app_handler = DatabaseLogHandler()
+    app_handler.setLevel(logging.INFO)
+    app_handler.setFormatter(formatter)
+    app_logger = logging.getLogger("kais.app")
+    app_logger.addHandler(app_handler)
+    app_logger.setLevel(logging.INFO)
+    app_logger.propagate = False
+
+setup_logging()
+app_logger = logging.getLogger("kais.app")
 
 def run_migrations():
     """Vérifie et ajoute les colonnes manquantes si nécessaire (pour Supabase/Postgres)"""
@@ -84,13 +145,70 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    return response
+async def logging_and_security_middleware(request: Request, call_next):
+    start_time = time.time()
+    method = request.method
+    path = request.url.path
+
+    # Exclure les routes de monitoring elles-mêmes pour éviter les boucles
+    skip_log_paths = ["/auth/logs", "/docs", "/openapi.json", "/redoc", "/uploads"]
+    should_log = not any(path.startswith(p) for p in skip_log_paths)
+
+    try:
+        response = await call_next(request)
+        duration_ms = int((time.time() - start_time) * 1000)
+        status_code = response.status_code
+
+        # Logger toutes les erreurs 4xx/5xx et les requêtes lentes (>3s)
+        if should_log and (status_code >= 400 or duration_ms > 3000):
+            level = "ERROR" if status_code >= 500 else "WARNING" if status_code >= 400 else "INFO"
+            msg = f"[HTTP {status_code}] {method} {path} — {duration_ms}ms"
+
+            try:
+                db = database.SessionLocal()
+                try:
+                    log_entry = database.SystemLog(
+                        level=level,
+                        logger_name="http.access",
+                        message=msg,
+                        method=method,
+                        path=path,
+                        status_code=status_code,
+                    )
+                    db.add(log_entry)
+                    db.commit()
+                finally:
+                    db.close()
+            except Exception:
+                pass
+
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+    except Exception as exc:
+        duration_ms = int((time.time() - start_time) * 1000)
+        if should_log:
+            try:
+                db = database.SessionLocal()
+                try:
+                    log_entry = database.SystemLog(
+                        level="CRITICAL",
+                        logger_name="http.middleware",
+                        message=f"[EXCEPTION] {method} {path} — {type(exc).__name__}: {str(exc)[:500]}",
+                        method=method,
+                        path=path,
+                        traceback=tb_module.format_exc()[:5000],
+                    )
+                    db.add(log_entry)
+                    db.commit()
+                finally:
+                    db.close()
+            except Exception:
+                pass
+        raise exc
 
 os.makedirs("uploads/avatars", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
