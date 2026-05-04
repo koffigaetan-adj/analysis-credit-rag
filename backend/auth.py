@@ -268,7 +268,47 @@ def send_login_alert_async(user_email: str, first_name: str, last_name: str, ip_
     from email_service import send_email_sync
     send_email_sync(user_email, "Kaïs Analytics - Nouvelle connexion détectée", login_html)
 
-# --- ROUTES ---
+def send_backoffice_login_alert_async(user_email: str, user_name: str, ip_address: str, user_agent: str, login_time: str):
+    """Alerte de connexion spécifique au backoffice d'administration."""
+    device_info = parse_user_agent(user_agent)
+    location = get_location_from_ip(ip_address)
+
+    backoffice_url = os.getenv('BACKOFFICE_URL', os.getenv('FRONTEND_URL', 'https://kais-analytics.vercel.app') + '/backoffice')
+
+    login_html = f"""
+    <h3>⚠️ Connexion au Backoffice d’administration</h3>
+    <p>Bonjour <b>{user_name}</b>,</p>
+    <p>Une connexion vient d’être effectuée sur votre <strong>compte administrateur Kaïs Backoffice</strong> :</p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+      <tr style="background: #f8fafc;">
+        <td style="padding: 10px 16px; font-weight: bold; color: #475569; border: 1px solid #e2e8f0;">Appareil</td>
+        <td style="padding: 10px 16px; border: 1px solid #e2e8f0;">{device_info}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 16px; font-weight: bold; color: #475569; border: 1px solid #e2e8f0;">Localisation</td>
+        <td style="padding: 10px 16px; border: 1px solid #e2e8f0;">{location}</td>
+      </tr>
+      <tr style="background: #f8fafc;">
+        <td style="padding: 10px 16px; font-weight: bold; color: #475569; border: 1px solid #e2e8f0;">Adresse IP</td>
+        <td style="padding: 10px 16px; border: 1px solid #e2e8f0; font-family: monospace;">{ip_address}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 16px; font-weight: bold; color: #475569; border: 1px solid #e2e8f0;">Date &amp; Heure</td>
+        <td style="padding: 10px 16px; border: 1px solid #e2e8f0;">{login_time}</td>
+      </tr>
+    </table>
+    <p style="color: #dc2626; font-weight: bold; margin-top: 20px; padding: 12px; background: #fef2f2; border-left: 4px solid #dc2626; border-radius: 4px;">
+      ⛔ Si vous n’êtes pas à l’origine de cette connexion, votre compte backoffice est peut-être compromis.
+    </p>
+    <p>Connectez-vous immédiatement au backoffice et changez votre mot de passe : 
+      <a href="{backoffice_url}" style="color: #7c3aed; font-weight: bold;">Accéder au Backoffice</a>
+    </p>
+    <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">Cet email est envoyé automatiquement à chaque connexion sur le panneau d’administration Kaïs Backoffice.</p>
+    """
+    from email_service import send_email_sync
+    send_email_sync(user_email, "[BACKOFFICE] Kaïs - Connexion administrateur détectée", login_html)
+
+
 
 @router.post("/backoffice/login")
 def backoffice_login(request: Request, req: BackofficeLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -287,7 +327,7 @@ def backoffice_login(request: Request, req: BackofficeLoginRequest, background_t
             ip_address = forwarded_for.split(",")[0].strip()
         user_agent = request.headers.get("user-agent", "Inconnu")
         login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        background_tasks.add_task(send_login_alert_async, user.email, user.name, "", ip_address, user_agent, login_time)
+        background_tasks.add_task(send_backoffice_login_alert_async, user.email, user.name, ip_address, user_agent, login_time)
 
         temp_token_expires = timedelta(minutes=5)
         temp_token = create_access_token(
@@ -323,7 +363,7 @@ def backoffice_login(request: Request, req: BackofficeLoginRequest, background_t
         ip_address = forwarded_for.split(",")[0].strip()
     user_agent = request.headers.get("user-agent", "Inconnu")
     login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    background_tasks.add_task(send_login_alert_async, user.email, user.name, "", ip_address, user_agent, login_time)
+    background_tasks.add_task(send_backoffice_login_alert_async, user.email, user.name, ip_address, user_agent, login_time)
     
     return response_data
 
@@ -375,8 +415,7 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
     access_token = create_access_token(
         data={"sub": user.id, "email": user.email, "role": user.role}
     )
-    
-    # 4. Envoi de l'alerte de connexion
+    # 4. Envoi de l'alerte de connexion (si activée dans les préférences)
     ip_address = request.client.host if request.client else "Inconnue"
     # Reverse proxy fallback
     forwarded_for = request.headers.get("x-forwarded-for")
@@ -385,11 +424,12 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
 
     user_agent = request.headers.get("user-agent", "Inconnu")
     login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    
-    background_tasks.add_task(send_login_alert_async, user.email, user.first_name, user.last_name, ip_address, user_agent, login_time)
+
+    if getattr(user, "notif_email_login", True):
+        background_tasks.add_task(send_login_alert_async, user.email, user.first_name, user.last_name, ip_address, user_agent, login_time)
     
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "token_type": "bearer",
         "requires_2fa": False,
         "is_first_login": user.is_first_login,
@@ -404,7 +444,12 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
             "email": user.email,
             "avatar_url": user.avatar_url,
             "is_active": user.is_active,
-            "two_factor_enabled": getattr(user, "two_factor_enabled", False)
+            "two_factor_enabled": getattr(user, "two_factor_enabled", False),
+            "notif_email_login":    getattr(user, "notif_email_login", True),
+            "notif_email_analysis": getattr(user, "notif_email_analysis", True),
+            "notif_email_password": getattr(user, "notif_email_password", True),
+            "notif_email_report":   getattr(user, "notif_email_report", True),
+            "notif_inapp":          getattr(user, "notif_inapp", True),
         }
     }
 
@@ -583,9 +628,66 @@ def update_profile(
             "establishment": current_user.establishment,
             "role": current_user.role,
             "email": current_user.email,
-            "avatar_url": current_user.avatar_url
+            "avatar_url": current_user.avatar_url,
+            "two_factor_enabled": getattr(current_user, "two_factor_enabled", False),
+            "notif_email_login":   getattr(current_user, "notif_email_login", True),
+            "notif_email_analysis": getattr(current_user, "notif_email_analysis", True),
+            "notif_email_password": getattr(current_user, "notif_email_password", True),
+            "notif_email_report":  getattr(current_user, "notif_email_report", True),
+            "notif_inapp":         getattr(current_user, "notif_inapp", True),
         }
     }
+
+
+class NotificationPreferencesRequest(BaseModel):
+    notif_email_login: bool = True
+    notif_email_analysis: bool = True
+    notif_email_password: bool = True
+    notif_email_report: bool = True
+    notif_inapp: bool = True
+
+
+@router.get("/me")
+def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Retourne le profil complet de l'utilisateur connecté, incluant les préférences."""
+    return {
+        "id": current_user.id,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "sexe": getattr(current_user, "sexe", "M"),
+        "poste": getattr(current_user, "poste", ""),
+        "establishment": current_user.establishment,
+        "role": current_user.role,
+        "email": current_user.email,
+        "avatar_url": getattr(current_user, "avatar_url", None),
+        "is_active": current_user.is_active,
+        "two_factor_enabled": getattr(current_user, "two_factor_enabled", False),
+        "notif_email_login":    getattr(current_user, "notif_email_login", True),
+        "notif_email_analysis": getattr(current_user, "notif_email_analysis", True),
+        "notif_email_password": getattr(current_user, "notif_email_password", True),
+        "notif_email_report":   getattr(current_user, "notif_email_report", True),
+        "notif_inapp":          getattr(current_user, "notif_inapp", True),
+    }
+
+
+@router.put("/notification-preferences")
+def update_notification_preferences(
+    request: NotificationPreferencesRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les préférences de notifications/emails de l'utilisateur."""
+    current_user.notif_email_login    = request.notif_email_login
+    current_user.notif_email_analysis = request.notif_email_analysis
+    current_user.notif_email_password = request.notif_email_password
+    current_user.notif_email_report   = request.notif_email_report
+    current_user.notif_inapp          = request.notif_inapp
+    db.commit()
+    return {"message": "Préférences de notifications mises à jour avec succès."}
+
 
 @router.post("/avatar")
 async def upload_avatar(

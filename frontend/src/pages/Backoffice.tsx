@@ -67,6 +67,32 @@ export default function Backoffice() {
     if (!token) navigate('/backoffice/login');
   }, [token, navigate]);
 
+  // --- Déconnexion automatique après 15  min d'inactivité ---
+  useEffect(() => {
+    if (!token) return;
+
+    const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    let timer: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        localStorage.removeItem('backoffice_token');
+        localStorage.removeItem('backoffice_user');
+        navigate('/backoffice/login?reason=inactivity');
+      }, TIMEOUT_MS);
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer(); // Démarrer le timer dès la connexion
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+    };
+  }, [token, navigate]);
+
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [establishments, setEstablishments] = useState<Est[]>([]);
   const [members, setMembers] = useState<Member[]>([]);

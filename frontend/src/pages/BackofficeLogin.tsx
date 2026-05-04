@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Lock, ArrowRight, Eye, EyeOff, AlertTriangle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Lock, ArrowRight, Eye, EyeOff, AlertTriangle, Clock } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
 
 export default function BackofficeLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isInactivityLogout = new URLSearchParams(location.search).get('reason') === 'inactivity';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -111,6 +113,13 @@ export default function BackofficeLogin() {
             </p>
           </div>
 
+          {isInactivityLogout && (
+            <div className="mb-5 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+              style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#fbbf24' }}>
+              <Clock className="w-4 h-4 shrink-0" />
+              Session expirée après 30 minutes d'inactivité.
+            </div>
+          )}
           {errorMsg && (
             <div className="mb-5 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
               style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>

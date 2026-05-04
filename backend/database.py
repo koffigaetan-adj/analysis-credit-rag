@@ -99,6 +99,12 @@ class User(Base):
     avatar_url = Column(String, nullable=True)
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String, nullable=True)
+    # --- Préférences de notifications ---
+    notif_email_login     = Column(Boolean, default=True)   # Alerte email à chaque connexion
+    notif_email_analysis  = Column(Boolean, default=True)   # Email lors de la sauvegarde d'une analyse
+    notif_email_password  = Column(Boolean, default=True)   # Email lors d'un changement de MDP
+    notif_email_report    = Column(Boolean, default=True)   # Email lors de l'envoi d'un rapport PDF
+    notif_inapp           = Column(Boolean, default=True)   # Notifications in-app (cloche)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

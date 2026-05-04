@@ -97,6 +97,22 @@ def run_migrations():
         except Exception as e:
             print(f"Note sur la migration : {e}")
 
+        # Migrations préférences de notifications
+        notif_columns = [
+            ("notif_email_login",    "BOOLEAN DEFAULT TRUE"),
+            ("notif_email_analysis", "BOOLEAN DEFAULT TRUE"),
+            ("notif_email_password", "BOOLEAN DEFAULT TRUE"),
+            ("notif_email_report",   "BOOLEAN DEFAULT TRUE"),
+            ("notif_inapp",          "BOOLEAN DEFAULT TRUE"),
+        ]
+        for col_name, col_def in notif_columns:
+            try:
+                connection.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_def};"))
+                connection.commit()
+                print(f"Migration '{col_name}' vérifiée/appliquée.")
+            except Exception as e:
+                print(f"Note migration {col_name} : {e}")
+
 @app.on_event("startup")
 def on_startup():
     print("=== STARTUP Kais Analytics ===")
