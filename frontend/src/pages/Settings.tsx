@@ -18,6 +18,14 @@ export default function Settings() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [currentLang, setCurrentLang] = useState('fr');
 
+  const [notifPreferences, setNotifPreferences] = useState({
+    notif_email_login: true,
+    notif_email_analysis: true,
+    notif_email_password: true,
+    notif_email_report: true,
+    notif_inapp: true,
+  });
+
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLang = e.target.value;
     setCurrentLang(newLang);
@@ -58,8 +66,43 @@ export default function Settings() {
       setEmail(user.email || '');
       setEstablishment(user.establishment || 'Kof Company');
       setAvatarPreview(user.avatar_url || null);
+      
+      setNotifPreferences({
+        notif_email_login: user.notif_email_login ?? true,
+        notif_email_analysis: user.notif_email_analysis ?? true,
+        notif_email_password: user.notif_email_password ?? true,
+        notif_email_report: user.notif_email_report ?? true,
+        notif_inapp: user.notif_inapp ?? true,
+      });
     }
   }, [user]);
+
+  const handleToggleNotif = async (key: keyof typeof notifPreferences) => {
+    const newValue = !notifPreferences[key];
+    const newPreferences = { ...notifPreferences, [key]: newValue };
+    setNotifPreferences(newPreferences);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/notification-preferences`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newPreferences)
+      });
+      if (!response.ok) {
+        throw new Error('Erreur de mise à jour des préférences');
+      }
+      
+      if (user && token) {
+        login(token, { ...user, ...newPreferences }, false);
+      }
+    } catch (err) {
+      console.error(err);
+      setNotifPreferences(notifPreferences); // revert
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -297,14 +340,29 @@ export default function Settings() {
                   <option value="es">Español</option>
                 </select>
               </div>
-              <div className="p-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Alertes d'IA</span>
-                <input type="checkbox" defaultChecked className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-              </div>
-              <div className="p-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Rapports Hebdo</span>
-                <input type="checkbox" defaultChecked className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-              </div>
+              
+              {[
+                { key: 'notif_email_login', label: "Alerte email à chaque connexion", icon: Lock },
+                { key: 'notif_email_password', label: "Email de sécurité (Mise à jour du mot de passe)", icon: ShieldCheck },
+                { key: 'notif_email_analysis', label: "Rapport d'analyse de crédit", icon: Mail },
+                { key: 'notif_email_report', label: "Rapports & Synthèses", icon: Mail },
+                { key: 'notif_inapp', label: "Notifications dans l'application (cloche)", icon: Bell },
+              ].map(({ key, label, icon: Icon }) => (
+                <div key={key} className="p-4 flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-slate-400" /> {label}
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifPreferences[key as keyof typeof notifPreferences]}
+                      onChange={() => handleToggleNotif(key as keyof typeof notifPreferences)}
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
         </div>

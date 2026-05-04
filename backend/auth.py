@@ -320,15 +320,6 @@ def backoffice_login(request: Request, req: BackofficeLoginRequest, background_t
         raise HTTPException(status_code=403, detail="Compte suspendu.")
     
     if user.two_factor_enabled:
-        # Envoi de l'alerte de mot de passe valide
-        ip_address = request.client.host if request.client else "Inconnue"
-        forwarded_for = request.headers.get("x-forwarded-for")
-        if forwarded_for:
-            ip_address = forwarded_for.split(",")[0].strip()
-        user_agent = request.headers.get("user-agent", "Inconnu")
-        login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        background_tasks.add_task(send_backoffice_login_alert_async, user.email, user.name, ip_address, user_agent, login_time)
-
         temp_token_expires = timedelta(minutes=5)
         temp_token = create_access_token(
             data={"sub": user.id, "type": "2fa_pending_backoffice"},
@@ -392,15 +383,6 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
         )
 
     if user.two_factor_enabled:
-        # On envoie quand même l'alerte de mot de passe valide
-        ip_address = request.client.host if request.client else "Inconnue"
-        forwarded_for = request.headers.get("x-forwarded-for")
-        if forwarded_for:
-            ip_address = forwarded_for.split(",")[0].strip()
-        user_agent = request.headers.get("user-agent", "Inconnu")
-        login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        background_tasks.add_task(send_login_alert_async, user.email, user.first_name, user.last_name, ip_address, user_agent, login_time)
-
         temp_token_expires = timedelta(minutes=5)
         temp_token = create_access_token(
             data={"sub": user.id, "type": "2fa_pending"},
@@ -468,27 +450,29 @@ def update_password(
     current_user.password_hash = get_password_hash(request.new_password)
     current_user.is_first_login = False
     
-    # Create notification for password change
-    password_notif = Notification(
-        user_id=current_user.id,
-        title="Sécurité du compte",
-        message="Votre mot de passe a été modifié avec succès.",
-        type="INFO"
-    )
-    db.add(password_notif)
+    # Create notification for password change if enabled
+    if getattr(current_user, "notif_inapp", True):
+        password_notif = Notification(
+            user_id=current_user.id,
+            title="Sécurité du compte",
+            message="Votre mot de passe a été modifié avec succès.",
+            type="INFO"
+        )
+        db.add(password_notif)
     
     db.commit()
     
-    # Send email notification
-    pwd_change_html = f"""
-    <h3>Modification de mot de passe</h3>
-    <p>Bonjour <b>{current_user.first_name}</b>,</p>
-    <p>Le mot de passe de votre compte Kaïs Analytics vient d'être modifié avec succès depuis vos paramètres.</p>
-    <p>Si vous êtes à l'origine de cette action, vous pouvez ignorer cet email.</p>
-    <p style="color: #ef4444; font-weight: bold;">Si ce n'est pas vous :</p>
-    <p>Veuillez utiliser la fonction "Mot de passe oublié" sur l'écran de connexion pour sécuriser votre compte immédiatement.</p>
-    """
-    background_tasks.add_task(send_email_sync, current_user.email, "Kaïs Analytics - Mot de passe modifié", pwd_change_html)
+    # Send email notification if enabled
+    if getattr(current_user, "notif_email_password", True):
+        pwd_change_html = f"""
+        <h3>Modification de mot de passe</h3>
+        <p>Bonjour <b>{current_user.first_name}</b>,</p>
+        <p>Le mot de passe de votre compte Kaïs Analytics vient d'être modifié avec succès depuis vos paramètres.</p>
+        <p>Si vous êtes à l'origine de cette action, vous pouvez ignorer cet email.</p>
+        <p style="color: #ef4444; font-weight: bold;">Si ce n'est pas vous :</p>
+        <p>Veuillez utiliser la fonction "Mot de passe oublié" sur l'écran de connexion pour sécuriser votre compte immédiatement.</p>
+        """
+        background_tasks.add_task(send_email_sync, current_user.email, "Kaïs Analytics - Mot de passe modifié", pwd_change_html)
     
     return {"message": "Mot de passe mis à jour avec succès."}
 
@@ -1892,8 +1876,19 @@ def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_ta
     if not pyotp.TOTP(user.two_factor_secret).verify(req.code):
         raise HTTPException(status_code=401, detail="Code 2FA invalide.")
         
+    # Extraction des informations pour l'alerte de connexion
+    ip_address = request.client.host if request.client else "Inconnue"
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        ip_address = forwarded_for.split(",")[0].strip()
+    user_agent = request.headers.get("user-agent", "Inconnu")
+    login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     if token_type == "2fa_pending":
+        if getattr(user, "notif_email_login", True):
+            background_tasks.add_task(send_login_alert_async, user.email, getattr(user, "first_name", ""), getattr(user, "last_name", ""), ip_address, user_agent, login_time)
+            
         access_token = create_access_token(
             data={"sub": user.id, "email": user.email, "role": user.role},
             expires_delta=access_token_expires
@@ -1916,7 +1911,10 @@ def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_ta
                 "two_factor_enabled": True
             }
         }
+        }
     else:
+        background_tasks.add_task(send_backoffice_login_alert_async, user.email, getattr(user, "name", ""), ip_address, user_agent, login_time)
+        
         access_token = create_access_token(
             data={"sub": user.id, "type": "backoffice", "role": user.role},
             expires_delta=access_token_expires
