@@ -15,7 +15,7 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
 REPLY_TO = "no-reply@kaisanalytics.com"
 FROM_NAME = os.getenv("FROM_NAME", "Kaïs Analytics")
 
-def send_email_sync(to_email: str, subject: str, html_content: str, attachment_name: str = None, attachment_data: bytes = None):
+def send_email_sync(to_email: str, subject: str, html_content: str, attachment_name: str = None, attachment_data: bytes = None, is_backoffice: bool = False):
     """
     Fonction synchrone pour envoyer un email via SMTP.
     Retourne True si l'envoi a réussi, False sinon.
@@ -37,13 +37,21 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
         msg['Reply-To'] = REPLY_TO
         msg['To'] = to_email
 
+        frontend_url = os.getenv('FRONTEND_URL', 'https://kais-analytics.vercel.app')
+        
+        # Choix du logo (Backoffice ou Classique)
+        if is_backoffice:
+            logo_img_tag = f'<img src="{frontend_url}/logocompletoffice.svg" alt="Kaïs Backoffice" style="max-height: 60px;">'
+        else:
+            logo_img_tag = '<img src="cid:logomail" alt="Kaïs Analytics" style="max-height: 60px;">'
+
         # Template HTML global avec le logo et le pied de page
         template_html = f"""
         <html>
             <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
                 <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; max-width: 600px; margin: 0 auto;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="cid:logomail" alt="Kaïs Analytics" style="max-height: 60px;">
+                        {logo_img_tag}
                     </div>
                     <div style="background-color: white; padding: 20px; border-radius: 8px;">
                         {html_content}
@@ -61,15 +69,16 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
         body_part = MIMEMultipart("related")
         body_part.attach(MIMEText(template_html, 'html'))
         
-        # Attach embedded Logo
-        logo_path = os.path.join(os.path.dirname(__file__), "images", "logomail.png")
-        if os.path.exists(logo_path):
-            with open(logo_path, "rb") as f:
-                img_data = f.read()
-            image = MIMEImage(img_data, name=os.path.basename(logo_path))
-            image.add_header('Content-ID', '<logomail>')
-            image.add_header('Content-Disposition', 'inline', filename='logomail.png')
-            body_part.attach(image)
+        # Attach embedded Logo uniquement si on n'est pas en backoffice
+        if not is_backoffice:
+            logo_path = os.path.join(os.path.dirname(__file__), "images", "logomail.png")
+            if os.path.exists(logo_path):
+                with open(logo_path, "rb") as f:
+                    img_data = f.read()
+                image = MIMEImage(img_data, name=os.path.basename(logo_path))
+                image.add_header('Content-ID', '<logomail>')
+                image.add_header('Content-Disposition', 'inline', filename='logomail.png')
+                body_part.attach(image)
         
         msg.attach(body_part)
 

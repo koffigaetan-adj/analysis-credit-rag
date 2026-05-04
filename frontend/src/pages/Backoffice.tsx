@@ -3,7 +3,7 @@ import {
   Building2, Users, LayoutDashboard,
   Plus, CheckCircle2, XCircle, Edit2,
   Lock, Loader2, LogOut, AlertTriangle, Search, Filter, ShieldCheck,
-  Terminal, RefreshCw, Trash2, ChevronDown, ChevronUp, Clock, Wifi
+  Terminal, RefreshCw, Trash2, ChevronDown, ChevronUp, Clock, Wifi, Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
@@ -193,6 +193,23 @@ export default function Backoffice() {
     const levelParam = logsFilter !== 'ALL' ? `?level=${logsFilter}` : '';
     await fetch(`${API}/auth/logs${levelParam}`, { method: 'DELETE', headers });
     fetchLogs(logsFilter);
+  };
+
+  const downloadLogs = async () => {
+    try {
+      const levelParam = logsFilter !== 'ALL' ? `?level=${logsFilter}` : '';
+      const res = await fetch(`${API}/auth/logs/download${levelParam}`, { headers });
+      if (!res.ok) throw new Error('Erreur lors du téléchargement');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kais_logs_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) { console.error(err); }
   };
 
   // Stats
@@ -539,6 +556,15 @@ export default function Backoffice() {
                       </button>
 
                       <span className="text-xs text-slate-500 ml-auto">{logs.length} / {logsTotal} log(s)</span>
+
+                      {/* Télécharger */}
+                      <button
+                        onClick={downloadLogs}
+                        className="flex items-center gap-2 px-3 py-2 bg-[#0F1523] border border-slate-700 hover:border-slate-500 rounded-lg text-xs text-slate-300 transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Télécharger CSV
+                      </button>
 
                       {/* Vider */}
                       <button

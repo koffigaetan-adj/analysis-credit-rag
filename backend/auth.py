@@ -276,7 +276,7 @@ def send_backoffice_login_alert_async(user_email: str, user_name: str, ip_addres
     backoffice_url = os.getenv('BACKOFFICE_URL', os.getenv('FRONTEND_URL', 'https://kais-analytics.vercel.app') + '/backoffice')
 
     login_html = f"""
-    <h3>⚠️ Connexion au Backoffice d’administration</h3>
+    <h3> Connexion au Backoffice d’administration</h3>
     <p>Bonjour <b>{user_name}</b>,</p>
     <p>Une connexion vient d’être effectuée sur votre <strong>compte administrateur Kaïs Backoffice</strong> :</p>
     <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
@@ -298,7 +298,7 @@ def send_backoffice_login_alert_async(user_email: str, user_name: str, ip_addres
       </tr>
     </table>
     <p style="color: #dc2626; font-weight: bold; margin-top: 20px; padding: 12px; background: #fef2f2; border-left: 4px solid #dc2626; border-radius: 4px;">
-      ⛔ Si vous n’êtes pas à l’origine de cette connexion, votre compte backoffice est peut-être compromis.
+       Si vous n’êtes pas à l’origine de cette connexion, votre compte backoffice est peut-être compromis.
     </p>
     <p>Connectez-vous immédiatement au backoffice et changez votre mot de passe : 
       <a href="{backoffice_url}" style="color: #7c3aed; font-weight: bold;">Accéder au Backoffice</a>
@@ -306,7 +306,7 @@ def send_backoffice_login_alert_async(user_email: str, user_name: str, ip_addres
     <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">Cet email est envoyé automatiquement à chaque connexion sur le panneau d’administration Kaïs Backoffice.</p>
     """
     from email_service import send_email_sync
-    send_email_sync(user_email, "[BACKOFFICE] Kaïs - Connexion administrateur détectée", login_html)
+    send_email_sync(user_email, "[BACKOFFICE] Kaïs - Connexion administrateur détectée", login_html, is_backoffice=True)
 
 
 
@@ -1972,6 +1972,49 @@ def get_system_logs(
             for log in logs
         ]
     }
+
+@router.get("/logs/download")
+def download_system_logs(
+    level: str = None,
+    db: Session = Depends(get_db),
+    current_user: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    from database import SystemLog
+    from sqlalchemy import desc
+    from fastapi.responses import StreamingResponse
+    import io
+    import csv
+
+    query = db.query(SystemLog)
+    if level and level != "ALL":
+        query = query.filter(SystemLog.level == level.upper())
+    
+    logs = query.order_by(desc(SystemLog.created_at)).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(["ID", "Date", "Niveau", "Source", "Message", "Method", "Path", "Status", "Traceback"])
+    
+    for log in logs:
+        writer.writerow([
+            log.id,
+            log.created_at.isoformat() if log.created_at else "",
+            log.level,
+            log.source,
+            log.message,
+            log.method or "",
+            log.path or "",
+            log.status_code or "",
+            log.traceback or ""
+        ])
+    
+    output.seek(0)
+    
+    filename = f"kais_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"'
+    }
+    return StreamingResponse(iter([output.getvalue()]), media_type="text/csv", headers=headers)
 
 
 @router.delete("/logs")
