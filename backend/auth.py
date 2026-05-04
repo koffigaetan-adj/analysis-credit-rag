@@ -1911,7 +1911,6 @@ def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_ta
                 "two_factor_enabled": True
             }
         }
-        }
     else:
         background_tasks.add_task(send_backoffice_login_alert_async, user.email, getattr(user, "name", ""), ip_address, user_agent, login_time)
         
