@@ -355,7 +355,23 @@ def backoffice_login(request: Request, req: BackofficeLoginRequest, background_t
     user_agent = request.headers.get("user-agent", "Inconnu")
     login_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     background_tasks.add_task(send_backoffice_login_alert_async, user.email, user.name, ip_address, user_agent, login_time)
-    
+
+    # ── Log de connexion backoffice dans SystemLog ────────────────
+    try:
+        from database import SystemLog
+        bo_login_log = SystemLog(
+            level="INFO",
+            logger_name="auth.backoffice.login",
+            message=f"Connexion backoffice réussie : {user.email} depuis {ip_address}",
+            method="POST",
+            path="/auth/backoffice/login",
+            status_code=200,
+        )
+        db.add(bo_login_log)
+        db.commit()
+    except Exception:
+        pass
+
     return response_data
 
 @router.post("/login")
@@ -409,6 +425,22 @@ def login(request: Request, login_req: LoginRequest, background_tasks: Backgroun
 
     if getattr(user, "notif_email_login", True):
         background_tasks.add_task(send_login_alert_async, user.email, user.first_name, user.last_name, ip_address, user_agent, login_time)
+
+    # ── Log de connexion réussie pour le dashboard ───────────────
+    try:
+        from database import SystemLog
+        login_log = SystemLog(
+            level="INFO",
+            logger_name="auth.login",
+            message=f"Connexion réussie : {user.email} depuis {ip_address}",
+            method="POST",
+            path="/auth/login",
+            status_code=200,
+        )
+        db.add(login_log)
+        db.commit()
+    except Exception:
+        pass
     
     return {
         "access_token": access_token,
@@ -1917,6 +1949,22 @@ def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_ta
     if token_type == "2fa_pending":
         if getattr(user, "notif_email_login", True):
             background_tasks.add_task(send_login_alert_async, user.email, getattr(user, "first_name", ""), getattr(user, "last_name", ""), ip_address, user_agent, login_time)
+
+        # ── Log de connexion 2FA réussie pour le dashboard ───────
+        try:
+            from database import SystemLog
+            login_log = SystemLog(
+                level="INFO",
+                logger_name="auth.login",
+                message=f"Connexion 2FA réussie : {user.email} depuis {ip_address}",
+                method="POST",
+                path="/auth/login",
+                status_code=200,
+            )
+            db.add(login_log)
+            db.commit()
+        except Exception:
+            pass
             
         access_token = create_access_token(
             data={"sub": user.id, "email": user.email, "role": user.role},
@@ -1942,7 +1990,23 @@ def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_ta
         }
     else:
         background_tasks.add_task(send_backoffice_login_alert_async, user.email, getattr(user, "name", ""), ip_address, user_agent, login_time)
-        
+
+        # ── Log de connexion 2FA backoffice dans SystemLog ────────
+        try:
+            from database import SystemLog
+            bo_2fa_log = SystemLog(
+                level="INFO",
+                logger_name="auth.backoffice.login",
+                message=f"Connexion 2FA backoffice réussie : {user.email} depuis {ip_address}",
+                method="POST",
+                path="/auth/backoffice/login",
+                status_code=200,
+            )
+            db.add(bo_2fa_log)
+            db.commit()
+        except Exception:
+            pass
+
         access_token = create_access_token(
             data={"sub": user.id, "type": "backoffice", "role": user.role},
             expires_delta=access_token_expires
@@ -2030,7 +2094,7 @@ def get_dashboard_stats(
         count = db.query(Application).filter(func.date(Application.created_at) == day).count()
         logins = db.query(SystemLog).filter(
             func.date(SystemLog.created_at) == day,
-            SystemLog.path == "/auth/login",
+            SystemLog.path.in_(["/auth/login", "/auth/backoffice/login"]),
             SystemLog.status_code == 200
         ).count()
         activity_7d.append({
@@ -2048,12 +2112,12 @@ def get_dashboard_stats(
     ).count()
     logins_today = db.query(SystemLog).filter(
         func.date(SystemLog.created_at) == today,
-        SystemLog.path == "/auth/login",
+        SystemLog.path.in_(["/auth/login", "/auth/backoffice/login"]),
         SystemLog.status_code == 200
     ).count()
     logins_7d = db.query(SystemLog).filter(
         SystemLog.created_at >= seven_days_ago,
-        SystemLog.path == "/auth/login",
+        SystemLog.path.in_(["/auth/login", "/auth/backoffice/login"]),
         SystemLog.status_code == 200
     ).count()
 

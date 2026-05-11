@@ -390,8 +390,8 @@ def build_interpretation_prompt(client_info: dict, extracted_text: str, score_da
     """
 
     common_prompt = f"""
-    RÔLE : Analyste crédit expérimenté dans une banque.
-    Tu dois évaluer la solidité financière et le niveau de risque d'un dossier de financement.
+    RÔLE : Tu es un analyste crédit senior dans une banque, chargé de rédiger une note d'audit officielle et complète pour le comité de crédit.
+    Tu dois évaluer la solidité financière et le niveau de risque d'un dossier de financement de manière rigoureuse et professionnelle.
     
     DOSSIER : {client_info.get('fullName')} | MONTANT DEMANDÉ : {client_info.get('amount')}€ | TYPE : {client_info.get('clientType')} | PROJET : {client_info.get('projectType')}
     
@@ -413,14 +413,13 @@ def build_interpretation_prompt(client_info: dict, extracted_text: str, score_da
     4. Signale clairement tout élément disproportionné, irréaliste ou manquant (ex: absence d'apport, dossier incomplet).
     5. Ne valide JAMAIS un projet si les ratios sont tendus ou si le dossier est non conforme aux règles internes.
     6. Propose des ajustements réalistes (montant plus faible, apport à constituer, garanties à apporter).
-    7. Conclus avec : niveau de risque global (faible/modéré/élevé/très élevé), recommandation claire et 2-3 pistes d'amélioration concrètes.
-    8. Sois détaillé et professionnel dans tes explications.
+    7. Sois détaillé, argumenté et professionnel dans chaque section.
     
     FORMAT JSON OBLIGATOIRE EN SORTIE :
     {{
         "risks": ["Point bloquant ou fragilité 1", "Risque 2", ...],
         "opportunities": ["Point fort 1", "Ajustement ou condition proposée", ...],
-        "summary": "1-2 paragraphes d'analyse argumentée et nuancée.\\n\\nSynthèse :\\nNiveau de risque : ...\\nDécision : ...\\nRecommandations : ..."
+        "summary": "NOTE D'AUDIT — ANALYSE CRÉDIT\\n\\n1. PRÉSENTATION DU DOSSIER\\n[Présente le demandeur, le type de projet, le montant sollicité, le contexte général du dossier. 3-4 phrases minimum.]\\n\\n2. ANALYSE FINANCIÈRE DÉTAILLÉE\\n[Commente en détail les principaux ratios et chiffres clés : revenus, charges, dettes, capacité de remboursement, reste à vivre, épargne ou capitaux propres, levier financier. Explique ce que ces chiffres signifient concrètement pour la capacité de remboursement. 4-6 phrases minimum.]\\n\\n3. CONFORMITÉ AVEC LA POLITIQUE DE CRÉDIT\\n[Analyse point par point la conformité du dossier avec les règles de la banque. Cite les seuils respectés ou dépassés. 3-4 phrases minimum.]\\n\\n4. ÉVALUATION DES RISQUES ET ATOUTS\\n[Développe les principaux risques identifiés et les points forts du dossier. Nuance ton analyse. 3-5 phrases minimum.]\\n\\n5. CONCLUSION ET RECOMMANDATION\\nNiveau de risque global : [Faible / Modéré / Élevé / Très élevé]\\nDécision recommandée : [Accord / Refus / Accord conditionnel]\\n[Explique clairement ta décision et propose 2-3 conditions ou recommandations concrètes si applicable. 3-4 phrases minimum.]"
     }}
     """
 
@@ -977,14 +976,53 @@ async def send_report_route(
     email: str = Form(...),
     subject: str = Form(...),
     file: UploadFile = File(...),
+    db: Session = Depends(database.get_db),
     current_user: database.User = Depends(get_current_user)
 ):
     try:
         file_bytes = await file.read()
         background_tasks.add_task(send_report_email, email, subject, file_bytes, file.filename)
+
+        # ── Log d'envoi de rapport dans SystemLog ────────────────────
+        try:
+            log_entry = database.SystemLog(
+                level="INFO",
+                logger_name="report.send",
+                message=f"Rapport envoyé par {current_user.email} à {email} — Sujet : {subject}",
+                method="POST",
+                path="/send-report/",
+                status_code=200,
+            )
+            db.add(log_entry)
+            db.commit()
+        except Exception:
+            pass
+
         return {"message": "Rapport envoyé avec succès."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/log-print/")
+async def log_print_action(
+    db: Session = Depends(database.get_db),
+    current_user: database.User = Depends(get_current_user),
+    client_name: str = Form(...)
+):
+    """Enregistre une impression/export PDF dans les logs système."""
+    try:
+        log_entry = database.SystemLog(
+            level="INFO",
+            logger_name="report.print",
+            message=f"Rapport imprimé/exporté par {current_user.email} — Client : {client_name}",
+            method="POST",
+            path="/log-print/",
+            status_code=200,
+        )
+        db.add(log_entry)
+        db.commit()
+    except Exception:
+        pass
+    return {"message": "Action tracée."}
 
 @app.post("/admin/index-policy/")
 def admin_index_policy(current_user: database.User = Depends(get_current_user)):

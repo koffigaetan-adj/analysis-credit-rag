@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Send, Download,
@@ -176,12 +176,14 @@ export default function AnalysisResult() {
   }, []);
 
   const handleExport = async () => {
+    const token = localStorage.getItem('token');
+    // Notification in-app
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           title: "Analyse exportée",
@@ -190,7 +192,19 @@ export default function AnalysisResult() {
         })
       });
     } catch (e) {
-      console.error("Erreur lors de la création de la notification d'export:", e);
+      console.error("Erreur notification export:", e);
+    }
+    // Log système backoffice
+    try {
+      const form = new FormData();
+      form.append('client_name', state?.clientInfo?.fullName || 'Inconnu');
+      await fetch(`${import.meta.env.VITE_API_URL}/log-print/`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: form
+      });
+    } catch (e) {
+      console.error("Erreur log impression:", e);
     }
     window.print();
   };
@@ -582,7 +596,7 @@ export default function AnalysisResult() {
                 <Trash2 className="w-4 h-4" /> Supprimer
               </button>
             ) : (
-              <button onClick={handleSaveAnalysis} className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center ${isSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 dark:btn-primary hover:bg-blue-600 dark:'}`}>
+              <button onClick={handleSaveAnalysis} className={`px-6 py-2.5 rounded-2xl text-sm font-medium transition-all shadow-lg flex items-center text-white ${isSaved ? 'bg-emerald-500' : 'bg-slate-900 hover:bg-blue-600'}`}>
                 {isSaved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} {isSaved ? 'Enregistré' : 'Enregistrer'}
               </button>
             )}
