@@ -267,12 +267,23 @@ export default function Backoffice() {
 
       const sendRes = await fetch(`${API}/auth/logs/send-email`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`
+          // Do NOT set Content-Type for FormData, browser will do it automatically
+        },
         body: formData
       });
-      if (!sendRes.ok) { const d = await sendRes.json(); throw new Error(d.detail || 'Erreur envoi email'); }
+      if (!sendRes.ok) { 
+        const d = await sendRes.json(); 
+        throw new Error(d.detail || 'Erreur envoi email'); 
+      }
       setSendLogsSuccess(`Logs envoyés avec succès à ${sendLogsEmail} !`);
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { 
+      console.error('Send logs error:', err);
+      // Log the full URL for debugging 404 issues
+      console.log('Target URL:', `${API}/auth/logs/send-email`);
+      alert(err.message); 
+    }
     finally { setSendLogsLoading(false); }
   };
 
@@ -463,7 +474,7 @@ export default function Backoffice() {
   const uniqueRoles = [...new Set(members.map(m => m.role))];
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-slate-300 font-sans flex text-sm">
+    <div className="h-screen bg-[#0B0F19] text-slate-300 font-sans flex text-sm overflow-hidden">
 
       {/* SIDEBAR */}
       <aside className="w-64 bg-[#0F1523] border-r border-slate-800 flex flex-col shrink-0">
@@ -477,7 +488,7 @@ export default function Backoffice() {
           <span className="text-[10px]" style={{ color: '#a89fdb' }}>{backofficeUser.role || 'SYSTEM_ADMIN'}</span>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 mt-2">
+        <nav className="flex-1 p-3 space-y-1 mt-2 overflow-y-auto">
           {([
             { id: 'dashboard', icon: LayoutDashboard, label: 'Vue Globale' },
             { id: 'establishments', icon: Building2, label: 'Établissements' },
@@ -527,7 +538,7 @@ export default function Backoffice() {
       </aside>
 
       {/* MAIN */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="px-8 py-5 border-b border-slate-800/50 flex justify-between items-center bg-[#0B0F19]/80 backdrop-blur-sm">
           <div>
             <h2 className="text-xl font-semibold text-white">
