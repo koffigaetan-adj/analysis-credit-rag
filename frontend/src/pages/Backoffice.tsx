@@ -4,7 +4,7 @@ import {
   Plus, CheckCircle2, XCircle, Edit2,
   Lock, Loader2, LogOut, AlertTriangle, Search, Filter, ShieldCheck,
   Terminal, RefreshCw, Trash2, ChevronDown, ChevronUp, Clock, Wifi, Download,
-  BarChart2, KeyRound, Zap, Trophy, Medal, Award, Star
+  BarChart2, KeyRound, Zap, Trophy, Medal, Award, Star, Mail
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
@@ -127,6 +127,10 @@ export default function Backoffice() {
   const [logsAutoRefresh, setLogsAutoRefresh] = useState(false);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
   const [logStats, setLogStats] = useState<Record<string, number>>({});
+  const [showSendLogsModal, setShowSendLogsModal] = useState(false);
+  const [sendLogsEmail, setSendLogsEmail] = useState('');
+  const [sendLogsLoading, setSendLogsLoading] = useState(false);
+  const [sendLogsSuccess, setSendLogsSuccess] = useState('');
 
   // --- States Établissement ---
   const [showEstModal, setShowEstModal] = useState(false);
@@ -223,6 +227,36 @@ export default function Backoffice() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) { console.error(err); }
+  };
+
+  const openSendLogsModal = () => {
+    setSendLogsEmail(backofficeUser.email || '');
+    setSendLogsSuccess('');
+    setShowSendLogsModal(true);
+  };
+
+  const handleSendLogs = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendLogsLoading(true);
+    setSendLogsSuccess('');
+    try {
+      const levelParam = logsFilter !== 'ALL' ? `?level=${logsFilter}` : '';
+      const res = await fetch(`${API}/auth/logs/download${levelParam}`, { headers });
+      if (!res.ok) throw new Error('Erreur lors de la récupération des logs');
+      const blob = await res.blob();
+      // Build a FormData to send the file + recipient email to the backend
+      const formData = new FormData();
+      formData.append('file', blob, `kais_logs_${new Date().toISOString().slice(0, 10)}.csv`);
+      formData.append('email', sendLogsEmail);
+      const sendRes = await fetch(`${API}/auth/logs/send-email`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      if (!sendRes.ok) { const d = await sendRes.json(); throw new Error(d.detail || 'Erreur envoi email'); }
+      setSendLogsSuccess(`Logs envoyés avec succès à ${sendLogsEmail} !`);
+    } catch (err: any) { alert(err.message); }
+    finally { setSendLogsLoading(false); }
   };
 
   // Stats
@@ -590,6 +624,15 @@ export default function Backoffice() {
                         Télécharger CSV
                       </button>
 
+                      {/* Envoyer par email */}
+                      <button
+                        onClick={openSendLogsModal}
+                        className="flex items-center gap-2 px-3 py-2 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 rounded-lg text-xs text-violet-300 transition-all"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        Envoyer par email
+                      </button>
+
                       {/* Vider */}
                       <button
                         onClick={clearLogs}
@@ -903,12 +946,9 @@ export default function Backoffice() {
                           <div className="space-y-2">
                             {dashboardStats.establishments.stats.map((est: any) => (
                               <div key={est.name} className="flex items-center justify-between p-3 bg-[#0F1523] rounded-lg border border-slate-800/40 group">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: est.color }} />
-                                  <div>
-                                    <p className="text-slate-200 text-xs font-medium">{est.name}</p>
-                                    {est.status !== 'active' && <span className="text-[9px] text-rose-400">Suspendu</span>}
-                                  </div>
+                                <div className="flex flex-col">
+                                  <p className="text-slate-200 text-xs font-medium">{est.name}</p>
+                                  {est.status !== 'active' && <span className="text-[9px] text-rose-400">Suspendu</span>}
                                 </div>
                                 <div className="flex items-center gap-4 text-xs text-right">
                                   <div>
@@ -1337,6 +1377,65 @@ export default function Backoffice() {
                 Confirmer la suppression
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showSendLogsModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
+          <div className="bg-[#121927] border border-slate-800 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4 text-violet-300" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm">Envoyer les logs par email</h3>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  Filtre actif : <span className="text-violet-300">{logsFilter}</span> — {logsTotal} entrée(s)
+                </p>
+              </div>
+            </div>
+
+            {sendLogsSuccess ? (
+              <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg mb-5">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                {sendLogsSuccess}
+              </div>
+            ) : null}
+
+            <form onSubmit={handleSendLogs} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Adresse destinataire</label>
+                <input
+                  required
+                  type="email"
+                  value={sendLogsEmail}
+                  onChange={e => setSendLogsEmail(e.target.value)}
+                  placeholder="email@exemple.com"
+                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all text-sm"
+                />
+                <p className="text-[10px] text-slate-600 mt-1">Pré-rempli avec votre adresse de connexion.</p>
+              </div>
+              <div className="flex justify-end gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowSendLogsModal(false)}
+                  disabled={sendLogsLoading}
+                  className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendLogsLoading || !sendLogsEmail}
+                  className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {sendLogsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <Mail className="w-4 h-4" />
+                  Envoyer
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

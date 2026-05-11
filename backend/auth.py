@@ -4,7 +4,7 @@ from typing import Optional, List
 import bcrypt
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks, Request, Form
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -2230,3 +2230,87 @@ def get_logs_stats(
     from sqlalchemy import func
     stats = db.query(SystemLog.level, func.count(SystemLog.id)).group_by(SystemLog.level).all()
     return {level: count for level, count in stats}
+
+
+@router.post("/logs/send-email")
+async def send_logs_by_email(
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    level: str = None,
+    db: Session = Depends(get_db),
+    current_user: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    from database import SystemLog
+    from sqlalchemy import desc
+    import io
+    import csv as csv_mod
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from email.mime.base import MIMEBase
+    from email import encoders
+
+    # Générer le CSV en mémoire
+    query = db.query(SystemLog)
+    if level and level.upper() != "ALL":
+        query = query.filter(SystemLog.level == level.upper())
+    logs = query.order_by(desc(SystemLog.created_at)).all()
+
+    output = io.StringIO()
+    writer = csv_mod.writer(output, delimiter=',', quotechar='"', quoting=csv_mod.QUOTE_MINIMAL)
+    writer.writerow(["ID", "Date", "Niveau", "Source", "Message", "Method", "Path", "Status", "Traceback"])
+    for log in logs:
+        writer.writerow([
+            log.id,
+            log.created_at.isoformat() if log.created_at else "",
+            log.level,
+            log.source or "",
+            log.message,
+            log.method or "",
+            log.path or "",
+            log.status_code or "",
+            log.traceback or ""
+        ])
+    csv_content = output.getvalue()
+    filename = f"kais_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    html = f"""
+    <html><body style="font-family: Arial, sans-serif; color: #333;">
+      <h2 style="color:#645CA5;">Kaïs Analytics — Export Logs Système</h2>
+      <p>Bonjour,</p>
+      <p>Veuillez trouver en pièce jointe l'export des logs système de la plateforme Kaïs Analytics.</p>
+      <ul>
+        <li><b>Filtre appliqué :</b> {level or 'ALL'}</li>
+        <li><b>Nombre d'entrées :</b> {len(logs)}</li>
+        <li><b>Généré le :</b> {datetime.now().strftime('%d/%m/%Y à %H:%M')}</li>
+      </ul>
+      <p>Cordialement,<br>L'équipe Kaïs Analytics</p>
+    </body></html>
+    """
+
+    def send_with_attachment():
+        import smtplib
+        import os
+        smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        smtp_user = os.getenv("SMTP_USER", "")
+        smtp_password = os.getenv("SMTP_PASSWORD", "")
+
+        msg = MIMEMultipart()
+        msg["Subject"] = f"[Kaïs Backoffice] Export Logs — {datetime.now().strftime('%d/%m/%Y')}"
+        msg["From"] = smtp_user
+        msg["To"] = email
+        msg.attach(MIMEText(html, "html"))
+
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(csv_content.encode("utf-8"))
+        encoders.encode_base64(part)
+        part.add_header("Content-Disposition", f'attachment; filename="{filename}"')
+        msg.attach(part)
+
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.sendmail(smtp_user, email, msg.as_string())
+
+    background_tasks.add_task(send_with_attachment)
+    return {"message": f"Export en cours d'envoi à {email}."}
