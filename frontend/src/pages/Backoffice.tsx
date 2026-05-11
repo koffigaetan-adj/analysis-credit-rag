@@ -3,7 +3,8 @@ import {
   Building2, Users, LayoutDashboard,
   Plus, CheckCircle2, XCircle, Edit2,
   Lock, Loader2, LogOut, AlertTriangle, Search, Filter, ShieldCheck,
-  Terminal, RefreshCw, Trash2, ChevronDown, ChevronUp, Clock, Wifi, Download
+  Terminal, RefreshCw, Trash2, ChevronDown, ChevronUp, Clock, Wifi, Download,
+  BarChart2, KeyRound, Zap, Trophy, Medal, Award, Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
@@ -97,6 +98,8 @@ export default function Backoffice() {
   const [establishments, setEstablishments] = useState<Est[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // --- Filtres utilisateurs ---
   const [searchUsr, setSearchUsr] = useState('');
@@ -136,6 +139,7 @@ export default function Backoffice() {
   // --- States Utilisateur ---
   const [showUsrModal, setShowUsrModal] = useState(false);
   const [editingUsr, setEditingUsr] = useState<Member | null>(null);
+  const [userToDelete, setUserToDelete] = useState<Member | null>(null);
   const [usrForm, setUsrForm] = useState({
     first_name: '', last_name: '', email: '', tempPwd: '', role: 'ANALYST', establishment: ''
   });
@@ -157,7 +161,16 @@ export default function Backoffice() {
     finally { setIsLoading(false); }
   };
 
-  useEffect(() => { if (token) fetchData(); }, [token]);
+  const fetchDashboardStats = async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/dashboard/stats`, { headers });
+      if (res.ok) setDashboardStats(await res.json());
+    } catch (err) { console.error(err); }
+    finally { setStatsLoading(false); }
+  };
+
+  useEffect(() => { if (token) { fetchData(); fetchDashboardStats(); } }, [token]);
 
   // --- Logs ---
   const fetchLogs = useCallback(async (filter = logsFilter) => {
@@ -371,6 +384,17 @@ export default function Backoffice() {
       await fetch(`${API}/auth/backoffice/users/${usr.id}/toggle-status`, { method: 'PUT', headers });
       await fetchData();
     } catch (err) { console.error(err); }
+  };
+
+  const deleteUser = async (usr: Member) => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${API}/auth/backoffice/users/${usr.id}`, { method: 'DELETE', headers });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Erreur lors de la suppression'); }
+      setUserToDelete(null);
+      await fetchData();
+    } catch (err: any) { alert(err.message); }
+    finally { setIsSubmitting(false); }
   };
 
   const logout = () => {
@@ -675,49 +699,244 @@ export default function Backoffice() {
               {/* DASHBOARD */}
               {activeTab === 'dashboard' && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-3 gap-5">
-                    {[
-                      { label: 'Établissements', value: establishments.length, sub: `${establishments.filter(e => e.status === 'active').length} actifs`, icon: Building2, color: '#a89fdb' },
-                      { label: 'Comptes Utilisateurs', value: members.length, sub: `${activeUsers} actifs`, icon: Users, color: '#34d399' },
-                      { label: 'Comptes Inactifs', value: members.length - activeUsers, sub: 'accès suspendus', icon: Lock, color: '#f87171' },
-                    ].map(({ label, value, sub, icon: Icon, color }) => (
-                      <div key={label} className="bg-[#121927] border border-slate-800/60 p-6 rounded-xl flex items-start justify-between">
-                        <div>
-                          <p className="text-slate-500 text-xs mb-2">{label}</p>
-                          <p className="text-3xl font-light" style={{ color }}>{value}</p>
-                          <p className="text-xs text-slate-500 mt-2">{sub}</p>
-                        </div>
-                        <Icon className="w-8 h-8 opacity-20" style={{ color }} />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-6">
-                    <h3 className="text-white font-medium mb-4">Membres par établissement</h3>
-                    <div className="space-y-3">
-                      {establishments.length === 0 && <p className="text-slate-500 text-sm">Aucun établissement.</p>}
-                      {establishments.map(est => {
-                        const count = members.filter(m => m.establishment === est.name).length;
-                        const active = members.filter(m => m.establishment === est.name && m.is_active).length;
-                        const color = est.primary_color || '#645CA5';
-                        return (
-                          <div key={est.id} className="flex items-center justify-between p-4 bg-[#0F1523] rounded-xl border border-slate-800/40">
-                            <div className="flex items-center gap-3">
-                              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
-                              <span className="text-slate-200 font-medium text-sm">{est.name}</span>
-                              {est.status !== 'active' && (
-                                <span className="text-[10px] text-rose-400 border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 rounded-full">Suspendu</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4 text-xs">
-                              <span className="text-slate-400">{count} membre{count !== 1 ? 's' : ''}</span>
-                              <span className="text-emerald-500">{active} actif{active !== 1 ? 's' : ''}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                  {statsLoading && !dashboardStats ? (
+                    <div className="flex h-40 items-center justify-center text-slate-500 gap-3">
+                      <Loader2 className="w-5 h-5 animate-spin" /> Chargement des statistiques...
                     </div>
-                  </div>
+                  ) : dashboardStats ? (
+                  <>
+                    {/* ── ROW 1 : KPIs principaux ── */}
+                    <div className="grid grid-cols-4 gap-4">
+                      {([
+                        {
+                          label: 'Analyses totales',
+                          value: dashboardStats.analyses.total,
+                          sub: `+${dashboardStats.analyses.last_7d} cette semaine`,
+                          Icon: BarChart2,
+                          color: '#a89fdb',
+                          glow: 'rgba(168,159,219,0.15)',
+                          badge: dashboardStats.analyses.today > 0 ? `${dashboardStats.analyses.today} auj.` : null,
+                          badgeColor: 'bg-violet-500/20 text-violet-300'
+                        },
+                        {
+                          label: 'Connexions (7j)',
+                          value: dashboardStats.api.logins_7d,
+                          sub: `${dashboardStats.api.logins_today} aujourd'hui`,
+                          Icon: KeyRound,
+                          color: '#34d399',
+                          glow: 'rgba(52,211,153,0.12)',
+                          badge: null,
+                          badgeColor: ''
+                        },
+                        {
+                          label: 'Utilisateurs actifs',
+                          value: dashboardStats.users.active,
+                          sub: `+${dashboardStats.users.new_7d} nouveaux (7j)`,
+                          Icon: Users,
+                          color: '#60a5fa',
+                          glow: 'rgba(96,165,250,0.12)',
+                          badge: dashboardStats.users.inactive > 0 ? `${dashboardStats.users.inactive} suspendus` : null,
+                          badgeColor: 'bg-amber-500/20 text-amber-300'
+                        },
+                        {
+                          label: 'Requêtes API totales',
+                          value: dashboardStats.api.total_requests,
+                          sub: `${dashboardStats.api.total_errors} erreur(s) détectée(s)`,
+                          Icon: Zap,
+                          color: dashboardStats.api.errors_7d > 0 ? '#f87171' : '#34d399',
+                          glow: dashboardStats.api.errors_7d > 0 ? 'rgba(248,113,113,0.12)' : 'rgba(52,211,153,0.12)',
+                          badge: dashboardStats.api.errors_7d > 0 ? `${dashboardStats.api.errors_7d} err. (7j)` : 'Stable',
+                          badgeColor: dashboardStats.api.errors_7d > 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'
+                        },
+                      ] as const).map(({ label, value, sub, Icon, color, glow, badge, badgeColor }) => (
+                        <div key={label} className="bg-[#121927] border border-slate-800/60 p-5 rounded-xl relative overflow-hidden" style={{ boxShadow: `0 0 30px ${glow}` }}>
+                          <div className="absolute inset-0 rounded-xl opacity-30" style={{ background: `radial-gradient(ellipse at top right, ${glow} 0%, transparent 70%)` }} />
+                          <div className="relative">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-xs text-slate-500 uppercase tracking-wider">{label}</p>
+                              <Icon className="w-4 h-4 opacity-50" style={{ color }} />
+                            </div>
+                            <p className="text-3xl font-light mb-1" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
+                            <p className="text-xs text-slate-500">{sub}</p>
+                            {badge && (
+                              <span className={`mt-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── ROW 2 : Graphique d'activité + Répartition décisions ── */}
+                    <div className="grid grid-cols-3 gap-4">
+                      {/* Sparkline activité 7j */}
+                      <div className="col-span-2 bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                        <div className="flex items-center justify-between mb-5">
+                          <div>
+                            <h3 className="text-white font-medium text-sm">Activité — 7 derniers jours</h3>
+                            <p className="text-slate-500 text-xs mt-0.5">Analyses & Connexions par jour</p>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs">
+                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block"/>Analyses</span>
+                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"/>Connexions</span>
+                          </div>
+                        </div>
+                        {(() => {
+                          const data = dashboardStats.activity_7d;
+                          const maxVal = Math.max(...data.flatMap((d: any) => [d.analyses, d.logins]), 1);
+                          const H = 100;
+                          const W = 100 / data.length;
+                          return (
+                            <div className="relative" style={{ height: 120 }}>
+                              <div className="absolute inset-0 flex items-end gap-1 px-1">
+                                {data.map((d: any, i: number) => (
+                                  <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                                    <div className="w-full flex items-end justify-center gap-0.5" style={{ height: 90 }}>
+                                      <div
+                                        className="rounded-t transition-all duration-500 flex-1"
+                                        style={{ height: `${(d.analyses / maxVal) * 100}%`, background: 'rgba(168,159,219,0.7)', minHeight: d.analyses > 0 ? 4 : 0 }}
+                                        title={`Analyses: ${d.analyses}`}
+                                      />
+                                      <div
+                                        className="rounded-t transition-all duration-500 flex-1"
+                                        style={{ height: `${(d.logins / maxVal) * 100}%`, background: 'rgba(52,211,153,0.7)', minHeight: d.logins > 0 ? 4 : 0 }}
+                                        title={`Connexions: ${d.logins}`}
+                                      />
+                                    </div>
+                                    <p className="text-[9px] text-slate-600 text-center">{d.date}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Répartition décisions */}
+                      <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                        <h3 className="text-white font-medium text-sm mb-1">Décisions IA</h3>
+                        <p className="text-slate-500 text-xs mb-4">Score moyen : <span className="text-violet-300 font-medium">{dashboardStats.analyses.avg_score}/100</span></p>
+                        <div className="space-y-3">
+                          {Object.entries(dashboardStats.analyses.decision_breakdown).length === 0 ? (
+                            <p className="text-slate-600 text-xs italic">Aucune analyse enregistrée.</p>
+                          ) : (
+                            Object.entries(dashboardStats.analyses.decision_breakdown).map(([decision, count]: [string, any]) => {
+                              const total = dashboardStats.analyses.total || 1;
+                              const pct = Math.round((count / total) * 100);
+                              const DECISION_COLORS: Record<string, string> = {
+                                'Favorable': '#34d399',
+                                'Défavorable': '#f87171',
+                                'Vigilance': '#fbbf24',
+                                'Inconnu': '#64748b'
+                              };
+                              const color = DECISION_COLORS[decision] || '#a89fdb';
+                              return (
+                                <div key={decision}>
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span style={{ color }}>{decision}</span>
+                                    <span className="text-slate-400">{count} ({pct}%)</span>
+                                  </div>
+                                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── ROW 3 : Stats secondaires ── */}
+                    <div className="grid grid-cols-4 gap-4">
+                      {[
+                        { label: 'Sessions IA Chat', value: dashboardStats.chats.total, sub: `+${dashboardStats.chats.last_7d} (7j)`, color: '#c084fc' },
+                        { label: 'Analyses (30j)', value: dashboardStats.analyses.last_30d, sub: `${dashboardStats.analyses.last_7d} cette semaine`, color: '#a89fdb' },
+                        { label: 'Demandes en attente', value: dashboardStats.requests.pending, sub: `${dashboardStats.requests.total} au total`, color: dashboardStats.requests.pending > 0 ? '#fbbf24' : '#34d399' },
+                        { label: 'Établissements actifs', value: dashboardStats.establishments.active, sub: `sur ${dashboardStats.establishments.total} au total`, color: '#60a5fa' },
+                      ].map(({ label, value, sub, color }) => (
+                        <div key={label} className="bg-[#121927] border border-slate-800/60 p-4 rounded-xl">
+                          <p className="text-xs text-slate-500 mb-2">{label}</p>
+                          <p className="text-2xl font-light" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
+                          <p className="text-xs text-slate-600 mt-1">{sub}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── ROW 4 : Top users + Établissements ── */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Top utilisateurs */}
+                      <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                        <h3 className="text-white font-medium text-sm mb-4">Top Analystes</h3>
+                        {dashboardStats.analyses.top_users.length === 0 ? (
+                          <p className="text-slate-600 text-xs italic">Aucune analyse effectuée.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {dashboardStats.analyses.top_users.map((u: any, i: number) => {
+                              const max = dashboardStats.analyses.top_users[0].count || 1;
+                              const RankIcon = i === 0 ? Trophy : i === 1 ? Medal : i === 2 ? Award : Star;
+                              const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#c2824a' : '#4b5563';
+                              return (
+                                <div key={u.email} className="flex items-center gap-3">
+                                  <RankIcon className="w-4 h-4 shrink-0" style={{ color: rankColor }} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between text-xs mb-1">
+                                      <span className="text-slate-200 truncate font-medium">{u.name}</span>
+                                      <span className="text-slate-400 shrink-0 ml-2">{u.count} analyse{u.count > 1 ? 's' : ''}</span>
+                                    </div>
+                                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                                      <div className="h-full rounded-full bg-violet-400/60 transition-all duration-700" style={{ width: `${(u.count / max) * 100}%` }} />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Établissements breakdown */}
+                      <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                        <h3 className="text-white font-medium text-sm mb-4">Établissements</h3>
+                        {dashboardStats.establishments.stats.length === 0 ? (
+                          <p className="text-slate-600 text-xs italic">Aucun établissement.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {dashboardStats.establishments.stats.map((est: any) => (
+                              <div key={est.name} className="flex items-center justify-between p-3 bg-[#0F1523] rounded-lg border border-slate-800/40 group">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: est.color }} />
+                                  <div>
+                                    <p className="text-slate-200 text-xs font-medium">{est.name}</p>
+                                    {est.status !== 'active' && <span className="text-[9px] text-rose-400">Suspendu</span>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-right">
+                                  <div>
+                                    <p className="text-slate-300 font-medium">{est.members}</p>
+                                    <p className="text-slate-600 text-[10px]">membres</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-violet-300 font-medium">{est.analyses}</p>
+                                    <p className="text-slate-600 text-[10px]">analyses</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-emerald-400 font-medium">{est.active_members}</p>
+                                    <p className="text-slate-600 text-[10px]">actifs</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-600 gap-3">
+                      <LayoutDashboard className="w-10 h-10 opacity-20" />
+                      <p className="text-sm">Impossible de charger les statistiques.</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -891,11 +1110,17 @@ export default function Backoffice() {
                                   onClick={() => toggleUserStatus(usr)}
                                   className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
                                     usr.is_active
-                                      ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'
+                                      ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
                                       : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                                   }`}
                                 >
                                   {usr.is_active ? 'Suspendre' : 'Activer'}
+                                </button>
+                                <button
+                                  onClick={() => setUserToDelete(usr)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-xs"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Supprimer
                                 </button>
                               </div>
                             </td>
@@ -1088,6 +1313,34 @@ export default function Backoffice() {
           </div>
         </div>
       )}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
+          <div className="bg-[#121927] border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 className="text-xl font-semibold text-white mb-4">Supprimer l'utilisateur</h3>
+            <p className="text-slate-300 text-sm mb-6">
+              Êtes-vous sûr de vouloir supprimer définitivement le compte de <b>{userToDelete.first_name} {userToDelete.last_name}</b> ? Cette action est irréversible.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setUserToDelete(null)}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => deleteUser(userToDelete)}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors flex items-center gap-2"
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Confirmer la suppression
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TwoFactorSettingsModal
         isOpen={show2FAModal}
         onClose={() => { setShow2FAModal(false); refreshUserInfo(); }}

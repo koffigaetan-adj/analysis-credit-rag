@@ -31,9 +31,18 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
         return True
 
     try:
+        from email.utils import formataddr
+        from email.header import Header
+
         msg = MIMEMultipart("mixed")
         msg['Subject'] = subject
-        msg['From'] = f"{FROM_NAME} <{REPLY_TO}>" if FROM_NAME else REPLY_TO
+        
+        if FROM_NAME:
+            encoded_name = str(Header(FROM_NAME, 'utf-8'))
+            msg['From'] = formataddr((encoded_name, REPLY_TO))
+        else:
+            msg['From'] = REPLY_TO
+            
         msg['Reply-To'] = REPLY_TO
         msg['To'] = to_email
 

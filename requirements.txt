@@ -22,4 +22,7 @@ httpx
 pandas
 groq
 supabase
-i18next
+langchain-huggingface
+pyotp
+qrcode
+Pillow

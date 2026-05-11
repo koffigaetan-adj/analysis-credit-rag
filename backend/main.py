@@ -91,11 +91,13 @@ def run_migrations():
     engine = create_engine(SQLALCHEMY_DATABASE_URL)
     with engine.connect() as connection:
         try:
-            connection.execute(text("ALTER TABLE account_requests ADD COLUMN IF NOT EXISTS rejection_reason TEXT;"))
+            # SQLite doesn't support IF NOT EXISTS for ADD COLUMN
+            connection.execute(text("ALTER TABLE account_requests ADD COLUMN rejection_reason TEXT;"))
             connection.commit()
             print("Migration 'rejection_reason' vérifiée/appliquée.")
         except Exception as e:
-            print(f"Note sur la migration : {e}")
+            if "duplicate column name" not in str(e).lower() and "already exists" not in str(e).lower():
+                print(f"Note sur la migration : {e}")
 
         # Migrations préférences de notifications
         notif_columns = [
@@ -107,11 +109,12 @@ def run_migrations():
         ]
         for col_name, col_def in notif_columns:
             try:
-                connection.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_def};"))
+                connection.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_def};"))
                 connection.commit()
                 print(f"Migration '{col_name}' vérifiée/appliquée.")
             except Exception as e:
-                print(f"Note migration {col_name} : {e}")
+                if "duplicate column name" not in str(e).lower() and "already exists" not in str(e).lower():
+                    print(f"Note migration {col_name} : {e}")
 
 @app.on_event("startup")
 def on_startup():

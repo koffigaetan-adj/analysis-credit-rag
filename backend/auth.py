@@ -306,7 +306,7 @@ def send_backoffice_login_alert_async(user_email: str, user_name: str, ip_addres
     <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">Cet email est envoyé automatiquement à chaque connexion sur le panneau d’administration Kaïs Backoffice.</p>
     """
     from email_service import send_email_sync
-    send_email_sync(user_email, "[BACKOFFICE] Kaïs - Connexion administrateur détectée", login_html, is_backoffice=True)
+    send_email_sync(user_email, "Kaïs Backoffice - Connexion administrateur détectée", login_html, is_backoffice=True)
 
 
 
@@ -557,6 +557,11 @@ def reset_password(
     <p>Bonjour <b>{user.first_name}</b>,</p>
     <p>Le mot de passe de votre compte Kaïs Analytics vient d'être réinitialisé avec succès via la procédure d'oubli de mot de passe.</p>
     <p>Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+    <div style="margin-top: 25px; text-align: center;">
+            <a href="https://kais-analytics.vercel.app/login" style="background-color: #E73919; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+    </div>
+    <br>
+    <p>L'équipe Kaïs Analytics</p>
     """
     background_tasks.add_task(send_email_sync, user.email, "Kaïs Analytics - Mot de passe réinitialisé", pwd_reset_html)
     
@@ -793,8 +798,11 @@ def admin_create_user(
         <p>Voici vos identifiants de connexion :</p>
         <ul>
           <li><strong>Email :</strong> {request.email}</li>
-          <li><strong>Mot de passe :</strong> {request.password}</li>
+          <li><strong>Mot de passe provisoire:</strong> {request.password}</li>
         </ul>
+        <div style="margin-top: 25px; text-align: center;">
+            <a href="https://kais-analytics.vercel.app/login" style="background-color: #E73919; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+        </div>
         <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
         <br>
         <p>L'équipe Kaïs Analytics</p>
@@ -1059,8 +1067,9 @@ def approve_request_endpoint(
     html_content = f"""
     <html>
       <body>
+        <h2>Bienvenue sur Kaïs Analytics</h2>
         <h3>Bonjour {new_user.first_name} {new_user.last_name},</h3>
-        <p>Votre demande de compte a été approuvée avec le rôle <strong>{new_user.role}</strong>.</p>
+        <p>Votre demande de compte a été approuvée avec succès et vous pouvez dès à présent accéder à la plateforme Kaïs avec le rôle <strong>{new_user.role}</strong>.</p>
         <p>Voici vos identifiants de connexion :</p>
         <ul>
           <li><strong>Email :</strong> {new_user.email}</li>
@@ -1071,7 +1080,7 @@ def approve_request_endpoint(
             <a href="https://kais-analytics.vercel.app/login" style="background-color: #E73919; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
         </div>
         <br>
-        <p>L'équipe Kaïs</p>
+        <p>L'équipe Kaïs Analytics</p>
       </body>
     </html>
     """
@@ -1110,7 +1119,7 @@ def reject_request_endpoint(
         </div>
         <p>Pour toute question ou demande de réévaluation, n'hésitez pas à répondre directement à ce mail.</p>
         <br>
-        <p>L'équipe Kaïs</p>
+        <p>L'équipe Kaïs Analytics</p>
       </body>
     </html>
     """
@@ -1422,11 +1431,16 @@ def backoffice_create_user(
           <li><strong>Mot de passe provisoire :</strong> {request.password}</li>
         </ul>
         <p>Connectez-vous et changez votre mot de passe dès la première connexion.</p>
+        <div style="margin-top: 25px; text-align: center;">
+            <a href="https://kais-analytics.vercel.app/login" style="background-color: #E73919; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
+        </div>
+        <br>
+        <p>L'équipe Kaïs Analytics</p>
       </body>
     </html>
     """
-    background_tasks.add_task(send_email_sync, request.email, "Vos identifiants Kaïs Analytics", html_content)
-
+    background_tasks.add_task(send_email_sync, request.email, "Bienvenue sur Kaïs Analytics - Vos accès", html_content, is_backoffice=True)
+ 
     return {
         "message": "Compte créé avec succès.",
         "user": {
@@ -1478,6 +1492,21 @@ def update_backoffice_user(
         }
     }
 
+
+@router.delete("/backoffice/users/{user_id}")
+def delete_backoffice_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+        
+    db.query(AccountRequest).filter(AccountRequest.email == user.email).delete()
+    db.delete(user)
+    db.commit()
+    return {"message": "Utilisateur supprimé."}
 
 @router.put("/backoffice/users/{user_id}/toggle-status")
 def toggle_backoffice_user_status(
@@ -1931,6 +1960,166 @@ def login_verify_2fa(request: Request, req: TwoFactorLoginRequest, background_ta
             }
         }
 
+
+
+# ─── ENDPOINT DASHBOARD STATS (backoffice) ────────────────────────────────────
+
+@router.get("/dashboard/stats")
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    from database import SystemLog, Application, ChatSession
+    from sqlalchemy import func, desc, cast, Date
+    from datetime import datetime, timedelta
+
+    now = datetime.utcnow()
+    today = now.date()
+    seven_days_ago = now - timedelta(days=7)
+    thirty_days_ago = now - timedelta(days=30)
+
+    # ── Utilisateurs ────────────────────────────────────────────
+    total_users = db.query(User).count()
+    active_users = db.query(User).filter(User.is_active == True).count()
+    inactive_users = total_users - active_users
+    new_users_7d = db.query(User).filter(User.created_at >= seven_days_ago).count()
+    new_users_30d = db.query(User).filter(User.created_at >= thirty_days_ago).count()
+
+    # ── Établissements ────────────────────────────────────────────
+    total_establishments = db.query(Establishment).count()
+    active_establishments = db.query(Establishment).filter(Establishment.status == "active").count()
+
+    # ── Demandes de compte ────────────────────────────────────────
+    pending_requests = db.query(AccountRequest).filter(AccountRequest.status == "PENDING").count()
+    total_requests = db.query(AccountRequest).count()
+
+    # ── Analyses ──────────────────────────────────────────────────
+    total_analyses = db.query(Application).count()
+    analyses_7d = db.query(Application).filter(Application.created_at >= seven_days_ago).count()
+    analyses_30d = db.query(Application).filter(Application.created_at >= thirty_days_ago).count()
+    analyses_today = db.query(Application).filter(
+        func.date(Application.created_at) == today
+    ).count()
+
+    # Répartition par décision
+    decisions = db.query(Application.decision, func.count(Application.id)).group_by(Application.decision).all()
+    decision_breakdown = {d or "Inconnu": c for d, c in decisions}
+
+    # Score moyen
+    avg_score = db.query(func.avg(Application.score)).scalar()
+    avg_score = round(float(avg_score), 1) if avg_score else 0.0
+
+    # Top 5 utilisateurs les plus actifs (analyses)
+    top_users_raw = (
+        db.query(User.first_name, User.last_name, User.email, func.count(Application.id).label("count"))
+        .join(Application, Application.user_id == User.id)
+        .group_by(User.id)
+        .order_by(desc("count"))
+        .limit(5)
+        .all()
+    )
+    top_users = [
+        {"name": f"{r.first_name} {r.last_name}", "email": r.email, "count": r.count}
+        for r in top_users_raw
+    ]
+
+    # ── Activité par jour (7 derniers jours) ─────────────────────
+    activity_7d = []
+    for i in range(6, -1, -1):
+        day = (now - timedelta(days=i)).date()
+        count = db.query(Application).filter(func.date(Application.created_at) == day).count()
+        logins = db.query(SystemLog).filter(
+            func.date(SystemLog.created_at) == day,
+            SystemLog.path == "/auth/login",
+            SystemLog.status_code == 200
+        ).count()
+        activity_7d.append({
+            "date": day.strftime("%d/%m"),
+            "analyses": count,
+            "logins": logins
+        })
+
+    # ── Logs / Flux API ──────────────────────────────────────────
+    total_requests_api = db.query(SystemLog).filter(SystemLog.method != None).count()
+    total_errors = db.query(SystemLog).filter(SystemLog.level.in_(["ERROR", "CRITICAL"])).count()
+    errors_7d = db.query(SystemLog).filter(
+        SystemLog.level.in_(["ERROR", "CRITICAL"]),
+        SystemLog.created_at >= seven_days_ago
+    ).count()
+    logins_today = db.query(SystemLog).filter(
+        func.date(SystemLog.created_at) == today,
+        SystemLog.path == "/auth/login",
+        SystemLog.status_code == 200
+    ).count()
+    logins_7d = db.query(SystemLog).filter(
+        SystemLog.created_at >= seven_days_ago,
+        SystemLog.path == "/auth/login",
+        SystemLog.status_code == 200
+    ).count()
+
+    # ── Sessions de chat ─────────────────────────────────────────
+    total_chats = db.query(ChatSession).count()
+    chats_7d = db.query(ChatSession).filter(ChatSession.created_at >= seven_days_ago).count()
+
+    # ── Membres par établissement ─────────────────────────────────
+    est_stats = []
+    for est in db.query(Establishment).all():
+        count = db.query(User).filter(User.establishment == est.name).count()
+        active = db.query(User).filter(User.establishment == est.name, User.is_active == True).count()
+        analyses_count = (
+            db.query(Application)
+            .join(User, Application.user_id == User.id)
+            .filter(User.establishment == est.name)
+            .count()
+        )
+        est_stats.append({
+            "name": est.name,
+            "color": est.primary_color or "#645CA5",
+            "status": est.status,
+            "members": count,
+            "active_members": active,
+            "analyses": analyses_count
+        })
+
+    return {
+        "users": {
+            "total": total_users,
+            "active": active_users,
+            "inactive": inactive_users,
+            "new_7d": new_users_7d,
+            "new_30d": new_users_30d,
+        },
+        "establishments": {
+            "total": total_establishments,
+            "active": active_establishments,
+            "stats": est_stats,
+        },
+        "requests": {
+            "pending": pending_requests,
+            "total": total_requests,
+        },
+        "analyses": {
+            "total": total_analyses,
+            "today": analyses_today,
+            "last_7d": analyses_7d,
+            "last_30d": analyses_30d,
+            "avg_score": avg_score,
+            "decision_breakdown": decision_breakdown,
+            "top_users": top_users,
+        },
+        "activity_7d": activity_7d,
+        "api": {
+            "total_requests": total_requests_api,
+            "total_errors": total_errors,
+            "errors_7d": errors_7d,
+            "logins_today": logins_today,
+            "logins_7d": logins_7d,
+        },
+        "chats": {
+            "total": total_chats,
+            "last_7d": chats_7d,
+        }
+    }
 
 
 # ─── ENDPOINTS LOGS SYSTEME (reserve backoffice) ──────────────────────────────
