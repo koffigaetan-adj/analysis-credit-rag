@@ -123,6 +123,8 @@ export default function Backoffice() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [logsTotal, setLogsTotal] = useState(0);
   const [logsFilter, setLogsFilter] = useState('ALL');
+  const [logsStartDate, setLogsStartDate] = useState('');
+  const [logsEndDate, setLogsEndDate] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsAutoRefresh, setLogsAutoRefresh] = useState(false);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
@@ -177,13 +179,20 @@ export default function Backoffice() {
   useEffect(() => { if (token) { fetchData(); fetchDashboardStats(); } }, [token]);
 
   // --- Logs ---
-  const fetchLogs = useCallback(async (filter = logsFilter) => {
+  const fetchLogs = useCallback(async (filter = logsFilter, start = logsStartDate, end = logsEndDate) => {
     setLogsLoading(true);
     try {
-      const levelParam = filter !== 'ALL' ? `?level=${filter}&limit=200` : '?limit=200';
+      let params = new URLSearchParams();
+      if (filter !== 'ALL') params.append('level', filter);
+      if (start) params.append('start_date', start);
+      if (end) params.append('end_date', end);
+      
+      const paramStrLogs = `?limit=200${params.toString() ? '&' + params.toString() : ''}`;
+      const paramStrStats = params.toString() ? `?${params.toString()}` : '';
+
       const [logsRes, statsRes] = await Promise.all([
-        fetch(`${API}/auth/logs${levelParam}`, { headers }),
-        fetch(`${API}/auth/logs/stats`, { headers }),
+        fetch(`${API}/auth/logs${paramStrLogs}`, { headers }),
+        fetch(`${API}/auth/logs/stats${paramStrStats}`, { headers }),
       ]);
       if (logsRes.ok) {
         const data = await logsRes.json();
@@ -193,29 +202,39 @@ export default function Backoffice() {
       if (statsRes.ok) setLogStats(await statsRes.json());
     } catch (err) { console.error(err); }
     finally { setLogsLoading(false); }
-  }, [API, headers, logsFilter]);
+  }, [API, headers, logsFilter, logsStartDate, logsEndDate]);
 
   useEffect(() => {
-    if (activeTab === 'logs' && token) fetchLogs(logsFilter);
-  }, [activeTab, logsFilter]);
+    if (activeTab === 'logs' && token) fetchLogs();
+  }, [activeTab, logsFilter, logsStartDate, logsEndDate]);
 
   useEffect(() => {
     if (!logsAutoRefresh || activeTab !== 'logs') return;
-    const interval = setInterval(() => fetchLogs(logsFilter), 30000);
+    const interval = setInterval(() => fetchLogs(), 30000);
     return () => clearInterval(interval);
-  }, [logsAutoRefresh, activeTab, logsFilter]);
+  }, [logsAutoRefresh, activeTab, fetchLogs]);
 
   const clearLogs = async () => {
     if (!confirm('Supprimer tous les logs affichés ?')) return;
-    const levelParam = logsFilter !== 'ALL' ? `?level=${logsFilter}` : '';
-    await fetch(`${API}/auth/logs${levelParam}`, { method: 'DELETE', headers });
-    fetchLogs(logsFilter);
+    let params = new URLSearchParams();
+    if (logsFilter !== 'ALL') params.append('level', logsFilter);
+    if (logsStartDate) params.append('start_date', logsStartDate);
+    if (logsEndDate) params.append('end_date', logsEndDate);
+    const paramStr = params.toString() ? `?${params.toString()}` : '';
+
+    await fetch(`${API}/auth/logs${paramStr}`, { method: 'DELETE', headers });
+    fetchLogs();
   };
 
   const downloadLogs = async () => {
     try {
-      const levelParam = logsFilter !== 'ALL' ? `?level=${logsFilter}` : '';
-      const res = await fetch(`${API}/auth/logs/download${levelParam}`, { headers });
+      let params = new URLSearchParams();
+      if (logsFilter !== 'ALL') params.append('level', logsFilter);
+      if (logsStartDate) params.append('start_date', logsStartDate);
+      if (logsEndDate) params.append('end_date', logsEndDate);
+      const paramStr = params.toString() ? `?${params.toString()}` : '';
+
+      const res = await fetch(`${API}/auth/logs/download${paramStr}`, { headers });
       if (!res.ok) throw new Error('Erreur lors du téléchargement');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -240,14 +259,12 @@ export default function Backoffice() {
     setSendLogsLoading(true);
     setSendLogsSuccess('');
     try {
-      const levelParam = logsFilter !== 'ALL' ? `?level=${logsFilter}` : '';
-      const res = await fetch(`${API}/auth/logs/download${levelParam}`, { headers });
-      if (!res.ok) throw new Error('Erreur lors de la récupération des logs');
-      const blob = await res.blob();
-      // Build a FormData to send the file + recipient email to the backend
       const formData = new FormData();
-      formData.append('file', blob, `kais_logs_${new Date().toISOString().slice(0, 10)}.csv`);
       formData.append('email', sendLogsEmail);
+      if (logsFilter !== 'ALL') formData.append('level', logsFilter);
+      if (logsStartDate) formData.append('start_date', logsStartDate);
+      if (logsEndDate) formData.append('end_date', logsEndDate);
+
       const sendRes = await fetch(`${API}/auth/logs/send-email`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -593,6 +610,29 @@ export default function Backoffice() {
                         <option value="INFO">INFO</option>
                         <option value="DEBUG">DEBUG</option>
                       </select>
+
+                      {/* Dates */}
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0F1523] border border-slate-700 rounded-lg text-sm text-slate-300">
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <input
+                          type="date"
+                          value={logsStartDate}
+                          onChange={e => setLogsStartDate(e.target.value)}
+                          className="bg-transparent outline-none text-xs text-slate-300 w-28 [color-scheme:dark]"
+                        />
+                        <span className="text-slate-600">-</span>
+                        <input
+                          type="date"
+                          value={logsEndDate}
+                          onChange={e => setLogsEndDate(e.target.value)}
+                          className="bg-transparent outline-none text-xs text-slate-300 w-28 [color-scheme:dark]"
+                        />
+                        {(logsStartDate || logsEndDate) && (
+                          <button onClick={() => { setLogsStartDate(''); setLogsEndDate(''); }} className="text-slate-500 hover:text-rose-400">
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
 
                       {/* Auto-refresh */}
                       <button
@@ -1003,11 +1043,8 @@ export default function Backoffice() {
                         return (
                           <tr key={est.id} className="hover:bg-slate-800/20 transition-colors group">
                             <td className="px-5 py-4 text-slate-200 font-medium">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: est.primary_color || '#645CA5' }} />
-                                {est.name}
-                              </div>
-                            </td>
+                {est.name}
+            </td>
                             <td className="px-5 py-4 text-slate-400 text-sm">{est.address || <span className="text-slate-600 italic">Non renseignée</span>}</td>
                             <td className="px-5 py-4 text-slate-400 text-sm">{count} membre{count !== 1 ? 's' : ''}</td>
                             <td className="px-5 py-4 text-slate-500 text-xs font-mono">

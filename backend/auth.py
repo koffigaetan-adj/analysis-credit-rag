@@ -2128,6 +2128,8 @@ def get_dashboard_stats(
 def get_system_logs(
     level: str = None,
     logger_name: str = None,
+    start_date: str = None,
+    end_date: str = None,
     limit: int = 200,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -2135,11 +2137,16 @@ def get_system_logs(
 ):
     from database import SystemLog
     from sqlalchemy import desc
+    from datetime import datetime
     query = db.query(SystemLog)
     if level and level != "ALL":
         query = query.filter(SystemLog.level == level.upper())
     if logger_name:
         query = query.filter(SystemLog.logger_name.ilike(f"%{logger_name}%"))
+    if start_date:
+        query = query.filter(SystemLog.created_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.filter(SystemLog.created_at <= datetime.fromisoformat(end_date))
     total = query.count()
     logs = query.order_by(desc(SystemLog.created_at)).offset(offset).limit(min(limit, 500)).all()
     return {
@@ -2164,6 +2171,8 @@ def get_system_logs(
 @router.get("/logs/download")
 def download_system_logs(
     level: str = None,
+    start_date: str = None,
+    end_date: str = None,
     db: Session = Depends(get_db),
     current_user: UserBackoffice = Depends(get_current_backoffice_user)
 ):
@@ -2172,10 +2181,15 @@ def download_system_logs(
     from fastapi.responses import StreamingResponse
     import io
     import csv
+    from datetime import datetime
 
     query = db.query(SystemLog)
     if level and level != "ALL":
         query = query.filter(SystemLog.level == level.upper())
+    if start_date:
+        query = query.filter(SystemLog.created_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.filter(SystemLog.created_at <= datetime.fromisoformat(end_date))
     
     logs = query.order_by(desc(SystemLog.created_at)).all()
     
@@ -2208,13 +2222,20 @@ def download_system_logs(
 @router.delete("/logs")
 def clear_system_logs(
     level: str = None,
+    start_date: str = None,
+    end_date: str = None,
     db: Session = Depends(get_db),
     current_user: UserBackoffice = Depends(get_current_backoffice_user)
 ):
     from database import SystemLog
+    from datetime import datetime
     query = db.query(SystemLog)
     if level and level != "ALL":
         query = query.filter(SystemLog.level == level.upper())
+    if start_date:
+        query = query.filter(SystemLog.created_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.filter(SystemLog.created_at <= datetime.fromisoformat(end_date))
     count = query.count()
     query.delete(synchronize_session=False)
     db.commit()
@@ -2223,12 +2244,20 @@ def clear_system_logs(
 
 @router.get("/logs/stats")
 def get_logs_stats(
+    start_date: str = None,
+    end_date: str = None,
     db: Session = Depends(get_db),
     current_user: UserBackoffice = Depends(get_current_backoffice_user)
 ):
     from database import SystemLog
     from sqlalchemy import func
-    stats = db.query(SystemLog.level, func.count(SystemLog.id)).group_by(SystemLog.level).all()
+    from datetime import datetime
+    query = db.query(SystemLog.level, func.count(SystemLog.id)).group_by(SystemLog.level)
+    if start_date:
+        query = query.filter(SystemLog.created_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.filter(SystemLog.created_at <= datetime.fromisoformat(end_date))
+    stats = query.all()
     return {level: count for level, count in stats}
 
 
@@ -2236,7 +2265,9 @@ def get_logs_stats(
 async def send_logs_by_email(
     background_tasks: BackgroundTasks,
     email: str = Form(...),
-    level: str = None,
+    level: str = Form(None),
+    start_date: str = Form(None),
+    end_date: str = Form(None),
     db: Session = Depends(get_db),
     current_user: UserBackoffice = Depends(get_current_backoffice_user)
 ):
@@ -2244,15 +2275,16 @@ async def send_logs_by_email(
     from sqlalchemy import desc
     import io
     import csv as csv_mod
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-    from email.mime.base import MIMEBase
-    from email import encoders
+    from datetime import datetime
 
     # Générer le CSV en mémoire
     query = db.query(SystemLog)
     if level and level.upper() != "ALL":
         query = query.filter(SystemLog.level == level.upper())
+    if start_date:
+        query = query.filter(SystemLog.created_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.filter(SystemLog.created_at <= datetime.fromisoformat(end_date))
     logs = query.order_by(desc(SystemLog.created_at)).all()
 
     output = io.StringIO()
@@ -2270,7 +2302,7 @@ async def send_logs_by_email(
             log.status_code or "",
             log.traceback or ""
         ])
-    csv_content = output.getvalue()
+    csv_content = output.getvalue().encode("utf-8")
     filename = f"kais_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
     html = f"""
@@ -2288,29 +2320,14 @@ async def send_logs_by_email(
     """
 
     def send_with_attachment():
-        import smtplib
-        import os
-        smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        smtp_user = os.getenv("SMTP_USER", "")
-        smtp_password = os.getenv("SMTP_PASSWORD", "")
-
-        msg = MIMEMultipart()
-        msg["Subject"] = f"[Kaïs Backoffice] Export Logs — {datetime.now().strftime('%d/%m/%Y')}"
-        msg["From"] = smtp_user
-        msg["To"] = email
-        msg.attach(MIMEText(html, "html"))
-
-        part = MIMEBase("application", "octet-stream")
-        part.set_payload(csv_content.encode("utf-8"))
-        encoders.encode_base64(part)
-        part.add_header("Content-Disposition", f'attachment; filename="{filename}"')
-        msg.attach(part)
-
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_password)
-            server.sendmail(smtp_user, email, msg.as_string())
+        send_email_sync(
+            to_email=email,
+            subject=f"[Kaïs Backoffice] Export Logs — {datetime.now().strftime('%d/%m/%Y')}",
+            html_content=html,
+            attachment_name=filename,
+            attachment_data=csv_content,
+            is_backoffice=True
+        )
 
     background_tasks.add_task(send_with_attachment)
     return {"message": f"Export en cours d'envoi à {email}."}
