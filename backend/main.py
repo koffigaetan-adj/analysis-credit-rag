@@ -806,7 +806,7 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
     return {"message": "Supprimé"}
 
 def send_contact_email(email: str, subject: str, message: str, attachment_name: typing.Optional[str] = None, attachment_data: typing.Optional[bytes] = None):
-    target_admin_email = os.getenv("FROM_EMAIL", "gaetan.eyes@gmail.com")
+    target_admin_email = os.getenv("FROM_EMAIL", "gendak.consulting@gmail.com")
     
     html_content = f"""
     <html>
@@ -926,7 +926,7 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
         display_name = os.getenv("FROM_NAME", "Kaïs Analytics")
 
         # Le From affiche "Kaïs Analytics <email>" → le destinataire voit le nom de l'appli
-        msg['From'] = f"{display_name} <{from_email_addr}>"
+        msg['From'] = f"{display_name}"
         # Reply-To en no-reply pour éviter les réponses directes
         msg['Reply-To'] = f"No Reply <no-reply@kaisanalytics.com>"
         msg['To'] = email
