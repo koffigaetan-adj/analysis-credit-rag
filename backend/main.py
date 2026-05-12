@@ -918,10 +918,17 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
             print(f"Rapport PDF '{attachment_name}' serait envoyé à {email}")
             return True
 
-        msg = MIMEMultipart("related")
+        msg = MIMEMultipart("mixed")
         msg['Subject'] = subject
-        msg['From'] = f"{os.getenv('FROM_NAME', 'Kaïs Analytics')} <{os.getenv('REPLY_TO', 'no-reply@kaisanalytics.com')}>"
-        msg['Reply-To'] = os.getenv('REPLY_TO', 'no-reply@kaisanalytics.com')
+
+        # Adresse d'envoi réelle (celle utilisée pour l'authentification SMTP)
+        from_email_addr = os.getenv("FROM_EMAIL") or os.getenv("SMTP_USERNAME") or "no-reply@kaisanalytics.com"
+        display_name = os.getenv("FROM_NAME", "Kaïs Analytics")
+
+        # Le From affiche "Kaïs Analytics <email>" → le destinataire voit le nom de l'appli
+        msg['From'] = f"{display_name} <{from_email_addr}>"
+        # Reply-To en no-reply pour éviter les réponses directes
+        msg['Reply-To'] = f"No Reply <no-reply@kaisanalytics.com>"
         msg['To'] = email
 
         template_html = f"""
@@ -936,15 +943,15 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
                         <p>Veuillez trouver en pièce jointe le rapport d'analyse généré par Kaïs Analytics.</p>
                     </div>
                     <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #64748b;">
-                        <p>Veuillez ne pas répondre à cet email. Ce message a été généré automatiquement par Kaïs Analytics.</p>
+                        <p>Cet email a été généré automatiquement — merci de ne pas y répondre.</p>
                     </div>
                 </div>
             </body>
         </html>
         """
 
-        part = MIMEText(template_html, 'html')
-        msg.attach(part)
+        body_part = MIMEMultipart("related")
+        body_part.attach(MIMEText(template_html, 'html'))
         
         logo_path = os.path.join(os.path.dirname(__file__), "images", "logomail.png")
         if os.path.exists(logo_path):
@@ -953,7 +960,9 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
             image = MIMEImage(img_data, name=os.path.basename(logo_path))
             image.add_header('Content-ID', '<logomail>')
             image.add_header('Content-Disposition', 'inline', filename='logomail.png')
-            msg.attach(image)
+            body_part.attach(image)
+            
+        msg.attach(body_part)
 
         pdf_attachment = MIMEApplication(message, _subtype="pdf")
         pdf_attachment.add_header('Content-Disposition', 'attachment', filename=attachment_name)
@@ -962,8 +971,8 @@ def send_report_email(email: str, subject: str, message: bytes, attachment_name:
         server = smtplib.SMTP(os.getenv("SMTP_SERVER"), int(os.getenv("SMTP_PORT", 587)))
         server.starttls()
         server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
-        from_email_addr = os.getenv("FROM_EMAIL") or os.getenv("SMTP_USERNAME") or "no-reply@kaisanalytics.com"
         server.sendmail(from_email_addr, email, msg.as_string())
+        server.quit()
         server.quit()
         return True
     except Exception as e:

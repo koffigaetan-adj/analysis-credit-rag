@@ -39,9 +39,9 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
         
         if FROM_NAME:
             encoded_name = str(Header(FROM_NAME, 'utf-8'))
-            msg['From'] = formataddr((encoded_name, REPLY_TO))
+            msg['From'] = formataddr((encoded_name, FROM_EMAIL))
         else:
-            msg['From'] = REPLY_TO
+            msg['From'] = FROM_EMAIL
             
         msg['Reply-To'] = REPLY_TO
         msg['To'] = to_email
