@@ -994,7 +994,7 @@ def request_account(request: CreateAccountRequest, background_tasks: BackgroundT
     db.commit()
 
     # 1. Mail au demandeur : confirmation de transmission
-    requester_subject = "Kaïs Analytics - Demande d'accès transmise"
+    requester_subject = "Demande d'accès transmise"
     requester_html = f"""
     <h3 style="color: #0f172a; margin-top: 0;">Demande bien transmise</h3>
     <p>Bonjour {request.first_name},</p>
@@ -1107,10 +1107,11 @@ def approve_request_endpoint(
           <li><strong>Email :</strong> {new_user.email}</li>
           <li><strong>Mot de passe temporaire :</strong> {approval.password}</li>
         </ul>
-        <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
+        
         <div style="margin-top: 25px; text-align: center;">
             <a href="https://kais-analytics.vercel.app/login" style="background-color: #E73919; color: white; padding: 10px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accéder à Kaïs</a>
         </div>
+        <p>Lors de votre première connexion, vous serez invité(e) à modifier ce mot de passe.</p>
         <br>
         <p>L'équipe Kaïs Analytics</p>
       </body>
