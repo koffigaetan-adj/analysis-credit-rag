@@ -604,7 +604,7 @@ export default function Backoffice() {
   const ROLE_COLORS: Record<string, string> = {
     SUPER_ADMIN: 'text-purple-400 border-purple-700 bg-purple-500/10',
     ADMIN: 'text-indigo-400 border-indigo-700 bg-indigo-500/10',
-    ANALYST: 'text-slate-400 border-slate-700 bg-slate-800/50',
+    ANALYST: 'text-slate-200 border-slate-700 bg-slate-800/50',
   };
 
   const uniqueRoles = [...new Set(members.map(m => m.role))];
@@ -619,7 +619,7 @@ export default function Backoffice() {
         </div>
 
         <div className="p-3 border-b border-slate-800/50 mx-3 mt-3 rounded-xl bg-slate-800/30">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Connecté en tant que</p>
+          <p className="text-[10px] text-slate-300 uppercase tracking-wider">Connecté en tant que</p>
           <p className="text-slate-200 font-medium text-xs mt-0.5 truncate">{backofficeUser.name || 'Admin'}</p>
           <span className="text-[10px]" style={{ color: '#a89fdb' }}>{backofficeUser.role || 'SYSTEM_ADMIN'}</span>
         </div>
@@ -637,7 +637,7 @@ export default function Backoffice() {
               onClick={() => setActiveTab(id)}
               style={activeTab === id ? { background: 'rgba(100,92,165,0.12)', color: '#a89fdb', borderColor: 'rgba(100,92,165,0.3)' } : {}}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm border ${
-                activeTab === id ? 'font-semibold' : 'border-transparent hover:bg-slate-800/60 text-slate-400 hover:text-white'
+                activeTab === id ? 'font-semibold' : 'border-transparent hover:bg-slate-800/60 text-slate-200 hover:text-white'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -654,7 +654,7 @@ export default function Backoffice() {
         <div className="p-3 border-t border-slate-800 space-y-1">
           <button
             onClick={() => setShow2FAModal(true)}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm ${backofficeUser.two_factor_enabled ? 'text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60'}`}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm ${backofficeUser.two_factor_enabled ? 'text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10' : 'text-slate-300 hover:text-slate-300 hover:bg-slate-800/60'}`}
           >
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-4 h-4" />
@@ -666,7 +666,7 @@ export default function Backoffice() {
           </button>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all text-sm"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-500/10 transition-all text-sm"
           >
             <LogOut className="w-4 h-4" />
             Déconnexion
@@ -685,7 +685,7 @@ export default function Backoffice() {
               {activeTab === 'communications' && 'Communications'}
               {activeTab === 'logs' && 'Logs & Monitoring Système'}
             </h2>
-            <p className="text-slate-500 text-xs mt-0.5">
+            <p className="text-slate-300 text-xs mt-0.5">
               {activeTab === 'logs' ? `${logsTotal} entrée(s) enregistrée(s) — données en temps réel.` : 'Administration système — données en temps réel.'}
             </p>
           </div>
@@ -705,7 +705,7 @@ export default function Backoffice() {
 
         <div className="flex-1 overflow-y-auto p-8">
           {isLoading ? (
-            <div className="flex h-40 items-center justify-center text-slate-500 gap-3">
+            <div className="flex h-40 items-center justify-center text-slate-300 gap-3">
               <Loader2 className="w-5 h-5 animate-spin" /> Chargement des données...
             </div>
           ) : (
@@ -718,7 +718,7 @@ export default function Backoffice() {
                       <div className="flex justify-between items-center mb-8">
                         <div>
                           <h2 className="text-2xl font-bold text-white mb-2">Communications & Notifications</h2>
-                          <p className="text-slate-400">Diffusez des messages importants à vos utilisateurs.</p>
+                          <p className="text-slate-200">Diffusez des messages importants à vos utilisateurs.</p>
                         </div>
                         {smtpStatus && (
                           <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${smtpStatus.is_configured ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
@@ -744,12 +744,12 @@ export default function Backoffice() {
 
                       <form onSubmit={handleBroadcast} className="space-y-6">
                         <div className="space-y-3">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Cible du message</label>
+                          <label className="text-xs font-bold text-slate-300 uppercase tracking-widest">Cible du message</label>
                           <div className="grid grid-cols-2 gap-3">
                             <button
                               type="button"
                               onClick={() => setCommForm(f => ({ ...f, target: 'ALL' }))}
-                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'ALL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'ALL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-200 hover:border-slate-500'}`}
                             >
                               <Users className="w-5 h-5" />
                               <div className="text-left">
@@ -760,7 +760,7 @@ export default function Backoffice() {
                             <button
                               type="button"
                               onClick={() => setCommForm(f => ({ ...f, target: 'EMAIL' }))}
-                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'EMAIL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'EMAIL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-200 hover:border-slate-500'}`}
                             >
                               <Mail className="w-5 h-5" />
                               <div className="text-left">
@@ -773,7 +773,7 @@ export default function Backoffice() {
 
                         {commForm.target === 'EMAIL' && (
                           <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Adresse Email du destinataire</label>
+                            <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Adresse Email du destinataire</label>
                             <input
                               required
                               type="email"
@@ -787,7 +787,7 @@ export default function Backoffice() {
 
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Sujet (Titre de la notification)</label>
+                            <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Sujet (Titre de la notification)</label>
                             <input
                               required
                               type="text"
@@ -801,15 +801,15 @@ export default function Backoffice() {
                           <div>
                             <div className="flex justify-between items-center mb-2">
                               <div className="flex items-center gap-4">
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Message détaillé</label>
+                                <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest">Message détaillé</label>
                                 <div className="flex items-center gap-1 bg-[#0F1523] p-1 rounded-lg border border-slate-800">
-                                  <button type="button" onClick={() => insertFormat('**', '**')} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Gras">
+                                  <button type="button" onClick={() => insertFormat('**', '**')} className="p-1 hover:bg-slate-800 rounded text-slate-200 hover:text-white transition-colors" title="Gras">
                                     <Bold className="w-3.5 h-3.5" />
                                   </button>
-                                  <button type="button" onClick={() => insertFormat('*', '*')} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Italique">
+                                  <button type="button" onClick={() => insertFormat('*', '*')} className="p-1 hover:bg-slate-800 rounded text-slate-200 hover:text-white transition-colors" title="Italique">
                                     <Italic className="w-3.5 h-3.5" />
                                   </button>
-                                  <button type="button" onClick={() => insertFormat('[', '](url)')} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Lien">
+                                  <button type="button" onClick={() => insertFormat('[', '](url)')} className="p-1 hover:bg-slate-800 rounded text-slate-200 hover:text-white transition-colors" title="Lien">
                                     <Link className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
@@ -849,7 +849,7 @@ export default function Backoffice() {
                               Doubler l'envoi par Email
                             </label>
                           </div>
-                          <p className="text-[10px] text-slate-500 italic">L'email inclura votre signature Kaïs.</p>
+                          <p className="text-[10px] text-slate-300 italic">L'email inclura votre signature Kaïs.</p>
                         </div>
 
                         <button
@@ -870,7 +870,7 @@ export default function Backoffice() {
                           <Clock className="w-5 h-5 text-[#a89fdb]" />
                           <h3 className="text-white font-semibold">Historique des communications</h3>
                         </div>
-                        <span className="text-[10px] bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest">
+                        <span className="text-[10px] bg-slate-800 text-slate-200 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest">
                           {commHistory.length} messages
                         </span>
                       </div>
@@ -879,16 +879,16 @@ export default function Backoffice() {
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="border-b border-slate-800/50 bg-[#0B0F19]/30">
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Date</th>
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Expéditeur</th>
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Destinataire</th>
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sujet</th>
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Date</th>
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Expéditeur</th>
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Destinataire</th>
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Sujet</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-800/30">
                             {commHistory.length === 0 ? (
                               <tr>
-                                <td colSpan={4} className="px-6 py-10 text-center text-slate-500 text-sm italic">
+                                <td colSpan={4} className="px-6 py-10 text-center text-slate-300 text-sm italic">
                                   Aucun historique pour le moment.
                                 </td>
                               </tr>
@@ -899,7 +899,7 @@ export default function Backoffice() {
                                     <div className="text-slate-300 font-medium">
                                       {new Date(h.created_at).toLocaleDateString('fr-FR')}
                                     </div>
-                                    <div className="text-[10px] text-slate-500">
+                                    <div className="text-[10px] text-slate-300">
                                       {new Date(h.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                   </td>
@@ -918,7 +918,7 @@ export default function Backoffice() {
                                   </td>
                                   <td className="px-6 py-4">
                                     <div className="text-slate-200 font-medium line-clamp-1">{h.title}</div>
-                                    <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">{h.message}</div>
+                                    <div className="text-[10px] text-slate-300 line-clamp-1 mt-0.5">{h.message}</div>
                                   </td>
                                 </tr>
                               ))
@@ -938,7 +938,7 @@ export default function Backoffice() {
                   ERROR:    'bg-rose-500/20 text-rose-300 border-rose-500/40',
                   WARNING:  'bg-amber-500/20 text-amber-300 border-amber-500/40',
                   INFO:     'bg-blue-500/20 text-blue-300 border-blue-500/40',
-                  DEBUG:    'bg-slate-500/20 text-slate-400 border-slate-600',
+                  DEBUG:    'bg-slate-500/20 text-slate-200 border-slate-600',
                 };
                 const LEVEL_DOT: Record<string, string> = {
                   CRITICAL: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]',
@@ -958,14 +958,14 @@ export default function Backoffice() {
                           className={`p-3 rounded-xl border text-center transition-all ${logsFilter === lvl ? LEVEL_STYLES[lvl] : 'bg-[#121927] border-slate-800/60 hover:border-slate-700'}`}
                         >
                           <p className={`text-lg font-light ${logsFilter === lvl ? '' : 'text-slate-300'}`}>{logStats[lvl] || 0}</p>
-                          <p className="text-[9px] uppercase tracking-widest text-slate-500 mt-1">{lvl}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-slate-300 mt-1">{lvl}</p>
                         </button>
                       ))}
                     </div>
 
                     {/* Barre de contrôle */}
                     <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-4 flex flex-wrap gap-3 items-center">
-                      <Terminal className="w-4 h-4 text-slate-500 shrink-0" />
+                      <Terminal className="w-4 h-4 text-slate-300 shrink-0" />
 
                       {/* Filtre niveau */}
                       <select
@@ -983,7 +983,7 @@ export default function Backoffice() {
 
                       {/* Dates */}
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0F1523] border border-slate-700 rounded-lg text-sm text-slate-300">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <Clock className="w-3.5 h-3.5 text-slate-300" />
                         <input
                           type="date"
                           value={logsStartDate}
@@ -998,7 +998,7 @@ export default function Backoffice() {
                           className="bg-transparent outline-none text-xs text-slate-300 w-28 [color-scheme:dark]"
                         />
                         {(logsStartDate || logsEndDate) && (
-                          <button onClick={() => { setLogsStartDate(''); setLogsEndDate(''); }} className="text-slate-500 hover:text-rose-400">
+                          <button onClick={() => { setLogsStartDate(''); setLogsEndDate(''); }} className="text-slate-300 hover:text-rose-400">
                             <XCircle className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -1007,7 +1007,7 @@ export default function Backoffice() {
                       {/* Auto-refresh */}
                       <button
                         onClick={() => setLogsAutoRefresh(v => !v)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${logsAutoRefresh ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-[#0F1523] text-slate-400 border-slate-700 hover:border-slate-500'}`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${logsAutoRefresh ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-[#0F1523] text-slate-200 border-slate-700 hover:border-slate-500'}`}
                       >
                         <Wifi className="w-3.5 h-3.5" />
                         {logsAutoRefresh ? 'Live (30s)' : 'Auto-refresh'}
@@ -1023,7 +1023,7 @@ export default function Backoffice() {
                         Rafraîchir
                       </button>
 
-                      <span className="text-xs text-slate-500 ml-auto">{logs.length} / {logsTotal} log(s)</span>
+                      <span className="text-xs text-slate-300 ml-auto">{logs.length} / {logsTotal} log(s)</span>
 
                       {/* Télécharger */}
                       <button
@@ -1056,7 +1056,7 @@ export default function Backoffice() {
                     {/* Tableau des logs */}
                     <div className="bg-[#121927] border border-slate-800/60 rounded-xl overflow-hidden">
                       {logsLoading && logs.length === 0 ? (
-                        <div className="flex h-32 items-center justify-center gap-3 text-slate-500">
+                        <div className="flex h-32 items-center justify-center gap-3 text-slate-300">
                           <Loader2 className="w-5 h-5 animate-spin" /> Chargement des logs...
                         </div>
                       ) : logs.length === 0 ? (
@@ -1092,7 +1092,7 @@ export default function Backoffice() {
                                     <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
                                       log.status_code >= 500 ? 'text-red-400 border-red-500/30 bg-red-500/10' :
                                       log.status_code >= 400 ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' :
-                                      'text-slate-500 border-slate-700'
+                                      'text-slate-300 border-slate-700'
                                     }`}>
                                       {log.method} {log.status_code}
                                     </span>
@@ -1103,8 +1103,8 @@ export default function Backoffice() {
                                   </div>
                                   {(log.traceback || log.path) && (
                                     expandedLog === log.id
-                                      ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
-                                      : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                                      ? <ChevronUp className="w-3.5 h-3.5 text-slate-300" />
+                                      : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
                                   )}
                                 </div>
                               </div>
@@ -1113,21 +1113,21 @@ export default function Backoffice() {
                               {expandedLog === log.id && (
                                 <div className="px-5 pb-4 space-y-3 animate-fade-in">
                                   {log.source && (
-                                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-300">
                                       <span className="text-slate-600">Source :</span>
-                                      <span className="font-mono text-slate-400">{log.source}</span>
+                                      <span className="font-mono text-slate-200">{log.source}</span>
                                     </div>
                                   )}
                                   {log.logger_name && (
-                                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-300">
                                       <span className="text-slate-600">Logger :</span>
-                                      <span className="font-mono text-slate-400">{log.logger_name}</span>
+                                      <span className="font-mono text-slate-200">{log.logger_name}</span>
                                     </div>
                                   )}
                                   {log.path && (
-                                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-300">
                                       <span className="text-slate-600">Endpoint :</span>
-                                      <span className="font-mono text-slate-400">{log.method} {log.path}</span>
+                                      <span className="font-mono text-slate-200">{log.method} {log.path}</span>
                                     </div>
                                   )}
                                   {log.traceback && (
@@ -1153,7 +1153,7 @@ export default function Backoffice() {
               {activeTab === 'dashboard' && (
                 <div className="space-y-6">
                   {statsLoading && !dashboardStats ? (
-                    <div className="flex h-40 items-center justify-center text-slate-500 gap-3">
+                    <div className="flex h-40 items-center justify-center text-slate-300 gap-3">
                       <Loader2 className="w-5 h-5 animate-spin" /> Chargement des statistiques...
                     </div>
                   ) : dashboardStats ? (
@@ -1206,11 +1206,11 @@ export default function Backoffice() {
                           <div className="absolute inset-0 rounded-xl opacity-30" style={{ background: `radial-gradient(ellipse at top right, ${glow} 0%, transparent 70%)` }} />
                           <div className="relative">
                             <div className="flex items-center justify-between mb-3">
-                              <p className="text-xs text-slate-500 uppercase tracking-wider">{label}</p>
+                              <p className="text-xs text-slate-300 uppercase tracking-wider">{label}</p>
                               <Icon className="w-4 h-4 opacity-50" style={{ color }} />
                             </div>
                             <p className="text-3xl font-light mb-1" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
-                            <p className="text-xs text-slate-500">{sub}</p>
+                            <p className="text-xs text-slate-300">{sub}</p>
                             {badge && (
                               <span className={`mt-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
                             )}
@@ -1226,7 +1226,7 @@ export default function Backoffice() {
                         <div className="flex items-center justify-between mb-5">
                           <div>
                             <h3 className="text-white font-medium text-sm">Activité — 7 derniers jours</h3>
-                            <p className="text-slate-500 text-xs mt-0.5">Analyses & Connexions par jour</p>
+                            <p className="text-slate-300 text-xs mt-0.5">Analyses & Connexions par jour</p>
                           </div>
                           <div className="flex items-center gap-4 text-xs">
                             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block"/>Analyses</span>
@@ -1267,7 +1267,7 @@ export default function Backoffice() {
                       {/* Répartition décisions */}
                       <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
                         <h3 className="text-white font-medium text-sm mb-1">Décisions IA</h3>
-                        <p className="text-slate-500 text-xs mb-4">Score moyen : <span className="text-violet-300 font-medium">{dashboardStats.analyses.avg_score}/100</span></p>
+                        <p className="text-slate-300 text-xs mb-4">Score moyen : <span className="text-violet-300 font-medium">{dashboardStats.analyses.avg_score}/100</span></p>
                         <div className="space-y-3">
                           {Object.entries(dashboardStats.analyses.decision_breakdown).length === 0 ? (
                             <p className="text-slate-600 text-xs italic">Aucune analyse enregistrée.</p>
@@ -1286,7 +1286,7 @@ export default function Backoffice() {
                                 <div key={decision}>
                                   <div className="flex justify-between text-xs mb-1">
                                     <span style={{ color }}>{decision}</span>
-                                    <span className="text-slate-400">{count} ({pct}%)</span>
+                                    <span className="text-slate-200">{count} ({pct}%)</span>
                                   </div>
                                   <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                     <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
@@ -1308,7 +1308,7 @@ export default function Backoffice() {
                         { label: 'Établissements actifs', value: dashboardStats.establishments.active, sub: `sur ${dashboardStats.establishments.total} au total`, color: '#60a5fa' },
                       ].map(({ label, value, sub, color }) => (
                         <div key={label} className="bg-[#121927] border border-slate-800/60 p-4 rounded-xl">
-                          <p className="text-xs text-slate-500 mb-2">{label}</p>
+                          <p className="text-xs text-slate-300 mb-2">{label}</p>
                           <p className="text-2xl font-light" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
                           <p className="text-xs text-slate-600 mt-1">{sub}</p>
                         </div>
@@ -1334,7 +1334,7 @@ export default function Backoffice() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex justify-between text-xs mb-1">
                                       <span className="text-slate-200 truncate font-medium">{u.name}</span>
-                                      <span className="text-slate-400 shrink-0 ml-2">{u.count} analyse{u.count > 1 ? 's' : ''}</span>
+                                      <span className="text-slate-200 shrink-0 ml-2">{u.count} analyse{u.count > 1 ? 's' : ''}</span>
                                     </div>
                                     <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
                                       <div className="h-full rounded-full bg-violet-400/60 transition-all duration-700" style={{ width: `${(u.count / max) * 100}%` }} />
@@ -1395,7 +1395,7 @@ export default function Backoffice() {
                 <div className="bg-[#121927] border border-slate-800/60 rounded-xl overflow-hidden">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="bg-[#0F1523] text-slate-500 text-xs uppercase tracking-wider border-b border-slate-800">
+                      <tr className="bg-[#0F1523] text-slate-300 text-xs uppercase tracking-wider border-b border-slate-800">
                         <th className="px-5 py-3 font-medium">Établissement</th>
                         <th className="px-5 py-3 font-medium">Adresse</th>
                         <th className="px-5 py-3 font-medium">Membres</th>
@@ -1406,7 +1406,7 @@ export default function Backoffice() {
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
                       {establishments.length === 0 && (
-                        <tr><td colSpan={6} className="p-8 text-center text-slate-500">Aucun établissement enregistré.</td></tr>
+                        <tr><td colSpan={6} className="p-8 text-center text-slate-300">Aucun établissement enregistré.</td></tr>
                       )}
                       {establishments.map(est => {
                         const count = members.filter(m => m.establishment === est.name).length;
@@ -1415,9 +1415,9 @@ export default function Backoffice() {
                             <td className="px-5 py-4 text-slate-200 font-medium">
                 {est.name}
             </td>
-                            <td className="px-5 py-4 text-slate-400 text-sm">{est.address || <span className="text-slate-600 italic">Non renseignée</span>}</td>
-                            <td className="px-5 py-4 text-slate-400 text-sm">{count} membre{count !== 1 ? 's' : ''}</td>
-                            <td className="px-5 py-4 text-slate-500 text-xs font-mono">
+                            <td className="px-5 py-4 text-slate-200 text-sm">{est.address || <span className="text-slate-600 italic">Non renseignée</span>}</td>
+                            <td className="px-5 py-4 text-slate-200 text-sm">{count} membre{count !== 1 ? 's' : ''}</td>
+                            <td className="px-5 py-4 text-slate-300 text-xs font-mono">
                               {est.created_at ? new Date(est.created_at).toLocaleDateString('fr-FR') : '—'}
                             </td>
                             <td className="px-5 py-4 text-center">
@@ -1451,11 +1451,11 @@ export default function Backoffice() {
                 <div className="space-y-4">
                   {/* Barre de filtres */}
                   <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-4 flex flex-wrap gap-3 items-center">
-                    <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+                    <Filter className="w-4 h-4 text-slate-300 shrink-0" />
 
                     {/* Recherche texte */}
                     <div className="relative flex-1 min-w-[180px]">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
                       <input
                         type="text"
                         placeholder="Nom, email…"
@@ -1501,7 +1501,7 @@ export default function Backoffice() {
                     </select>
 
                     {/* Compteur */}
-                    <span className="text-xs text-slate-500 ml-auto">
+                    <span className="text-xs text-slate-300 ml-auto">
                       {filteredMembers.length} / {members.length} utilisateur{members.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -1510,7 +1510,7 @@ export default function Backoffice() {
                   <div className="bg-[#121927] border border-slate-800/60 rounded-xl overflow-hidden">
                     <table className="w-full text-left">
                       <thead>
-                        <tr className="bg-[#0F1523] text-slate-500 text-xs uppercase tracking-wider border-b border-slate-800">
+                        <tr className="bg-[#0F1523] text-slate-300 text-xs uppercase tracking-wider border-b border-slate-800">
                           <th className="px-5 py-3 font-medium">Utilisateur</th>
                           <th className="px-5 py-3 font-medium">Établissement</th>
                           <th className="px-5 py-3 font-medium">Rôle</th>
@@ -1520,13 +1520,13 @@ export default function Backoffice() {
                       </thead>
                       <tbody className="divide-y divide-slate-800/50">
                         {filteredMembers.length === 0 && (
-                          <tr><td colSpan={5} className="p-8 text-center text-slate-500">Aucun utilisateur trouvé avec ces filtres.</td></tr>
+                          <tr><td colSpan={5} className="p-8 text-center text-slate-300">Aucun utilisateur trouvé avec ces filtres.</td></tr>
                         )}
                         {filteredMembers.map(usr => (
                           <tr key={usr.id} className="hover:bg-slate-800/20 transition-colors group">
                             <td className="px-5 py-4">
                               <div className="text-slate-200 font-medium">{usr.first_name} {usr.last_name}</div>
-                              <div className="text-slate-500 text-xs mt-0.5">{usr.email}</div>
+                              <div className="text-slate-300 text-xs mt-0.5">{usr.email}</div>
                             </td>
                             <td className="px-5 py-4 text-sm">
                               {usr.establishment
@@ -1587,7 +1587,7 @@ export default function Backoffice() {
       {showEstModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#121927] border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl p-6 relative">
-            <button onClick={() => setShowEstModal(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white">
+            <button onClick={() => setShowEstModal(false)} className="absolute top-4 right-4 text-slate-300 hover:text-white">
               <XCircle className="w-5 h-5" />
             </button>
             <h3 className="text-lg font-semibold text-white mb-5">
@@ -1600,13 +1600,13 @@ export default function Backoffice() {
             )}
             <form onSubmit={handleSaveEst} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Nom (unique) *</label>
+                <label className="block text-xs font-medium text-slate-200 mb-1">Nom (unique) *</label>
                 <input required type="text" value={estForm.name} onChange={e => setEstForm(f => ({ ...f, name: e.target.value }))}
                   className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                   placeholder="Ex: Agence Nord" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Adresse</label>
+                <label className="block text-xs font-medium text-slate-200 mb-1">Adresse</label>
                 <input type="text" value={estForm.address} onChange={e => setEstForm(f => ({ ...f, address: e.target.value }))}
                   className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                   placeholder="Adresse complète" />
@@ -1615,11 +1615,11 @@ export default function Backoffice() {
               {/* Color Picker */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-medium text-slate-400">Couleur thème du logiciel</label>
+                  <label className="block text-xs font-medium text-slate-200">Couleur thème du logiciel</label>
                   <button
                     type="button"
                     onClick={() => setEstForm(f => ({ ...f, primary_color: '#E73919' }))}
-                    className="text-[10px] text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+                    className="text-[10px] text-slate-300 hover:text-slate-300 underline underline-offset-2 transition-colors"
                   >
                     ↺ Couleur par défaut
                   </button>
@@ -1636,7 +1636,7 @@ export default function Backoffice() {
                     <p className="text-white text-sm font-medium" style={{ color: estForm.primary_color }}>
                       Aperçu — Couleur de l'établissement
                     </p>
-                    <p className="text-slate-500 text-xs font-mono mt-0.5">{estForm.primary_color}</p>
+                    <p className="text-slate-300 text-xs font-mono mt-0.5">{estForm.primary_color}</p>
                   </div>
                   <span
                     className="ml-auto text-xs px-3 py-1.5 rounded-lg font-medium text-white"
@@ -1651,7 +1651,7 @@ export default function Backoffice() {
               {editingEst && (
                 <div className="border-t border-slate-700/50 pt-4 mt-2">
                   <label className="block text-xs font-medium text-slate-300 mb-2">Politique de Crédit (RAG IA)</label>
-                  <p className="text-[10px] text-slate-500 mb-3 leading-tight">
+                  <p className="text-[10px] text-slate-300 mb-3 leading-tight">
                     Ajoutez un document (PDF/TXT) contenant les règles d'octroi de crédit. L'Intelligence Artificielle s'appuiera dessus pour analyser tous les dossiers de cette agence.
                   </p>
                   <div className="flex gap-2">
@@ -1668,7 +1668,7 @@ export default function Backoffice() {
               )}
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowEstModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">Annuler</button>
+                <button type="button" onClick={() => setShowEstModal(false)} className="px-4 py-2 text-slate-200 hover:text-white transition-colors text-sm">Annuler</button>
                 <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium text-sm disabled:opacity-50 hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
                   {isSubmitting ? 'Enregistrement...' : (editingEst ? 'Sauvegarder' : 'Créer')}
                 </button>
@@ -1683,7 +1683,7 @@ export default function Backoffice() {
       {showUsrModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#121927] border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl p-6 relative">
-            <button onClick={() => setShowUsrModal(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white">
+            <button onClick={() => setShowUsrModal(false)} className="absolute top-4 right-4 text-slate-300 hover:text-white">
               <XCircle className="w-5 h-5" />
             </button>
             <h3 className="text-lg font-semibold text-white mb-5">
@@ -1699,13 +1699,13 @@ export default function Backoffice() {
               {/* Prénom + Nom séparés */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Prénom *</label>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Prénom *</label>
                   <input required type="text" value={usrForm.first_name} onChange={e => setUsrForm(f => ({ ...f, first_name: e.target.value }))}
                     className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                     placeholder="Jean" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Nom *</label>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Nom *</label>
                   <input required type="text" value={usrForm.last_name} onChange={e => setUsrForm(f => ({ ...f, last_name: e.target.value }))}
                     className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                     placeholder="Dupont" />
@@ -1713,7 +1713,7 @@ export default function Backoffice() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Email *</label>
+                <label className="block text-xs font-medium text-slate-200 mb-1">Email *</label>
                 <input required type="email" value={usrForm.email} onChange={e => setUsrForm(f => ({ ...f, email: e.target.value }))}
                   className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
                   placeholder="jean.dupont@email.com" />
@@ -1721,7 +1721,7 @@ export default function Backoffice() {
 
               {!editingUsr && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Mot de passe provisoire</label>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Mot de passe provisoire</label>
                   <input type="text" value={usrForm.tempPwd} onChange={e => setUsrForm(f => ({ ...f, tempPwd: e.target.value }))}
                     className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all font-mono"
                     placeholder="Laisser vide → TempPass123!" />
@@ -1730,7 +1730,7 @@ export default function Backoffice() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Rôle *</label>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Rôle *</label>
                   <select value={usrForm.role} onChange={e => setUsrForm(f => ({ ...f, role: e.target.value }))}
                     className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all">
                     <option value="ANALYST">Analyste</option>
@@ -1739,7 +1739,7 @@ export default function Backoffice() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Établissement</label>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Établissement</label>
                   <select value={usrForm.establishment} onChange={e => setUsrForm(f => ({ ...f, establishment: e.target.value }))}
                     className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all">
                     <option value="">— Aucun —</option>
@@ -1751,7 +1751,7 @@ export default function Backoffice() {
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowUsrModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">Annuler</button>
+                <button type="button" onClick={() => setShowUsrModal(false)} className="px-4 py-2 text-slate-200 hover:text-white transition-colors text-sm">Annuler</button>
                 <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium text-sm disabled:opacity-50 hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
                   {isSubmitting ? 'Enregistrement...' : (editingUsr ? 'Sauvegarder' : 'Créer le compte')}
                 </button>
@@ -1771,7 +1771,7 @@ export default function Backoffice() {
               <button
                 onClick={() => setUserToDelete(null)}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-slate-200 hover:text-white transition-colors"
               >
                 Annuler
               </button>
@@ -1797,7 +1797,7 @@ export default function Backoffice() {
               </div>
               <div>
                 <h3 className="text-white font-semibold text-sm">Envoyer les logs par email</h3>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-slate-300 text-xs mt-0.5">
                   Filtre actif : <span className="text-violet-300">{logsFilter}</span> — {logsTotal} entrée(s)
                 </p>
               </div>
@@ -1812,7 +1812,7 @@ export default function Backoffice() {
 
             <form onSubmit={handleSendLogs} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Adresse destinataire</label>
+                <label className="block text-xs font-medium text-slate-200 mb-1.5">Adresse destinataire</label>
                 <input
                   required
                   type="email"
@@ -1828,7 +1828,7 @@ export default function Backoffice() {
                   type="button"
                   onClick={() => setShowSendLogsModal(false)}
                   disabled={sendLogsLoading}
-                  className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+                  className="px-4 py-2 text-sm text-slate-200 hover:text-white transition-colors"
                 >
                   Annuler
                 </button>
