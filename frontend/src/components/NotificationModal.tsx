@@ -18,9 +18,9 @@ export default function NotificationModal({ notification, onClose }: Notificatio
     if (!text) return { __html: '' };
     // Basic markdown-like parsing
     const html = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-blue-500 hover:underline cursor-pointer font-medium">$1</a>');
+      .replace(/\*\*(.*?)\*\*/gs, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gs, '<em>$1</em>')
+      .replace(/\[(.*?)\]\((.*?)\)/gs, '<a href="$2" target="_blank" class="text-blue-500 hover:underline cursor-pointer font-medium">$1</a>');
     
     return { __html: html };
   };

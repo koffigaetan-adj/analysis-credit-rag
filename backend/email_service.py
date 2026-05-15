@@ -21,11 +21,11 @@ def markdown_to_html(text: str) -> str:
     import re
     if not text: return ""
     # Gras
-    text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
+    text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text, flags=re.DOTALL)
     # Italique
-    text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', text)
+    text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', text, flags=re.DOTALL)
     # Liens
-    text = re.sub(r'\[(.*?)\]\((.*?)\)', r'<a href="\2" style="color: #2563eb; text-decoration: underline;">\1</a>', text)
+    text = re.sub(r'\[(.*?)\]\((.*?)\)', r'<a href="\2" style="color: #2563eb; text-decoration: underline;">\1</a>', text, flags=re.DOTALL)
     # Newlines
     text = text.replace('\n', '<br>')
     return text

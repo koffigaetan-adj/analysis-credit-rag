@@ -113,6 +113,8 @@ export default function Backoffice() {
   const [commSuccess, setCommSuccess] = useState<string | null>(null);
   const [commError, setCommError] = useState<string | null>(null);
   const [commHistory, setCommHistory] = useState<any[]>([]);
+  const [commView, setCommView] = useState<'new' | 'history'>('new');
+  const [selectedComm, setSelectedComm] = useState<any>(null);
   const [smtpStatus, setSmtpStatus] = useState<{ is_configured: boolean; missing_variables: string[] } | null>(null);
   const [aiRefining, setAIRefining] = useState(false);
   const [establishments, setEstablishments] = useState<Est[]>([]);
@@ -412,6 +414,8 @@ export default function Backoffice() {
           message: '',
           sendEmail: false
         });
+        fetchCommHistory();
+        setTimeout(() => setCommSuccess(null), 5000);
       } else {
         const data = await res.json();
         setCommError(data.detail || "Erreur lors de l'envoi.");
@@ -720,15 +724,25 @@ export default function Backoffice() {
                           <h2 className="text-2xl font-bold text-white mb-2">Communications & Notifications</h2>
                           <p className="text-slate-200">Diffusez des messages importants à vos utilisateurs.</p>
                         </div>
-                        {smtpStatus && (
-                          <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${smtpStatus.is_configured ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
-                            <div className={`w-2 h-2 rounded-full ${smtpStatus.is_configured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></div>
-                            <span className="text-xs font-bold uppercase tracking-wider">
-                              {smtpStatus.is_configured ? 'Service Email Actif' : 'Email non configuré'}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex bg-[#0B0F19] p-1 rounded-xl border border-slate-800">
+                          <button
+                            onClick={() => setCommView('new')}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${commView === 'new' ? 'bg-[#645CA5] text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                          >
+                            Nouvelle Diffusion
+                          </button>
+                          <button
+                            onClick={() => setCommView('history')}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${commView === 'history' ? 'bg-[#645CA5] text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                          >
+                            Historique
+                            <span className="bg-[#0F1523] px-1.5 py-0.5 rounded text-[10px]">{commHistory.length}</span>
+                          </button>
+                        </div>
                       </div>
+
+                      {commView === 'new' && (
+                        <div className="animate-in fade-in slide-in-from-left-2">
 
                       {commSuccess && (
                         <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2">
@@ -861,71 +875,83 @@ export default function Backoffice() {
                           DIFFUSER LE MESSAGE MAINTENANT
                         </button>
                       </form>
-                    </div>
-
-                    {/* HISTORIQUE */}
-                    <div className="bg-[#121927] border border-slate-800/60 rounded-2xl overflow-hidden shadow-xl mt-8">
-                      <div className="p-6 border-b border-slate-800/50 bg-[#0F1523]/50 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Clock className="w-5 h-5 text-[#a89fdb]" />
-                          <h3 className="text-white font-semibold">Historique des communications</h3>
                         </div>
-                        <span className="text-[10px] bg-slate-800 text-slate-200 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest">
-                          {commHistory.length} messages
-                        </span>
-                      </div>
-                      
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-800/50 bg-[#0B0F19]/30">
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Date</th>
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Expéditeur</th>
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Destinataire</th>
-                              <th className="px-6 py-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Sujet</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-800/30">
-                            {commHistory.length === 0 ? (
-                              <tr>
-                                <td colSpan={4} className="px-6 py-10 text-center text-slate-300 text-sm italic">
-                                  Aucun historique pour le moment.
-                                </td>
-                              </tr>
-                            ) : (
-                              commHistory.map((h: any) => (
-                                <tr key={h.id} className="hover:bg-white/[0.02] transition-colors group">
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-slate-300 font-medium">
-                                      {new Date(h.created_at).toLocaleDateString('fr-FR')}
-                                    </div>
-                                    <div className="text-[10px] text-slate-300">
-                                      {new Date(h.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-400">
-                                        {h.sender_name?.[0] || 'A'}
-                                      </div>
-                                      <span className="text-slate-300 font-medium">{h.sender_name || 'Admin'}</span>
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${h.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                                      {h.target_email || 'Inconnu'}
-                                    </span>
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <div className="text-slate-200 font-medium line-clamp-1">{h.title}</div>
-                                    <div className="text-[10px] text-slate-300 line-clamp-1 mt-0.5">{h.message}</div>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                      )}
+
+                      {/* HISTORIQUE */}
+                      {commView === 'history' && (
+                        <div className="animate-in fade-in slide-in-from-right-2 mt-8">
+                          <div className="bg-[#121927] border border-slate-800/60 rounded-2xl overflow-hidden shadow-xl">
+                            <div className="p-6 border-b border-slate-800/50 bg-[#0F1523]/50 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Clock className="w-5 h-5 text-[#a89fdb]" />
+                                <h3 className="text-white font-semibold">Historique des diffusions envoyées</h3>
+                              </div>
+                            </div>
+                            
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-slate-800/50 bg-[#0B0F19]/30">
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Date</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Expéditeur</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Destinataire</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Sujet</th>
+                                    <th className="px-6 py-4"></th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/30">
+                                  {commHistory.length === 0 ? (
+                                    <tr>
+                                      <td colSpan={5} className="px-6 py-10 text-center text-slate-300 text-sm italic">
+                                        Aucun historique pour le moment.
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    commHistory.map((h: any) => (
+                                      <tr key={h.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                          <div className="text-slate-100 font-medium">
+                                            {new Date(h.created_at).toLocaleDateString('fr-FR')}
+                                          </div>
+                                          <div className="text-[10px] text-slate-300">
+                                            {new Date(h.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                          </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-300">
+                                              {h.sender_name?.[0] || 'A'}
+                                            </div>
+                                            <span className="text-slate-100 font-medium">{h.sender_name || 'Admin'}</span>
+                                          </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${h.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                            {h.target_email || 'Inconnu'}
+                                          </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                          <div className="text-slate-100 font-medium line-clamp-1">{h.title}</div>
+                                          <div className="text-[10px] text-slate-300 line-clamp-1 mt-0.5">{h.message}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                          <button 
+                                            onClick={() => setSelectedComm(h)}
+                                            className="text-xs font-bold bg-slate-800 hover:bg-[#645CA5] text-slate-100 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+                                          >
+                                            Voir
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1206,11 +1232,11 @@ export default function Backoffice() {
                           <div className="absolute inset-0 rounded-xl opacity-30" style={{ background: `radial-gradient(ellipse at top right, ${glow} 0%, transparent 70%)` }} />
                           <div className="relative">
                             <div className="flex items-center justify-between mb-3">
-                              <p className="text-xs text-slate-300 uppercase tracking-wider">{label}</p>
+                              <p className="text-xs text-slate-100 uppercase tracking-wider">{label}</p>
                               <Icon className="w-4 h-4 opacity-50" style={{ color }} />
                             </div>
                             <p className="text-3xl font-light mb-1" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
-                            <p className="text-xs text-slate-300">{sub}</p>
+                            <p className="text-xs text-slate-200">{sub}</p>
                             {badge && (
                               <span className={`mt-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
                             )}
@@ -1843,6 +1869,59 @@ export default function Backoffice() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Communication Modal */}
+      {selectedComm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-[#0F1523] border border-slate-700 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-[#121927]">
+              <h3 className="text-xl font-bold text-white">Détails de la diffusion</h3>
+              <button onClick={() => setSelectedComm(null)} className="text-slate-400 hover:text-white transition-colors">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div className="flex flex-wrap gap-4 text-sm bg-[#0B0F19] p-4 rounded-xl border border-slate-800">
+                <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Date</span> <span className="text-slate-200 font-medium">{new Date(selectedComm.created_at).toLocaleString('fr-FR')}</span></div>
+                <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Expéditeur</span> <span className="text-slate-200 font-medium">{selectedComm.sender_name || 'Admin'}</span></div>
+                <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Destinataire(s)</span> 
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${selectedComm.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                    {selectedComm.target_email === 'TOUS' ? `${activeUsers} Personnes (Tous les utilisateurs)` : selectedComm.target_email}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-slate-500 text-xs uppercase tracking-widest font-bold mb-2">Sujet</h4>
+                <div className="text-white text-lg font-bold">{selectedComm.title}</div>
+              </div>
+
+              <div>
+                <h4 className="text-slate-500 text-xs uppercase tracking-widest font-bold mb-2">Message</h4>
+                <div className="bg-[#121927] p-5 rounded-xl border border-slate-800 text-slate-300 whitespace-pre-wrap leading-relaxed">
+                  {selectedComm.message}
+                </div>
+              </div>
+
+              {selectedComm.target_email === 'TOUS' && (
+                <div>
+                  <h4 className="text-slate-500 text-xs uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+                    <Users className="w-4 h-4" /> Liste des destinataires ({activeUsers})
+                  </h4>
+                  <div className="bg-[#121927] border border-slate-800 rounded-xl max-h-60 overflow-y-auto p-2">
+                    {members.filter(m => m.is_active).map(m => (
+                      <div key={m.id} className="flex justify-between items-center p-2 hover:bg-slate-800/50 rounded-lg">
+                        <span className="text-sm text-slate-300 font-medium">{m.first_name} {m.last_name}</span>
+                        <span className="text-xs text-slate-500">{m.email}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

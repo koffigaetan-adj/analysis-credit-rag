@@ -1268,7 +1268,11 @@ def get_notifications_history(
     db: Session = Depends(get_db),
     current_admin: UserBackoffice = Depends(get_current_backoffice_user)
 ):
-    notifs = db.query(Notification).filter(Notification.sender_name != None).order_by(Notification.created_at.desc()).limit(50).all()
+    notifs = db.query(Notification).filter(
+        Notification.sender_name != None,
+        Notification.sender_name != 'Système',
+        Notification.type == "INFO"
+    ).order_by(Notification.created_at.desc()).limit(50).all()
     return notifs
 
 @router.get("/backoffice/notifications/check-smtp")
