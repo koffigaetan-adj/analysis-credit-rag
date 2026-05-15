@@ -5,7 +5,7 @@ import {
   Lock, Loader2, LogOut, AlertTriangle, Search, Filter, ShieldCheck,
   Terminal, RefreshCw, Trash2, ChevronDown, ChevronUp, Clock, Wifi, Download,
   BarChart2, KeyRound, Zap, Trophy, Medal, Award, Star, Mail,
-  Megaphone, Send, Sparkles
+  Megaphone, Send, Sparkles, Bold, Italic, Link
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
@@ -112,6 +112,8 @@ export default function Backoffice() {
   const [commLoading, setCommLoading] = useState(false);
   const [commSuccess, setCommSuccess] = useState<string | null>(null);
   const [commError, setCommError] = useState<string | null>(null);
+  const [commHistory, setCommHistory] = useState<any[]>([]);
+  const [smtpStatus, setSmtpStatus] = useState<{ is_configured: boolean; missing_variables: string[] } | null>(null);
   const [aiRefining, setAIRefining] = useState(false);
   const [establishments, setEstablishments] = useState<Est[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -190,7 +192,42 @@ export default function Backoffice() {
     finally { setStatsLoading(false); }
   };
 
-  useEffect(() => { if (token) { fetchData(); fetchDashboardStats(); } }, [token]);
+  useEffect(() => {
+    if (token) {
+      fetchData();
+      fetchDashboardStats();
+      checkSmtpStatus();
+      fetchCommHistory();
+    }
+  }, [token]);
+
+  const fetchCommHistory = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/notifications/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCommHistory(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const checkSmtpStatus = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/notifications/check-smtp`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSmtpStatus(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // --- Logs ---
   const fetchLogs = useCallback(async (filter = logsFilter, start = logsStartDate, end = logsEndDate) => {
@@ -301,6 +338,25 @@ export default function Backoffice() {
     } finally {
       setSendLogsLoading(false);
     }
+  };
+
+  const insertFormat = (before: string, after: string) => {
+    const textarea = document.getElementById('comm-message') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = commForm.message;
+    const selected = text.substring(start, end);
+    const newText = text.substring(0, start) + before + selected + after + text.substring(end);
+    
+    setCommForm(f => ({ ...f, message: newText }));
+    
+    // Repositionner le curseur après le rendu
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, end + before.length);
+    }, 0);
   };
 
   const handleAIRefine = async () => {
@@ -659,14 +715,19 @@ export default function Backoffice() {
                 <div className="max-w-3xl mx-auto animate-fade-in">
                   <div className="bg-[#121927] border border-slate-800/60 rounded-2xl overflow-hidden shadow-xl">
                     <div className="p-8 border-b border-slate-800/50 bg-[#0F1523]/50">
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-[#645CA5]/15 border border-[#645CA5]/30 flex items-center justify-center">
-                          <Megaphone className="w-6 h-6 text-[#a89fdb]" />
-                        </div>
+                      <div className="flex justify-between items-center mb-8">
                         <div>
-                          <h3 className="text-white text-lg font-semibold">Diffuser une information</h3>
-                          <p className="text-slate-500 text-sm">Envoyez des notifications in-app et des emails à vos utilisateurs.</p>
+                          <h2 className="text-2xl font-bold text-white mb-2">Communications & Notifications</h2>
+                          <p className="text-slate-400">Diffusez des messages importants à vos utilisateurs.</p>
                         </div>
+                        {smtpStatus && (
+                          <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${smtpStatus.is_configured ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                            <div className={`w-2 h-2 rounded-full ${smtpStatus.is_configured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></div>
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                              {smtpStatus.is_configured ? 'Service Email Actif' : 'Email non configuré'}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {commSuccess && (
@@ -718,7 +779,7 @@ export default function Backoffice() {
                               type="email"
                               value={commForm.targetEmail}
                               onChange={e => setCommForm(f => ({ ...f, targetEmail: e.target.value }))}
-                              placeholder="ex: jean.dupont@banque.fr"
+                              placeholder="ex: jean.dupont@mail.com"
                               className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all"
                             />
                           </div>
@@ -739,7 +800,20 @@ export default function Backoffice() {
 
                           <div>
                             <div className="flex justify-between items-center mb-2">
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Message détaillé</label>
+                              <div className="flex items-center gap-4">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Message détaillé</label>
+                                <div className="flex items-center gap-1 bg-[#0F1523] p-1 rounded-lg border border-slate-800">
+                                  <button type="button" onClick={() => insertFormat('**', '**')} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Gras">
+                                    <Bold className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button type="button" onClick={() => insertFormat('*', '*')} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Italique">
+                                    <Italic className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button type="button" onClick={() => insertFormat('[', '](url)')} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors" title="Lien">
+                                    <Link className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
                               <button
                                 type="button"
                                 onClick={handleAIRefine}
@@ -747,10 +821,11 @@ export default function Backoffice() {
                                 className="flex items-center gap-2 text-[10px] font-bold text-[#a89fdb] hover:text-white bg-[#645CA5]/10 hover:bg-[#645CA5] px-3 py-1.5 rounded-full transition-all border border-[#645CA5]/20 disabled:opacity-50"
                               >
                                 {aiRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                AMÉLIORER PAR L'IA
+                                Améliorer le message
                               </button>
                             </div>
                             <textarea
+                              id="comm-message"
                               required
                               rows={6}
                               value={commForm.message}
@@ -786,6 +861,71 @@ export default function Backoffice() {
                           DIFFUSER LE MESSAGE MAINTENANT
                         </button>
                       </form>
+                    </div>
+
+                    {/* HISTORIQUE */}
+                    <div className="bg-[#121927] border border-slate-800/60 rounded-2xl overflow-hidden shadow-xl mt-8">
+                      <div className="p-6 border-b border-slate-800/50 bg-[#0F1523]/50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Clock className="w-5 h-5 text-[#a89fdb]" />
+                          <h3 className="text-white font-semibold">Historique des communications</h3>
+                        </div>
+                        <span className="text-[10px] bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest">
+                          {commHistory.length} messages
+                        </span>
+                      </div>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-800/50 bg-[#0B0F19]/30">
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Date</th>
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Expéditeur</th>
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Destinataire</th>
+                              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sujet</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/30">
+                            {commHistory.length === 0 ? (
+                              <tr>
+                                <td colSpan={4} className="px-6 py-10 text-center text-slate-500 text-sm italic">
+                                  Aucun historique pour le moment.
+                                </td>
+                              </tr>
+                            ) : (
+                              commHistory.map((h: any) => (
+                                <tr key={h.id} className="hover:bg-white/[0.02] transition-colors group">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-slate-300 font-medium">
+                                      {new Date(h.created_at).toLocaleDateString('fr-FR')}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500">
+                                      {new Date(h.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-400">
+                                        {h.sender_name?.[0] || 'A'}
+                                      </div>
+                                      <span className="text-slate-300 font-medium">{h.sender_name || 'Admin'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${h.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                      {h.target_email || 'Inconnu'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-slate-200 font-medium line-clamp-1">{h.title}</div>
+                                    <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">{h.message}</div>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </div>

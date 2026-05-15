@@ -124,9 +124,11 @@ class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, nullable=True) # Null for SUPER_ADMIN general notifications
+    target_email = Column(String, nullable=True) # To track specific target email if any
     title = Column(String, nullable=False)
     message = Column(Text, nullable=False)
     type = Column(String) # ACCOUNT_REQUEST, WELCOME, INFO
+    sender_name = Column(String, nullable=True) # Admin who sent it
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 

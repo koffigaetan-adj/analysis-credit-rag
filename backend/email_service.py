@@ -8,12 +8,27 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+_port = os.getenv("SMTP_PORT")
+SMTP_PORT = int(_port) if _port and _port.isdigit() else 587
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
 REPLY_TO = "no-reply@kaisanalytics.com"
 FROM_NAME = os.getenv("FROM_NAME", "Kaïs Analytics")
+
+def markdown_to_html(text: str) -> str:
+    """Convertit un markdown ultra-simplifié en HTML."""
+    import re
+    if not text: return ""
+    # Gras
+    text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
+    # Italique
+    text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', text)
+    # Liens
+    text = re.sub(r'\[(.*?)\]\((.*?)\)', r'<a href="\2" style="color: #2563eb; text-decoration: underline;">\1</a>', text)
+    # Newlines
+    text = text.replace('\n', '<br>')
+    return text
 
 def send_email_sync(to_email: str, subject: str, html_content: str, attachment_name: str = None, attachment_data: bytes = None, is_backoffice: bool = False):
     """
@@ -21,14 +36,16 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
     Retourne True si l'envoi a réussi, False sinon.
     Si les variables SMTP ne sont pas configurées, fait une simulation console.
     """
-    if not SMTP_SERVER or not SMTP_USERNAME or not SMTP_PASSWORD:
-        print("⚠️ [EMAIL SIMULATION] Configuration SMTP manquante. L'email suivant n'a pas été physiquement expédié :")
+    missing = []
+    if not SMTP_SERVER: missing.append("SMTP_SERVER")
+    if not SMTP_USERNAME: missing.append("SMTP_USERNAME")
+    if not SMTP_PASSWORD: missing.append("SMTP_PASSWORD")
+    
+    if missing:
+        print(f"⚠️ [EMAIL ERROR] Variables manquantes : {', '.join(missing)}")
         print(f"To: {to_email}")
         print(f"Subject: {subject}")
-        print("--- Contenu HTML ---")
-        print(html_content)
-        print("--------------------")
-        return True
+        return False
 
     try:
         from email.utils import formataddr

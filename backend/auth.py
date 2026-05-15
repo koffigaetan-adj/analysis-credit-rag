@@ -16,7 +16,7 @@ import qrcode
 import base64
 from io import BytesIO
 from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment, UserBackoffice
-from email_service import send_email_sync
+from email_service import send_email_sync, markdown_to_html
 import rag_engine
 from groq import Groq
 
@@ -1230,32 +1230,62 @@ def broadcast_notification(
         
         new_notif = Notification(
             user_id=target_user.id,
+            target_email=req.target_email,
             title=req.title,
             message=req.message,
-            type="INFO"
+            type="INFO",
+            sender_name=current_admin.name
         )
         db.add(new_notif)
         
         if req.send_email:
-            background_tasks.add_task(send_email_sync, target_user.email, req.title, req.message, is_backoffice=True)
+            email_html = markdown_to_html(req.message)
+            background_tasks.add_task(send_email_sync, target_user.email, req.title, email_html, is_backoffice=True)
     else:
         # Diffusion globale
         new_notif = Notification(
             user_id=None,
+            target_email="TOUS",
             title=req.title,
             message=req.message,
-            type="INFO"
+            type="INFO",
+            sender_name=current_admin.name
         )
         db.add(new_notif)
         
         if req.send_email:
             # Récupérer tous les emails actifs
             all_users = db.query(User).filter(User.is_active == True).all()
+            email_html = markdown_to_html(req.message)
             for user in all_users:
-                background_tasks.add_task(send_email_sync, user.email, req.title, req.message, is_backoffice=True)
+                background_tasks.add_task(send_email_sync, user.email, req.title, email_html, is_backoffice=True)
     
     db.commit()
     return {"message": "Notification diffusée avec succès."}
+
+@router.get("/backoffice/notifications/history")
+def get_notifications_history(
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    notifs = db.query(Notification).filter(Notification.sender_name != None).order_by(Notification.created_at.desc()).limit(50).all()
+    return notifs
+
+@router.get("/backoffice/notifications/check-smtp")
+def check_smtp_config(current_admin: UserBackoffice = Depends(get_current_backoffice_user)):
+    from email_service import SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD, SMTP_PORT
+    missing = []
+    if not SMTP_SERVER: missing.append("SMTP_SERVER")
+    if not SMTP_USERNAME: missing.append("SMTP_USERNAME")
+    if not SMTP_PASSWORD: missing.append("SMTP_PASSWORD")
+    
+    return {
+        "is_configured": len(missing) == 0,
+        "missing_variables": missing,
+        "smtp_server": SMTP_SERVER,
+        "smtp_port": SMTP_PORT,
+        "smtp_user": SMTP_USERNAME
+    }
 
 @router.post("/notifications")
 def create_notification(

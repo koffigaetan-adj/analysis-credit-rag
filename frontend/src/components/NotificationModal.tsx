@@ -14,6 +14,17 @@ interface NotificationModalProps {
 export default function NotificationModal({ notification, onClose }: NotificationModalProps) {
   if (!notification) return null;
 
+  const renderMessage = (text: string) => {
+    if (!text) return { __html: '' };
+    // Basic markdown-like parsing
+    const html = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-blue-500 hover:underline cursor-pointer font-medium">$1</a>');
+    
+    return { __html: html };
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('fr-FR', {
       day: 'numeric',
@@ -25,9 +36,9 @@ export default function NotificationModal({ notification, onClose }: Notificatio
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center md:items-start md:justify-end p-4 md:p-8 bg-slate-950/20 md:bg-transparent backdrop-blur-md md:backdrop-blur-0 animate-in fade-in duration-300 overflow-y-auto pointer-events-none">
       <div 
-        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300 my-auto"
+        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300 my-auto md:my-0 md:mt-20 pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Decor */}
@@ -59,17 +70,12 @@ export default function NotificationModal({ notification, onClose }: Notificatio
 
           <div className="space-y-6">
             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50">
-              <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed whitespace-pre-wrap">
-                {notification.message}
-              </p>
+              <div 
+                className="text-slate-600 dark:text-slate-300 text-base leading-relaxed whitespace-pre-wrap"
+                dangerouslySetInnerHTML={renderMessage(notification.message)}
+              />
             </div>
 
-            <div className="flex items-center gap-3 p-4 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100/50 dark:border-blue-500/10">
-              <Info className="w-5 h-5 text-blue-500 flex-shrink-0" />
-              <p className="text-xs text-blue-700 dark:text-blue-400/80 leading-snug">
-                Ceci est une notification officielle de l'équipe Kaïs Analytics. Pour toute question, veuillez contacter le support.
-              </p>
-            </div>
           </div>
 
           <div className="mt-10">
