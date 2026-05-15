@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
 import TwoFactorSettingsModal from '../components/TwoFactorSettingsModal';
 
-type TabType = 'dashboard' | 'establishments' | 'users' | 'logs'|'communications';
+type TabType = 'dashboard' | 'establishments' | 'users' | 'logs' | 'communications';
 
 interface Est {
   id: string;
@@ -339,7 +339,12 @@ export default function Backoffice() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(commForm)
+        body: JSON.stringify({
+          title: commForm.title,
+          message: commForm.message,
+          target_email: commForm.targetEmail,
+          send_email: commForm.sendEmail
+        })
       });
 
       if (res.ok) {

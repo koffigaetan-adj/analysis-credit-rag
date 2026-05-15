@@ -25,9 +25,9 @@ export default function NotificationModal({ notification, onClose }: Notificatio
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto">
       <div 
-        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300"
+        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Decor */}
