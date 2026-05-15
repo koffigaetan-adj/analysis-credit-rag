@@ -63,14 +63,14 @@ export default function Simulator() {
   }, [ca, marge, detteBase, montantPret, taux, duree]);
 
 
-  // Composant Slider Réutilisable (identique à l'original)
+  // Composant Slider Réutilisable — Redesigné pour plus de sobriété
   const RangeSlider = ({ label, value, min, max, step, unit, onChange, icon: Icon }: any) => (
     <div className="mb-6">
-      <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-           <Icon className="w-5 h-5 icon-primary" /> {label}
+      <div className="flex justify-between items-center mb-3">
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
+           <Icon className="w-4 h-4 text-slate-400" /> {label}
         </label>
-        <span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg">
+        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700/50 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-600">
           {value.toLocaleString('fr-FR')} {unit}
         </span>
       </div>
@@ -81,60 +81,59 @@ export default function Simulator() {
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
       />
     </div>
   );
 
-  // ─── Helpers couleur ────────────────────────────────────────────────────────
-  const pdColorClass = pd > 15 ? 'danger' : pd > 5 ? 'warn' : 'safe';
-  const pdColor      = pd > 15 ? '#f43f5e' : pd > 5 ? '#f59e0b' : '#10b981';
-  const scoreColor   = score < 50 ? '#f43f5e' : score < 70 ? '#f59e0b' : '#10b981';
-  const dscrColor    = dscr < 1.0 ? '#f43f5e' : dscr < 1.2 ? '#f59e0b' : '#10b981';
-  const levierColor  = levier > 6 ? '#f43f5e' : levier > 4 ? '#f59e0b' : '#10b981';
+  // ─── Helpers couleur — Tons plus sobres ────────────────────────────────────────
+  const pdColor      = pd > 15 ? '#ef4444' : pd > 5 ? '#f59e0b' : '#10b981';
+  const scoreColor   = score < 50 ? '#ef4444' : score < 70 ? '#f59e0b' : '#10b981';
+  const dscrColor    = dscr < 1.2 ? '#ef4444' : dscr < 1.5 ? '#f59e0b' : '#10b981';
+  const levierColor  = levier > 6 ? '#ef4444' : levier > 4 ? '#f59e0b' : '#10b981';
 
-  // Segments de jauge (20 segments)
-  const segments = Array.from({ length: 20 }, (_, i) => ({
-    active: score >= (i + 1) * 5,
+  // Segments de jauge (plus fins)
+  const segments = Array.from({ length: 40 }, (_, i) => ({
+    active: score >= (i + 1) * 2.5,
   }));
 
   return (
-    <div className="max-w-7xl mx-auto px-4 pb-20 mt-8 animate-fade-in font-sans">
+    <div className="max-w-7xl mx-auto px-6 pb-20 mt-10 animate-fadeIn font-sans">
 
-      {/* HEADER — identique */}
-      <div className="flex items-center justify-between mb-8">
+      {/* HEADER — Plus épuré */}
+      <div className="flex items-center justify-between mb-12">
         <div>
-          <h1 className="text-3xl font-medium text-slate-800 dark:text-white flex items-center gap-3">
-            <Activity className="w-5 h-5 icon-primary" /> Simulateur de Crédit
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+            Simulateur de Crédit
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">
-            Simulez instantanément différents scénarios économiques pour tester la robustesse des emprunteurs.
+          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+            Analysez la robustesse financière de vos dossiers sous différents scénarios.
           </p>
         </div>
         <button
           onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
         >
-          Retour <ArrowRight className="w-4 h-4" />
+          Retour au tableau de bord <ArrowRight className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-        {/* COLONNE GAUCHE: SLIDERS — identique */}
+        {/* COLONNE GAUCHE: SLIDERS */}
         <div className="lg:col-span-5 space-y-8">
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
-              <Settings2 className="w-5 h-5 text-indigo-500" /> Données de l'Entreprise
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-8 uppercase tracking-wider">
+              <Settings2 className="w-4 h-4 text-indigo-500" /> Données de l'Entreprise
             </h2>
             <RangeSlider label="Chiffre d'Affaires" value={ca} min={10000} max={5000000} step={10000} unit="€" onChange={setCa} icon={Banknote} />
             <RangeSlider label="Marge EBITDA" value={marge} min={-10} max={40} step={1} unit="%" onChange={setMarge} icon={Percent} />
             <RangeSlider label="Dette existante" value={detteBase} min={0} max={2000000} step={10000} unit="€" onChange={setDetteBase} icon={TrendingDown} />
           </div>
 
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6">
-              <TrendingUp className="w-5 h-5 text-emerald-500" /> Scénario de Financement
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-8 uppercase tracking-wider">
+              <TrendingUp className="w-4 h-4 text-emerald-500" /> Scénario de Financement
             </h2>
             <RangeSlider label="Montant Demandé" value={montantPret} min={0} max={1000000} step={10000} unit="€" onChange={setMontantPret} icon={Banknote} />
             <RangeSlider label="Durée d'amortissement" value={duree} min={12} max={120} step={12} unit="mois" onChange={setDuree} icon={Activity} />
@@ -145,184 +144,154 @@ export default function Simulator() {
         {/* COLONNE DROITE: RÉSULTATS */}
         <div className="lg:col-span-7 space-y-8">
 
-          {/* ── Main KPI — redesigné ── */}
-          <div className={`rounded-3xl p-8 border shadow-xl transition-all duration-500 relative overflow-hidden backdrop-blur-xl transform hover:-translate-y-1 ${
-            pd > 15 ? 'bg-rose-50/90 border-rose-200 dark:bg-rose-900/40 dark:border-rose-800/40' :
-            pd > 5  ? 'bg-orange-50/90 border-orange-200 dark:bg-orange-900/40 dark:border-orange-800/40' :
-            'bg-emerald-50/90 border-emerald-200 dark:bg-emerald-900/40 dark:border-emerald-800/40'
-          }`}>
-            <ShieldAlert className={`absolute -right-10 -top-10 w-64 h-64 opacity-[0.03] ${pd > 10 ? 'text-rose-500' : 'text-emerald-500'}`} />
+          {/* ── Main KPI — Redesign Premium ── */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden transition-all duration-300">
+            {/* Liseré latéral de statut */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: pdColor }} />
 
             <div className="relative z-10">
-              {/* Titre + badge statut */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   Probabilité de Défaut (1 an)
                 </h3>
                 <span
-                  className="text-xs font-medium uppercase tracking-wider px-3 py-1 rounded-full border"
+                  className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border"
                   style={{
                     color: pdColor,
-                    borderColor: pdColor + '55',
-                    background: pdColor + '15',
+                    borderColor: pdColor + '33',
+                    background: pdColor + '08',
                   }}
                 >
-                  {pd > 15 ? '⚠ Risque élevé' : pd > 5 ? '~ Surveillance' : '✓ Risque faible'}
+                  {pd > 15 ? 'Risque Critique' : pd > 5 ? 'Sous Surveillance' : 'Risque Maîtrisé'}
                 </span>
               </div>
 
-              {/* Chiffre PD + arc gauge SVG */}
-              <div className="flex items-center gap-8">
-                {/* Arc gauge */}
-                <div className="relative flex-shrink-0" style={{ width: 140, height: 80 }}>
-                  <svg width="140" height="80" viewBox="0 0 140 80">
-                    {/* Track */}
+              <div className="flex flex-col md:flex-row items-center gap-12">
+                {/* Arc gauge minimaliste */}
+                <div className="relative flex-shrink-0" style={{ width: 160, height: 90 }}>
+                  <svg width="160" height="90" viewBox="0 0 160 90">
                     <path
-                      d="M 10 75 A 60 60 0 0 1 130 75"
+                      d="M 15 80 A 65 65 0 0 1 145 80"
                       fill="none" stroke="currentColor"
-                      strokeWidth="10" strokeLinecap="round"
-                      className="text-slate-200 dark:text-slate-700"
+                      strokeWidth="6" strokeLinecap="round"
+                      className="text-slate-100 dark:text-slate-700"
                     />
-                    {/* Fill — stroke-dasharray trick */}
                     <path
-                      d="M 10 75 A 60 60 0 0 1 130 75"
+                      d="M 15 80 A 65 65 0 0 1 145 80"
                       fill="none"
                       stroke={pdColor}
-                      strokeWidth="10" strokeLinecap="round"
-                      strokeDasharray={`${(pd / 100) * 188} 188`}
-                      style={{ transition: 'stroke-dasharray 0.7s cubic-bezier(.4,0,.2,1), stroke 0.5s' }}
-                      filter={`drop-shadow(0 0 6px ${pdColor}88)`}
+                      strokeWidth="6" strokeLinecap="round"
+                      strokeDasharray={`${(pd / 100) * 204} 204`}
+                      style={{ transition: 'stroke-dasharray 1s cubic-bezier(.4,0,.2,1), stroke 0.5s' }}
                     />
-                    {/* Valeur centrale */}
-                    <text x="70" y="68" textAnchor="middle" fontSize="22" fontWeight="800"
+                    <text x="80" y="72" textAnchor="middle" fontSize="24" fontWeight="600"
                       fill={pdColor} style={{ transition: 'fill 0.5s', fontFamily: 'inherit' }}>
                       {pd.toFixed(1)}%
                     </text>
                   </svg>
                 </div>
 
-                {/* Score barre + segments */}
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Score</span>
-                    <span className="text-lg font-black" style={{ color: scoreColor }}>{score}<span className="text-sm font-normal text-slate-400">/100</span></span>
+                {/* Score barre épurée */}
+                <div className="flex-1 w-full">
+                  <div className="flex justify-between items-baseline mb-4">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Financial Score</span>
+                    <span className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{score}<span className="text-sm font-normal text-slate-400 ml-1">/100</span></span>
                   </div>
 
-                  {/* Barre principale */}
-                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-3" style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
+                  <div className="h-1 bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden mb-5">
                     <div
-                      className="h-full rounded-full transition-all duration-700 ease-out"
+                      className="h-full transition-all duration-1000 ease-out"
                       style={{
                         width: `${score}%`,
-                        background: `linear-gradient(90deg, ${scoreColor}99, ${scoreColor})`,
-                        boxShadow: `0 0 8px ${scoreColor}66`,
+                        backgroundColor: scoreColor,
                       }}
                     />
                   </div>
 
-                  {/* Segments de jauge */}
-                  <div className="flex gap-[2px]">
+                  {/* Segments ultra-fins */}
+                  <div className="flex gap-[1.5px]">
                     {segments.map((seg, i) => (
                       <div
                         key={i}
-                        className="flex-1 rounded-sm transition-all duration-300"
+                        className="flex-1 rounded-full transition-all duration-500"
                         style={{
-                          height: i % 4 === 0 ? 8 : 5,
-                          background: seg.active ? scoreColor : 'rgba(0,0,0,0.08)',
-                          opacity: seg.active ? (0.4 + (i / 20) * 0.6) : 1,
-                          boxShadow: seg.active ? `0 0 4px ${scoreColor}55` : 'none',
-                          transition: 'background 0.4s, box-shadow 0.4s',
+                          height: 4,
+                          background: seg.active ? scoreColor : 'rgba(0,0,0,0.04)',
+                          opacity: seg.active ? 1 : 1,
                         }}
                       />
                     ))}
                   </div>
-
-                  {/* Ticks */}
-                  <div className="flex justify-between mt-1">
-                    {['0', '25', '50', '75', '100'].map(v => (
-                      <span key={v} className="text-[9px] text-slate-400 font-mono">{v}</span>
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ── Sub KPIs — redesignés ── */}
+          {/* ── Sub KPIs — Cartes sobres ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             {/* DSCR */}
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Ratio DSCR</p>
-                  <div className="text-2xl font-bold" style={{ color: dscrColor }}>
-                    {dscr > 50 ? '> 50' : dscr.toFixed(2)}x
-                  </div>
-                </div>
-                <div className={`p-3 rounded-2xl ${dscr < 1.2 ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>
-                  <Activity className="w-6 h-6" />
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ratio DSCR</p>
+                <div className={`p-2 rounded-lg ${dscr < 1.2 ? 'text-red-500 bg-red-50/50' : 'text-emerald-500 bg-emerald-50/50'}`}>
+                  <Activity className="w-4 h-4" />
                 </div>
               </div>
-              {/* Barre de progression stylée */}
-              <div className="space-y-1">
-                <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${Math.min(100, (Math.min(dscr, 3) / 3) * 100)}%`,
-                      background: `linear-gradient(90deg, ${dscrColor}88, ${dscrColor})`,
-                      boxShadow: `0 0 6px ${dscrColor}44`,
-                    }}
-                  />
-                </div>
-                {/* Repères */}
-                <div className="flex justify-between text-[9px] text-slate-400 font-mono">
-                  <span>0</span>
-                  <span style={{ color: '#f59e0b' }}>1.2×</span>
-                  <span style={{ color: '#10b981' }}>2.0×</span>
-                  <span>3×</span>
-                </div>
+              <div className="text-3xl font-semibold text-slate-800 dark:text-slate-100 mb-4">
+                {dscr > 50 ? '> 50' : dscr.toFixed(2)}x
+              </div>
+              <div className="h-1 bg-slate-50 dark:bg-slate-700/30 rounded-full overflow-hidden">
+                <div
+                  className="h-full transition-all duration-700"
+                  style={{
+                    width: `${Math.min(100, (Math.min(dscr, 3) / 3) * 100)}%`,
+                    backgroundColor: dscrColor,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[8px] text-slate-400 font-medium mt-2 tracking-tighter">
+                <span>0.0</span>
+                <span>1.2 (Min)</span>
+                <span>2.0 (Cible)</span>
+                <span>3.0+</span>
               </div>
             </div>
 
             {/* LEVIER */}
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Levier (Dette/EBITDA)</p>
-                  <div className="text-2xl font-bold" style={{ color: levierColor }}>
-                    {levier > 50 ? '> 50' : levier.toFixed(1)}x
-                  </div>
-                </div>
-                <div className={`p-3 rounded-2xl ${levier > 4 ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>
-                  <TrendingDown className="w-6 h-6" />
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Levier de Dette</p>
+                <div className={`p-2 rounded-lg ${levier > 4 ? 'text-red-500 bg-red-50/50' : 'text-emerald-500 bg-emerald-50/50'}`}>
+                  <TrendingDown className="w-4 h-4" />
                 </div>
               </div>
-              <div className="space-y-1">
-                <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${Math.min(100, (Math.min(levier, 8) / 8) * 100)}%`,
-                      background: `linear-gradient(90deg, ${levierColor}88, ${levierColor})`,
-                      boxShadow: `0 0 6px ${levierColor}44`,
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-[9px] text-slate-400 font-mono">
-                  <span>0</span>
-                  <span style={{ color: '#10b981' }}>2×</span>
-                  <span style={{ color: '#f59e0b' }}>4×</span>
-                  <span style={{ color: '#f43f5e' }}>6×+</span>
-                </div>
+              <div className="text-3xl font-semibold text-slate-800 dark:text-slate-100 mb-4">
+                {levier > 50 ? '> 50' : levier.toFixed(1)}x
+              </div>
+              <div className="h-1 bg-slate-50 dark:bg-slate-700/30 rounded-full overflow-hidden">
+                <div
+                  className="h-full transition-all duration-700"
+                  style={{
+                    width: `${Math.min(100, (Math.min(levier, 8) / 8) * 100)}%`,
+                    backgroundColor: levierColor,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[8px] text-slate-400 font-medium mt-2 tracking-tighter">
+                <span>0.0</span>
+                <span>2.0</span>
+                <span>4.0</span>
+                <span>6.0 (Max)</span>
               </div>
             </div>
           </div>
 
-          {/* ── Graphique Plotly — paramètres visuels améliorés, logique identique ── */}
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Trajectoire du Cash Flow Libre</h3>
+          {/* ── Graphique Plotly — Tons Ardoise/Émeraude ── */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400">Capacité d'Autofinancement (Simulation 5 ans)</h3>
+            </div>
             <div className="h-64 w-full">
               <Plot
                 data={[
@@ -335,61 +304,39 @@ export default function Simulator() {
                     marker: {
                       color: Array.from({ length: 5 }, (_, i) => {
                         const val = ebitda - (((montantPret / duree) * 12) * Math.pow(0.9, i));
-                        return val >= 0
-                          ? (dscr > 1.2 ? '#10b981' : '#f59e0b')
-                          : '#f43f5e';
+                        return val >= 0 ? '#10b981' : '#ef4444';
                       }),
-                      opacity: 0.88,
-                      line: { width: 0 },
+                      opacity: 0.7,
                     },
-                    // Arrondir les coins (Plotly supporte via customdata trick — on garde simple)
                   }
                 ]}
                 layout={{
                   autosize: true,
-                  margin: { t: 18, l: 52, r: 12, b: 36 },
+                  margin: { t: 10, l: 40, r: 10, b: 30 },
                   paper_bgcolor: 'transparent',
                   plot_bgcolor: 'transparent',
-                  font: { color: '#94a3b8', size: 11 },
-                  bargap: 0.35,
+                  font: { color: '#94a3b8', size: 10, family: 'Inter, sans-serif' },
+                  bargap: 0.4,
                   xaxis: {
                     showgrid: false,
                     zeroline: false,
-                    tickfont: { size: 11, color: '#94a3b8' },
-                    showline: false,
+                    tickfont: { color: '#64748b' },
                   },
                   yaxis: {
                     showgrid: true,
-                    gridcolor: 'rgba(148,163,184,0.12)',
-                    gridwidth: 1,
+                    gridcolor: 'rgba(226,232,240,0.4)',
                     zeroline: true,
-                    zerolinecolor: 'rgba(148,163,184,0.35)',
-                    zerolinewidth: 1.5,
-                    tickfont: { size: 10, color: '#94a3b8' },
-                    showline: false,
+                    zerolinecolor: 'rgba(226,232,240,0.8)',
+                    tickfont: { color: '#64748b' },
                   },
-                  hoverlabel: {
-                    bgcolor: '#1e293b',
-                    bordercolor: 'rgba(255,255,255,0.1)',
-                    font: { color: '#f1f5f9', size: 12 },
-                  },
-                  shapes: [
-                    // Ligne zéro mise en valeur
-                    {
-                      type: 'line',
-                      x0: -0.5, x1: 4.5,
-                      y0: 0, y1: 0,
-                      line: { color: 'rgba(148,163,184,0.3)', width: 1, dash: 'dot' },
-                    }
-                  ],
                 }}
                 useResizeHandler
                 style={{ width: '100%', height: '100%' }}
                 config={{ displayModeBar: false, responsive: true }}
               />
             </div>
-            <p className="text-xs text-slate-400 mt-4 text-center">
-              Simulation indicative de la marge disponible après amortissement du prêt testé.
+            <p className="text-[10px] text-slate-400 mt-4 text-center italic">
+              Projection basée sur l'EBITDA actuel et l'amortissement du prêt.
             </p>
           </div>
 
