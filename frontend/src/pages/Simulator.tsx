@@ -103,19 +103,14 @@ export default function Simulator() {
       {/* HEADER — Plus épuré */}
       <div className="flex items-center justify-between mb-12">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-            Simulateur de Crédit
+        <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
+            Simulateur de <span className="font-semibold text-slate-900 dark:text-white">Crédit</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
             Analysez la robustesse financière de vos dossiers sous différents scénarios.
           </p>
         </div>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
-        >
-          Retour au tableau de bord <ArrowRight className="w-4 h-4" />
-        </button>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

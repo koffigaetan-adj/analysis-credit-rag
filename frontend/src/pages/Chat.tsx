@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, MessageSquare, Briefcase, TrendingUp, Plus, Trash2, Edit2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,7 +25,17 @@ export default function Chat() {
      const [isLoadingHistory, setIsLoadingHistory] = useState(true);
      const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
      const [editTitle, setEditTitle] = useState('');
+     const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
      const chatEndRef = useRef<HTMLDivElement>(null);
+
+     // Détection du changement de thème
+     useEffect(() => {
+          const observer = new MutationObserver(() => {
+               setIsDarkMode(document.documentElement.classList.contains('dark'));
+          });
+          observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+          return () => observer.disconnect();
+     }, []);
 
      const defaultGreeting = (firstName?: string): ChatMessage => ({
           role: 'assistant',
@@ -224,7 +234,11 @@ export default function Chat() {
                               Assistant <span className="font-semibold text-slate-900 dark:text-white">IA</span>
                          </h1>
                          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
-                              <Bot className="w-5 h-5 icon-primary" />
+                              <img 
+                                   src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"} 
+                                   alt="Kaïs Assistant" 
+                                   className="w-5 h-5 object-contain"
+                              />
                               Discutez, analysez et explorez des concepts financiers.
                          </p>
                     </div>
@@ -326,8 +340,12 @@ export default function Chat() {
                               {messages.map((msg, idx) => (
                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
                                         {msg.role === 'assistant' && (
-                                             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mr-4 shadow-sm border border-blue-200 dark:border-blue-800/50">
-                                                  <Bot className="w-5 h-5" />
+                                             <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shrink-0 mr-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                                  <img 
+                                                       src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"} 
+                                                       alt="Kaïs Assistant" 
+                                                       className="w-6 h-6 object-contain"
+                                                  />
                                              </div>
                                         )}
                                         <div className={`max-w-[85%] md:max-w-[75%] p-5 rounded-3xl text-sm leading-relaxed ${msg.role === 'user'
@@ -346,8 +364,12 @@ export default function Chat() {
 
                               {isTyping && (
                                    <div className="flex justify-start animate-in slide-in-from-bottom-2">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mr-4 shadow-sm border border-blue-200 dark:border-blue-800/50">
-                                             <Sparkles className="w-5 h-5 animate-pulse" />
+                                        <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shrink-0 mr-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                             <img 
+                                                  src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"} 
+                                                  alt="Typing..." 
+                                                  className="w-5 h-5 object-contain animate-pulse"
+                                             />
                                         </div>
                                         <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl rounded-tl-sm shadow-sm p-5 flex items-center gap-2">
                                              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#CB2B11] animate-pulse [animation-delay:-0.3s]"></span>
