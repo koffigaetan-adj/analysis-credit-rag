@@ -1334,9 +1334,9 @@ export default function Backoffice() {
                         { label: 'Établissements actifs', value: dashboardStats.establishments.active, sub: `sur ${dashboardStats.establishments.total} au total`, color: '#60a5fa' },
                       ].map(({ label, value, sub, color }) => (
                         <div key={label} className="bg-[#121927] border border-slate-800/60 p-4 rounded-xl">
-                          <p className="text-xs text-slate-300 mb-2">{label}</p>
+                          <p className="text-xs text-slate-100 mb-2">{label}</p>
                           <p className="text-2xl font-light" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
-                          <p className="text-xs text-slate-600 mt-1">{sub}</p>
+                          <p className="text-xs text-slate-200 mt-1">{sub}</p>
                         </div>
                       ))}
                     </div>
@@ -1347,7 +1347,7 @@ export default function Backoffice() {
                       <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
                         <h3 className="text-white font-medium text-sm mb-4">Top Analystes</h3>
                         {dashboardStats.analyses.top_users.length === 0 ? (
-                          <p className="text-slate-600 text-xs italic">Aucune analyse effectuée.</p>
+                          <p className="text-slate-200 text-xs italic">Aucune analyse effectuée.</p>
                         ) : (
                           <div className="space-y-3">
                             {dashboardStats.analyses.top_users.map((u: any, i: number) => {
@@ -1389,15 +1389,15 @@ export default function Backoffice() {
                                 <div className="flex items-center gap-4 text-xs text-right">
                                   <div>
                                     <p className="text-slate-300 font-medium">{est.members}</p>
-                                    <p className="text-slate-600 text-[10px]">membres</p>
+                                    <p className="text-slate-200 text-[10px]">membres</p>
                                   </div>
                                   <div>
                                     <p className="text-violet-300 font-medium">{est.analyses}</p>
-                                    <p className="text-slate-600 text-[10px]">analyses</p>
+                                    <p className="text-slate-200 text-[10px]">analyses</p>
                                   </div>
                                   <div>
                                     <p className="text-emerald-400 font-medium">{est.active_members}</p>
-                                    <p className="text-slate-600 text-[10px]">actifs</p>
+                                    <p className="text-slate-200 text-[10px]">actifs</p>
                                   </div>
                                 </div>
                               </div>
