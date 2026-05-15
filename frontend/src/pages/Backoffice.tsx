@@ -4,13 +4,14 @@ import {
   Plus, CheckCircle2, XCircle, Edit2,
   Lock, Loader2, LogOut, AlertTriangle, Search, Filter, ShieldCheck,
   Terminal, RefreshCw, Trash2, ChevronDown, ChevronUp, Clock, Wifi, Download,
-  BarChart2, KeyRound, Zap, Trophy, Medal, Award, Star, Mail
+  BarChart2, KeyRound, Zap, Trophy, Medal, Award, Star, Mail,
+  Megaphone, Send, Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
 import TwoFactorSettingsModal from '../components/TwoFactorSettingsModal';
 
-type TabType = 'dashboard' | 'establishments' | 'users' | 'logs';
+type TabType = 'dashboard' | 'establishments' | 'users' | 'logs'|'communications';
 
 interface Est {
   id: string;
@@ -95,6 +96,23 @@ export default function Backoffice() {
   }, [token, navigate]);
 
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [showSendLogsModal, setShowSendLogsModal] = useState(false);
+  const [sendLogsEmail, setSendLogsEmail] = useState('');
+  const [sendLogsLoading, setSendLogsLoading] = useState(false);
+  const [sendLogsSuccess, setSendLogsSuccess] = useState<string | null>(null);
+
+  // COMMUNICATIONS
+  const [commForm, setCommForm] = useState({
+    target: 'ALL' as 'ALL' | 'EMAIL',
+    targetEmail: '',
+    title: '',
+    message: '',
+    sendEmail: false
+  });
+  const [commLoading, setCommLoading] = useState(false);
+  const [commSuccess, setCommSuccess] = useState<string | null>(null);
+  const [commError, setCommError] = useState<string | null>(null);
+  const [aiRefining, setAIRefining] = useState(false);
   const [establishments, setEstablishments] = useState<Est[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,10 +147,6 @@ export default function Backoffice() {
   const [logsAutoRefresh, setLogsAutoRefresh] = useState(false);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
   const [logStats, setLogStats] = useState<Record<string, number>>({});
-  const [showSendLogsModal, setShowSendLogsModal] = useState(false);
-  const [sendLogsEmail, setSendLogsEmail] = useState('');
-  const [sendLogsLoading, setSendLogsLoading] = useState(false);
-  const [sendLogsSuccess, setSendLogsSuccess] = useState('');
 
   // --- States Établissement ---
   const [showEstModal, setShowEstModal] = useState(false);
@@ -250,41 +264,102 @@ export default function Backoffice() {
 
   const openSendLogsModal = () => {
     setSendLogsEmail(backofficeUser.email || '');
-    setSendLogsSuccess('');
+    setSendLogsSuccess(null);
     setShowSendLogsModal(true);
   };
 
   const handleSendLogs = async (e: React.FormEvent) => {
     e.preventDefault();
     setSendLogsLoading(true);
-    setSendLogsSuccess('');
+    setSendLogsSuccess(null);
     try {
-      const formData = new FormData();
-      formData.append('email', sendLogsEmail);
-      if (logsFilter !== 'ALL') formData.append('level', logsFilter);
-      if (logsStartDate) formData.append('start_date', logsStartDate);
-      if (logsEndDate) formData.append('end_date', logsEndDate);
-
-      const sendRes = await fetch(`${API}/auth/logs/send-email`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/logs/export-email`, {
         method: 'POST',
-        headers: { 
+        headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-          // Do NOT set Content-Type for FormData, browser will do it automatically
         },
-        body: formData
+        body: JSON.stringify({
+          email: sendLogsEmail,
+          filter: logsFilter
+        })
       });
-      if (!sendRes.ok) { 
-        const d = await sendRes.json(); 
-        throw new Error(d.detail || 'Erreur envoi email'); 
+
+      if (res.ok) {
+        setSendLogsSuccess('Les logs ont été envoyés avec succès.');
+        setTimeout(() => {
+          setShowSendLogsModal(false);
+          setSendLogsSuccess(null);
+        }, 3000);
+      } else {
+        const err = await res.json();
+        alert(`Erreur: ${err.detail || 'Inconnue'}`);
       }
-      setSendLogsSuccess(`Logs envoyés avec succès à ${sendLogsEmail} !`);
-    } catch (err: any) { 
-      console.error('Send logs error:', err);
-      // Log the full URL for debugging 404 issues
-      console.log('Target URL:', `${API}/auth/logs/send-email`);
-      alert(err.message); 
+    } catch (error) {
+      console.error(error);
+      alert('Erreur lors de l\'envoi des logs.');
+    } finally {
+      setSendLogsLoading(false);
     }
-    finally { setSendLogsLoading(false); }
+  };
+
+  const handleAIRefine = async () => {
+    if (!commForm.message) return;
+    setAIRefining(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/notifications/ai-refine`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: commForm.message })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCommForm(f => ({ ...f, message: data.refined_content }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAIRefining(false);
+    }
+  };
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCommLoading(true);
+    setCommSuccess(null);
+    setCommError(null);
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/backoffice/notifications/broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(commForm)
+      });
+
+      if (res.ok) {
+        setCommSuccess('Le message a été diffusé avec succès.');
+        setCommForm({
+          target: 'ALL',
+          targetEmail: '',
+          title: '',
+          message: '',
+          sendEmail: false
+        });
+      } else {
+        const data = await res.json();
+        setCommError(data.detail || "Erreur lors de l'envoi.");
+      }
+    } catch (e) {
+      setCommError("Erreur de connexion au serveur.");
+    } finally {
+      setCommLoading(false);
+    }
   };
 
   // Stats
@@ -343,39 +418,6 @@ export default function Backoffice() {
       });
       await fetchData();
     } catch (err) { console.error(err); }
-  };
-
-  const handleUploadPolicy = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !editingEst) return;
-    setIsSubmitting(true);
-    setEstError('');
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`${API}/auth/establishments/${editingEst.id}/policy`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }, // no Content-Type for FormData
-        body: formData
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
-      alert(`Politique RAG mise à jour avec succès pour ${editingEst.name} !`);
-    } catch (err: any) { setEstError(err.message); }
-    finally { setIsSubmitting(false); }
-  };
-
-  const handleDeletePolicy = async () => {
-    if (!editingEst || !confirm("Réinitaliser la politique aux règles par défaut ?")) return;
-    setIsSubmitting(true);
-    setEstError('');
-    try {
-      const res = await fetch(`${API}/auth/establishments/${editingEst.id}/policy`, {
-        method: 'DELETE', headers
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
-      alert(`Politique RAG réinitialisée pour ${editingEst.name} !`);
-    } catch (err: any) { setEstError(err.message); }
-    finally { setIsSubmitting(false); }
   };
 
   // --- Handlers Utilisateur ---
@@ -448,6 +490,39 @@ export default function Backoffice() {
     } catch (err) { console.error(err); }
   };
 
+  const handleUploadPolicy = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingEst) return;
+    setIsSubmitting(true);
+    setEstError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/auth/establishments/${editingEst.id}/policy`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }, // no Content-Type for FormData
+        body: formData
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+      alert(`Politique RAG mise à jour avec succès pour ${editingEst.name} !`);
+    } catch (err: any) { setEstError(err.message); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const handleDeletePolicy = async () => {
+    if (!editingEst || !confirm("Réinitaliser la politique aux règles par défaut ?")) return;
+    setIsSubmitting(true);
+    setEstError('');
+    try {
+      const res = await fetch(`${API}/auth/establishments/${editingEst.id}/policy`, {
+        method: 'DELETE', headers
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+      alert(`Politique RAG réinitialisée pour ${editingEst.name} !`);
+    } catch (err: any) { setEstError(err.message); }
+    finally { setIsSubmitting(false); }
+  };
+
   const deleteUser = async (usr: Member) => {
     setIsSubmitting(true);
     try {
@@ -493,6 +568,7 @@ export default function Backoffice() {
             { id: 'dashboard', icon: LayoutDashboard, label: 'Vue Globale' },
             { id: 'establishments', icon: Building2, label: 'Établissements' },
             { id: 'users', icon: Users, label: 'Comptes & Accès' },
+            { id: 'communications', icon: Megaphone, label: 'Communications' },
             { id: 'logs', icon: Terminal, label: 'Logs Système' },
           ] as const).map(({ id, icon: Icon, label }) => (
             <button
@@ -545,6 +621,7 @@ export default function Backoffice() {
               {activeTab === 'dashboard' && 'Vue Globale'}
               {activeTab === 'establishments' && 'Gestion des Établissements'}
               {activeTab === 'users' && "Gestion des Utilisateurs"}
+              {activeTab === 'communications' && 'Communications'}
               {activeTab === 'logs' && 'Logs & Monitoring Système'}
             </h2>
             <p className="text-slate-500 text-xs mt-0.5">
@@ -572,6 +649,143 @@ export default function Backoffice() {
             </div>
           ) : (
             <>
+              {/* COMMUNICATIONS */}
+              {activeTab === 'communications' && (
+                <div className="max-w-3xl mx-auto animate-fade-in">
+                  <div className="bg-[#121927] border border-slate-800/60 rounded-2xl overflow-hidden shadow-xl">
+                    <div className="p-8 border-b border-slate-800/50 bg-[#0F1523]/50">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-[#645CA5]/15 border border-[#645CA5]/30 flex items-center justify-center">
+                          <Megaphone className="w-6 h-6 text-[#a89fdb]" />
+                        </div>
+                        <div>
+                          <h3 className="text-white text-lg font-semibold">Diffuser une information</h3>
+                          <p className="text-slate-500 text-sm">Envoyez des notifications in-app et des emails à vos utilisateurs.</p>
+                        </div>
+                      </div>
+
+                      {commSuccess && (
+                        <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2">
+                          <CheckCircle2 className="w-5 h-5" /> {commSuccess}
+                        </div>
+                      )}
+
+                      {commError && (
+                        <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2">
+                          <AlertTriangle className="w-5 h-5" /> {commError}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleBroadcast} className="space-y-6">
+                        <div className="space-y-3">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Cible du message</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setCommForm(f => ({ ...f, target: 'ALL' }))}
+                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'ALL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                            >
+                              <Users className="w-5 h-5" />
+                              <div className="text-left">
+                                <p className="text-sm font-semibold">Tous les comptes</p>
+                                <p className="text-[10px] opacity-60">Diffusion générale</p>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCommForm(f => ({ ...f, target: 'EMAIL' }))}
+                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'EMAIL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                            >
+                              <Mail className="w-5 h-5" />
+                              <div className="text-left">
+                                <p className="text-sm font-semibold">Cible spécifique</p>
+                                <p className="text-[10px] opacity-60">Par adresse email</p>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+
+                        {commForm.target === 'EMAIL' && (
+                          <div className="animate-in fade-in slide-in-from-top-2">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Adresse Email du destinataire</label>
+                            <input
+                              required
+                              type="email"
+                              value={commForm.targetEmail}
+                              onChange={e => setCommForm(f => ({ ...f, targetEmail: e.target.value }))}
+                              placeholder="ex: jean.dupont@banque.fr"
+                              className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Sujet (Titre de la notification)</label>
+                            <input
+                              required
+                              type="text"
+                              value={commForm.title}
+                              onChange={e => setCommForm(f => ({ ...f, title: e.target.value }))}
+                              placeholder="Ex: Mise à jour système v2.4"
+                              className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all font-medium"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Message détaillé</label>
+                              <button
+                                type="button"
+                                onClick={handleAIRefine}
+                                disabled={aiRefining || !commForm.message}
+                                className="flex items-center gap-2 text-[10px] font-bold text-[#a89fdb] hover:text-white bg-[#645CA5]/10 hover:bg-[#645CA5] px-3 py-1.5 rounded-full transition-all border border-[#645CA5]/20 disabled:opacity-50"
+                              >
+                                {aiRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                AMÉLIORER PAR L'IA
+                              </button>
+                            </div>
+                            <textarea
+                              required
+                              rows={6}
+                              value={commForm.message}
+                              onChange={e => setCommForm(f => ({ ...f, message: e.target.value }))}
+                              placeholder="Saisissez votre message ici..."
+                              className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all resize-none leading-relaxed"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-4 bg-[#0F1523] rounded-xl border border-slate-800">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              id="send-email"
+                              checked={commForm.sendEmail}
+                              onChange={e => setCommForm(f => ({ ...f, sendEmail: e.target.checked }))}
+                              className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[#645CA5] focus:ring-[#645CA5]"
+                            />
+                            <label htmlFor="send-email" className="text-sm font-medium text-slate-300 cursor-pointer">
+                              Doubler l'envoi par Email
+                            </label>
+                          </div>
+                          <p className="text-[10px] text-slate-500 italic">L'email inclura votre signature Kaïs.</p>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={commLoading || !commForm.title || !commForm.message}
+                          className="w-full bg-[#645CA5] hover:bg-[#746dbb] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-[#645CA5]/20 transition-all disabled:opacity-50 group"
+                        >
+                          {commLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+                          DIFFUSER LE MESSAGE MAINTENANT
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* LOGS SYSTÈME */}
               {activeTab === 'logs' && (() => {
                 const LEVEL_STYLES: Record<string, string> = {

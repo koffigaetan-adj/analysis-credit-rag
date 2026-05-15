@@ -1,8 +1,9 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
-import { Bell, ChevronDown, Menu, Trash2 } from 'lucide-react';
+import { Bell, ChevronDown, Menu, Trash2, Volume2 } from 'lucide-react';
+import NotificationModal from './NotificationModal';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -18,8 +19,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedNotif, setSelectedNotif] = useState<any | null>(null);
+  
+  const lastNotifIds = useRef<Set<number>>(new Set());
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
+    // Demande de permission pour les notifications de bureau
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
@@ -42,11 +52,40 @@ export default function Header({ onMenuClick }: HeaderProps) {
       });
       if (res.ok) {
         const data = await res.json();
+        
+        // Détection des nouvelles notifications
+        if (!isFirstLoad.current) {
+          const newNotifs = data.filter((n: any) => !lastNotifIds.current.has(n.id) && !n.is_read);
+          if (newNotifs.length > 0) {
+            triggerNotificationAlert(newNotifs[0]);
+          }
+        }
+        
+        // Mise à jour des IDs connus
+        const ids = new Set<number>(data.map((n: any) => n.id));
+        lastNotifIds.current = ids;
+        isFirstLoad.current = false;
+
         setNotifications(data);
         setUnreadCount(data.filter((n: any) => !n.is_read).length);
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const triggerNotificationAlert = (notif: any) => {
+    // 1. Son
+    const audio = new Audio('https://res.cloudinary.com/dsu768xsy/video/upload/v1715781442/ping-82822_c9t6xp.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+
+    // 2. Notification de bureau
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(notif.title, {
+        body: notif.message,
+        icon: '/logo_kais.svg'
+      });
     }
   };
 
@@ -56,20 +95,24 @@ export default function Header({ onMenuClick }: HeaderProps) {
     return () => clearInterval(interval);
   }, [token]);
 
-  const markAsRead = async (id: number, type: string) => {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications/${id}/read`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      fetchNotifications();
-      // On ne ferme plus forcément le menu ici pour permettre d'autres actions
-      if (type === 'ACCOUNT_REQUEST') {
-        setShowNotifMenu(false);
-        navigate('/team', { state: { activeTab: 'requests' } });
+  const handleNotifClick = async (notif: any) => {
+    setSelectedNotif(notif);
+    setShowNotifMenu(false);
+    
+    if (!notif.is_read) {
+      try {
+        await fetch(`${import.meta.env.VITE_API_URL}/auth/notifications/${notif.id}/read`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        fetchNotifications();
+        
+        if (notif.type === 'ACCOUNT_REQUEST') {
+          navigate('/team', { state: { activeTab: 'requests' } });
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
     }
   };
 
@@ -163,7 +206,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     {notifications.map(notif => (
                       <div
                         key={notif.id}
-                        onClick={() => markAsRead(notif.id, notif.type)}
+                        onClick={() => handleNotifClick(notif)}
                         className={`group/item relative text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-50 border-last-transparent dark:border-slate-800/50 cursor-pointer ${notif.is_read ? 'opacity-60' : 'bg-blue-50/30'}`}
                       >
                         <div className="flex justify-between items-start gap-2">
@@ -244,6 +287,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
       </div>
+      <NotificationModal 
+        notification={selectedNotif} 
+        onClose={() => setSelectedNotif(null)} 
+      />
     </header>
   );
 }

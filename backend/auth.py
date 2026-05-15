@@ -18,6 +18,11 @@ from io import BytesIO
 from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment, UserBackoffice
 from email_service import send_email_sync
 import rag_engine
+from groq import Groq
+
+# Groq client initialization
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 # Paramètres Sécurité & JWT (à configurer via .env en prod)
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "une_cle_secrete_tres_complexe_ici_123!")
@@ -108,6 +113,15 @@ class CreateNotificationRequest(BaseModel):
     title: str
     message: str
     type: str = "INFO"
+
+class BroadcastNotificationRequest(BaseModel):
+    title: str
+    message: str
+    target_email: Optional[str] = None
+    send_email: bool = False
+
+class AIRefineRequest(BaseModel):
+    content: str
 
 # --- FONCTIONS UTILITAIRES ---
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -1166,15 +1180,10 @@ def get_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Les SUPER_ADMIN voient les notifications globales (user_id IS NULL) ET leurs notifs perso
-    if current_user.role == "SUPER_ADMIN":
-        notifs = db.query(Notification).filter(
-            (Notification.user_id == current_user.id) | (Notification.user_id == None)
-        ).order_by(Notification.created_at.desc()).all()
-    else:
-        notifs = db.query(Notification).filter(
-            Notification.user_id == current_user.id
-        ).order_by(Notification.created_at.desc()).all()
+    # Tout le monde voit les notifications globales (user_id IS NULL) ET leurs notifs perso
+    notifs = db.query(Notification).filter(
+        (Notification.user_id == current_user.id) | (Notification.user_id == None)
+    ).order_by(Notification.created_at.desc()).all()
         
     return [
         {
@@ -1186,6 +1195,67 @@ def get_notifications(
             "created_at": n.created_at
         } for n in notifs
     ]
+
+@router.post("/backoffice/notifications/ai-refine")
+def ai_refine_notification(
+    req: AIRefineRequest,
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    try:
+        response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Tu es un expert en communication bancaire. Ton rôle est de corriger, reformuler et rendre plus professionnel le message de notification suivant. Le message doit être clair, courtois et concis. Garde le sens original mais améliore la forme. Ne réponds QUE par le nouveau message, sans commentaires."},
+                {"role": "user", "content": req.content}
+            ]
+        )
+        refined_content = response.choices[0].message.content.strip()
+        return {"refined_content": refined_content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/backoffice/notifications/broadcast")
+def broadcast_notification(
+    req: BroadcastNotificationRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    # 1. Notification In-App
+    if req.target_email:
+        # Vers un utilisateur spécifique
+        target_user = db.query(User).filter(User.email == req.target_email).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+        
+        new_notif = Notification(
+            user_id=target_user.id,
+            title=req.title,
+            message=req.message,
+            type="INFO"
+        )
+        db.add(new_notif)
+        
+        if req.send_email:
+            background_tasks.add_task(send_email_sync, target_user.email, req.title, req.message, is_backoffice=True)
+    else:
+        # Diffusion globale
+        new_notif = Notification(
+            user_id=None,
+            title=req.title,
+            message=req.message,
+            type="INFO"
+        )
+        db.add(new_notif)
+        
+        if req.send_email:
+            # Récupérer tous les emails actifs
+            all_users = db.query(User).filter(User.is_active == True).all()
+            for user in all_users:
+                background_tasks.add_task(send_email_sync, user.email, req.title, req.message, is_backoffice=True)
+    
+    db.commit()
+    return {"message": "Notification diffusée avec succès."}
 
 @router.post("/notifications")
 def create_notification(
@@ -1595,99 +1665,6 @@ def reject_request_endpoint(
     return {"message": "Demande refusée. Le demandeur a été notifié par email."}
 
 
-@router.get("/notifications")
-def get_notifications(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # Les SUPER_ADMIN voient les notifications globales (user_id IS NULL) ET leurs notifs perso
-    if current_user.role == "SUPER_ADMIN":
-        notifs = db.query(Notification).filter(
-            (Notification.user_id == current_user.id) | (Notification.user_id == None)
-        ).order_by(Notification.created_at.desc()).all()
-    else:
-        notifs = db.query(Notification).filter(
-            Notification.user_id == current_user.id
-        ).order_by(Notification.created_at.desc()).all()
-        
-    return [
-        {
-            "id": n.id,
-            "title": n.title,
-            "message": n.message,
-            "type": n.type,
-            "is_read": n.is_read,
-            "created_at": n.created_at
-        } for n in notifs
-    ]
-
-@router.post("/notifications")
-def create_notification(
-    request: CreateNotificationRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    new_notif = Notification(
-        user_id=current_user.id,
-        title=request.title,
-        message=request.message,
-        type=request.type
-    )
-    db.add(new_notif)
-    db.commit()
-    return {"message": "Notification créée."}
-
-@router.put("/notifications/{notification_id}/read")
-def mark_notification_read(
-    notification_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    notif = db.query(Notification).filter(Notification.id == notification_id).first()
-    if not notif:
-        raise HTTPException(status_code=404, detail="Notification introuvable.")
-        
-    if notif.user_id is not None and notif.user_id != current_user.id:
-        if current_user.role != "SUPER_ADMIN":
-            raise HTTPException(status_code=403, detail="Non autorisé.")
-            
-    notif.is_read = True
-    db.commit()
-    return {"message": "Notification lue."}
-
-@router.delete("/notifications/{notification_id}")
-def delete_notification(
-    notification_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    notif = db.query(Notification).filter(Notification.id == notification_id).first()
-    if not notif:
-        raise HTTPException(status_code=404, detail="Notification introuvable.")
-        
-    if notif.user_id is not None and notif.user_id != current_user.id:
-        if current_user.role != "SUPER_ADMIN":
-            raise HTTPException(status_code=403, detail="Non autorisé.")
-            
-    db.delete(notif)
-    db.commit()
-    return {"message": "Notification supprimée."}
-
-@router.delete("/notifications")
-def clear_all_notifications(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if current_user.role == "SUPER_ADMIN":
-        # Delete both personal and global notifications shown to Super Admin
-        db.query(Notification).filter(
-            (Notification.user_id == current_user.id) | (Notification.user_id == None)
-        ).delete(synchronize_session=False)
-    else:
-        db.query(Notification).filter(Notification.user_id == current_user.id).delete(synchronize_session=False)
-        
-    db.commit()
-    return {"message": "Toutes les notifications ont été supprimées."}
 
 # --- ETABLISSEMENTS ---
 class CreateEstablishmentRequest(BaseModel):
