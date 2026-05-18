@@ -79,7 +79,7 @@ export default function Dashboard() {
         <div className="flex flex-row items-center gap-4 w-full md:w-auto">
           <button
             onClick={fetchStats}
-            className="p-3 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+            className="p-3 flex items-center justify-center bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
           >
             <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -102,7 +102,7 @@ export default function Dashboard() {
           { id: 'accept', label: 'Acceptation', val: `${acceptanceRate.toFixed(0)}%`, sub: "Taux d'acceptation", icon: Zap, color: 'amber' }
 
         ].map((kpi, i) => (
-          <div key={i} className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-50 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300 group">
+          <div key={i} className="bg-white dark:bg-slate-950/40 rounded-[24px] p-6 border border-slate-50 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300 group">
             <div className="flex items-center justify-between mb-4">
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors bg-${kpi.color}-50 dark:bg-${kpi.color}-900/20 text-${kpi.color}-500`}>
                 <kpi.icon className="w-6 h-6" />
@@ -139,7 +139,7 @@ export default function Dashboard() {
       {/* --- GRAPHIQUES --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Pie Chart */}
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-950/40 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm">
           <h3 className="text-lg font-medium text-slate-800 dark:text-white mb-2">Typologie Clients</h3>
           <p className="text-sm text-slate-400 dark:text-slate-500 mb-8">Répartition du portefeuille</p>
           <div className="h-[250px] w-full">
@@ -166,7 +166,7 @@ export default function Dashboard() {
         </div>
 
         {/* Area Chart */}
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm lg:col-span-2 overflow-hidden">
+        <div className="bg-white dark:bg-slate-950/40 rounded-[32px] p-8 border border-slate-50 dark:border-slate-800 shadow-sm lg:col-span-2 overflow-hidden">
           <h3 className="text-lg font-medium text-slate-800 dark:text-white mb-2">Activité</h3>
           <p className="text-sm text-slate-400 dark:text-slate-500 mb-8">Volume mensuel des analyses</p>
           <div className="h-[300px] w-full -ml-4 sm:ml-0">
@@ -192,7 +192,7 @@ export default function Dashboard() {
       </div>
 
       {/* --- TABLEAU --- */}
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-950/40 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-lg font-medium text-slate-800 dark:text-white">Analyses Récentes</h3>
           <Link to="/history" className="text-blue-500 text-sm font-medium hover:underline flex items-center gap-1">

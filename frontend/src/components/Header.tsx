@@ -67,7 +67,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const triggerNotificationAlert = (notif: any) => {
     const audio = new Audio('https://res.cloudinary.com/dsu768xsy/video/upload/v1715781442/ping-82822_c9t6xp.mp3');
     audio.volume = 0.5;
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
     if ("Notification" in window && Notification.permission === "granted") {
       const plainText = notif.message.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
       new Notification(notif.title, { body: plainText, icon: '/logo_kais.svg' });
@@ -171,7 +171,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <>
-      <header className="print:hidden sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-8 py-3 transition-all duration-300">
+      <header className="print:hidden sticky top-0 z-40 w-full  dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-8 py-3 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
 
           {/* LEFT */}
@@ -324,13 +324,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 return (
                   <div
                     key={notif.id}
-                    className={`group rounded-2xl border transition-all duration-200 overflow-hidden ${
-                      isExpanded
-                        ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/5'
-                        : notif.is_read
+                    className={`group rounded-2xl border transition-all duration-200 overflow-hidden ${isExpanded
+                      ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/5'
+                      : notif.is_read
                         ? 'border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                         : 'border-transparent bg-blue-50/40 dark:bg-blue-500/5 hover:bg-blue-50/70 dark:hover:bg-blue-500/10'
-                    }`}
+                      }`}
                   >
                     {/* Notification Header Row */}
                     <button

@@ -11,7 +11,7 @@ export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-500 relative">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#2E2E33] flex transition-colors duration-500 relative">
 
       {/* --- FOND GÉNÉRAL DYNAMIQUE --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
@@ -20,10 +20,7 @@ export default function Layout() {
         <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.2] [background-image:linear-gradient(#cbd5e1_1px,transparent_1px),linear-gradient(90deg,#cbd5e1_1px,transparent_1px)] dark:[background-image:linear-gradient(#1e293b_1px,transparent_1px),linear-gradient(90deg,#1e293b_1px,transparent_1px)] [background-size:40px_40px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
         {/* 2. Le Halo Central (Lueur IA) — couleur thème établissement */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[120px] animate-pulse-slow pointer-events-none"
-          style={{ background: 'color-mix(in srgb, var(--kais-primary) 6%, transparent)' }}
-        />
+
 
         {/* 3. Ligne de balayage (Scanning line - très subtil) */}
         <div

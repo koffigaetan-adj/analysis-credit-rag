@@ -1,4 +1,4 @@
-﻿import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -71,7 +71,7 @@ function NavItem({
         className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 group
           ${isActive
             ? 'text-white shadow-lg font-semibold'
-            : 'text-slate-400 hover:bg-slate-900 hover:text-white font-medium'}
+            : 'text-slate-300 hover:bg-slate-900/40 hover:text-white font-medium'}
           ${isCollapsed ? 'lg:justify-center' : ''}
         `}
       >
@@ -101,7 +101,7 @@ function BottomNavItem({
         to={to}
         onClick={onClick}
         className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all font-medium
-          ${isActive ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}
+          ${isActive ? 'bg-slate-900/40 text-slate-300 hover:bg-slate-900/40 hover:text-slate-300' : 'text-slate-300 hover:bg-slate-900/40 hover:text-slate-300'}
           ${isCollapsed ? 'lg:justify-center' : ''}
         `}
       >
@@ -145,14 +145,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-screen bg-slate-950 border-r border-slate-900 transition-all duration-300 ease-in-out z-50 flex flex-col
+        className={`fixed top-0 left-0 h-screen border-r border-slate-900 transition-all duration-300 ease-in-out z-50 flex flex-col
           lg:translate-x-0 ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
           ${isCollapsed ? 'lg:w-20 w-64' : 'w-64'}`}
+        style={{ background: 'linear-gradient(180deg, #030303ff 0%, #3f3f46 32%, #27272a 100%)' }}
       >
         {/* BOUTON FERMER MOBILE */}
         <button
           onClick={closeMobileSidebar}
-          className="lg:hidden absolute top-6 right-4 p-2 text-slate-400 hover:text-white"
+          className="lg:hidden absolute top-6 right-4 p-2 text-slate-300 hover:text-white"
         >
           <X className="w-5 h-5" />
         </button>
@@ -219,7 +220,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
           <div className="relative group/tooltip">
             <button
               onClick={() => setIsDark(!isDark)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all text-slate-400 hover:bg-slate-900 hover:text-white font-medium
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all text-slate-300 hover:bg-slate-900/40 hover:text-white font-medium
                 ${isCollapsed ? 'lg:justify-center' : ''}
               `}
             >
@@ -248,7 +249,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isOpenMobile = fa
           />
 
           {/* DÉCONNEXION — carte visible sur mobile + desktop étendu */}
-          <div className={`mt-6 p-4 bg-slate-900/50 rounded-[24px] border border-slate-900 animate-in zoom-in-95
+          <div className={`mt-6 p-4 bg-slate-800/30 rounded-[24px] border border-slate-800 animate-in zoom-in-95
             ${isCollapsed ? 'lg:hidden' : ''}
           `}>
             <button
