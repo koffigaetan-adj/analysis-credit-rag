@@ -207,3 +207,42 @@ body {
 #goog-gt-tt {
   display: none !important;
 }
+
+/* === ÉDITEUR RICH TEXT (Communications Backoffice) === */
+.comm-editor {
+  min-height: 150px;
+  outline: none;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.comm-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #64748b;
+  pointer-events: none;
+}
+.comm-editor:focus {
+  border-color: #645CA5 !important;
+}
+.comm-editor strong,
+.comm-editor b {
+  font-weight: 700;
+  color: #ffffff;
+}
+.comm-editor em,
+.comm-editor i {
+  font-style: italic;
+  color: #e2e8f0;
+}
+.comm-editor a {
+  color: #a89fdb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.comm-editor ul,
+.comm-editor ol {
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+.comm-editor li {
+  margin: 0.1rem 0;
+}

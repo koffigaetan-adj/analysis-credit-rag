@@ -3,7 +3,25 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/logo_kais.svg" />
+  <link rel="icon" type="image/svg+xml" href="/logo_kais.svg" id="favicon" />
+  <script>
+    (function() {
+      const favicon = document.getElementById('favicon');
+      const matcher = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      function updateFavicon() {
+        favicon.href = matcher.matches ? '/logo_kais.svg' : '/logo_kais01.svg';
+      }
+      
+      try {
+        matcher.addEventListener('change', updateFavicon);
+      } catch (e) {
+        matcher.addListener(updateFavicon);
+      }
+      
+      updateFavicon();
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kaïs Analytics</title>
   <meta property="og:title" content="Kaïs Analytics" />

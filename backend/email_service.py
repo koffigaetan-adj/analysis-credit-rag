@@ -64,32 +64,66 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
         msg['To'] = to_email
 
         frontend_url = os.getenv('FRONTEND_URL', 'https://kais-analytics.vercel.app')
-        
+
         # Choix du logo (Backoffice ou Classique)
         if is_backoffice:
-            logo_img_tag = f'<img src="{frontend_url}/logocompletoffice.svg" alt="Kaïs Backoffice" style="max-height: 60px;">'
+            logo_img_tag = f'<img src="{frontend_url}/logocompletoffice.svg" alt="Kaïs Backoffice" style="max-height:44px; display:inline-block;">'
         else:
-            logo_img_tag = '<img src="cid:logomail" alt="Kaïs Analytics" style="max-height: 60px;">'
+            logo_img_tag = '<img src="cid:logomail" alt="Kaïs Analytics" style="max-height:44px; display:inline-block;">'
 
-        # Template HTML global avec le logo et le pied de page
-        template_html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-                <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; max-width: 600px; margin: 0 auto;">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        {logo_img_tag}
-                    </div>
-                    <div style="background-color: white; padding: 20px; border-radius: 8px;">
-                        {html_content}
-                    </div>
-                    <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #64748b;">
-                        <p>Veuillez ne pas répondre à cet email. Ce message a été généré automatiquement par Kaïs Analytics.</p>
-                        <p>&copy; {os.environ.get('YEAR', '2026')} Kaïs Analytics. Tous droits réservés.</p>
-                    </div>
-                </div>
-            </body>
-        </html>
-        """
+        # Template HTML premium
+        template_html = f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.10);">
+
+          <!-- HEADER -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1e1b3a 0%,#2d2660 60%,#1a1535 100%);padding:32px 40px 24px 40px;text-align:center;">
+              {logo_img_tag}
+              <div style="margin-top:14px;width:48px;height:3px;background:linear-gradient(90deg,#E73919,#a89fdb);margin-left:auto;margin-right:auto;border-radius:2px;"></div>
+            </td>
+          </tr>
+
+          <!-- BODY -->
+          <tr>
+            <td style="background:#ffffff;padding:36px 40px 28px 40px;">
+              <p style="margin:0 0 8px 0;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a89fdb;">Message de l&rsquo;&eacute;quipe Kaïs</p>
+              <div style="height:1px;background:#f0eeff;margin-bottom:24px;"></div>
+              <div style="font-size:15px;color:#334155;line-height:1.75;">
+                {html_content}
+              </div>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td style="background:#ffffff;padding:0 40px 32px 40px;text-align:center;">
+              <a href="{frontend_url}" style="display:inline-block;background:linear-gradient(135deg,#E73919,#c22d10);color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;padding:13px 32px;border-radius:10px;letter-spacing:0.5px;">Accéder à Kaïs Analytics</a>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center;">
+              <p style="margin:0 0 4px 0;font-size:11px;color:#94a3b8;">Ce message a &eacute;t&eacute; envoy&eacute; automatiquement par Kaïs Analytics.</p>
+              <p style="margin:0;font-size:11px;color:#cbd5e1;">&copy; 2026 Kaïs Analytics &mdash; Tous droits r&eacute;serv&eacute;s.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
 
         # Sous-partie pour l'email principal et l'image inline (logo)
         body_part = MIMEMultipart("related")

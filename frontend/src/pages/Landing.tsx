@@ -197,7 +197,7 @@ const Landing = () => {
           </div>
 
           {/* Titre avec animation de révélation lettre par lettre */}
-          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-8 text-white leading-tight animate-fadeIn">
+          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-8 text-white leading-tight animate-fade-in">
             L'Intelligence Artificielle<br />
             <span className="relative inline-block">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-violet-500 animate-gradient">
@@ -208,11 +208,11 @@ const Landing = () => {
             </span>
           </h1>
 
-          <p className="mt-4 max-w-2xl text-lg sm:text-xl text-slate-400 mx-auto mb-10 animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
+          <p className="mt-4 max-w-2xl text-lg sm:text-xl text-slate-400 mx-auto mb-10 animate-fade-inUp" style={{ animationDelay: '0.3s' }}>
             Évaluez la solvabilité de vos clients instantanément avec nos modèles de scoring prédictifs et notre technologie RAG avancée. Prenez des décisions éclairées, plus rapidement.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-inUp" style={{ animationDelay: '0.5s' }}>
             <button
               onClick={handleCtaClick}
               className="group px-8 py-4 w-full sm:w-auto text-lg font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:shadow-[0_0_40px_rgba(37,99,235,0.7)] hover:scale-105 flex items-center justify-center"
@@ -229,7 +229,7 @@ const Landing = () => {
           </div>
 
           {/* Indicateurs de confiance */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500 animate-fadeInUp" style={{ animationDelay: '0.7s' }}>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500 animate-fade-inUp" style={{ animationDelay: '0.7s' }}>
             {['✓ RGPD conforme', '✓ Chiffrement bout en bout', '✓ Déploiement cloud sécurisé'].map(item => (
               <span key={item} className="flex items-center gap-1">{item}</span>
             ))}

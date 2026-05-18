@@ -99,6 +99,14 @@ def run_migrations():
             if "duplicate column name" not in str(e).lower() and "already exists" not in str(e).lower():
                 print(f"Note sur la migration : {e}")
 
+        try:
+            connection.execute(text("ALTER TABLE establishments ADD COLUMN primary_color VARCHAR DEFAULT '#E73919';"))
+            connection.commit()
+            print("Migration 'primary_color' vérifiée/appliquée.")
+        except Exception as e:
+            if "duplicate column name" not in str(e).lower() and "already exists" not in str(e).lower():
+                print(f"Note sur la migration primary_color : {e}")
+
         # Migrations préférences de notifications
         notif_columns = [
             ("notif_email_login",    "BOOLEAN DEFAULT TRUE"),
