@@ -2162,8 +2162,8 @@ export default function Backoffice() {
                 <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Date</span> <span className="text-slate-200 font-medium">{new Date(selectedComm.created_at).toLocaleString('fr-FR')}</span></div>
                 <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Expéditeur</span> <span className="text-slate-200 font-medium">{selectedComm.sender_name || 'Admin'}</span></div>
                 <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Destinataire(s)</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${selectedComm.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                    {selectedComm.target_email === 'TOUS' ? `${activeUsers} Personnes (Tous les utilisateurs)` : selectedComm.target_email}
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${selectedComm.target === 'ALL' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                    {selectedComm.target === 'ALL' ? `${activeUsers} Personnes (Tous les utilisateurs)` : selectedComm.target}
                   </span>
                 </div>
               </div>
@@ -2180,7 +2180,7 @@ export default function Backoffice() {
                 </div>
               </div>
 
-              {selectedComm.target_email === 'TOUS' && (
+              {selectedComm.target === 'ALL' && (
                 <div>
                   <h4 className="text-slate-500 text-xs uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
                     <Users className="w-4 h-4" /> Liste des destinataires ({activeUsers})

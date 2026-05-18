@@ -182,6 +182,20 @@ class SystemLog(Base):
 # Création des tables
 Base.metadata.create_all(bind=engine)
 
+# Auto-migration pour SQLite
+from sqlalchemy import text
+def auto_migrate():
+    with engine.begin() as conn:
+        try:
+            result = conn.execute(text("PRAGMA table_info(notifications)"))
+            columns = [row[1] for row in result.fetchall()]
+            if "communication_id" not in columns:
+                conn.execute(text("ALTER TABLE notifications ADD COLUMN communication_id INTEGER"))
+        except Exception as e:
+            print(f"Migration error: {e}")
+
+auto_migrate()
+
 def get_db():
     db = SessionLocal()
     try:
