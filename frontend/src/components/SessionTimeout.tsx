@@ -1,5 +1,6 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { AlertTriangle, LogOut } from 'lucide-react';
 
 const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
@@ -7,6 +8,7 @@ const WARNING_BEFORE_LOGOUT_MS = 30 * 1000;
 
 export default function SessionTimeout() {
      const { isAuthenticated, logout } = useAuth();
+     const location = useLocation();
      const [showWarning, setShowWarning] = useState(false);
      const [timeLeft, setTimeLeft] = useState(WARNING_BEFORE_LOGOUT_MS / 1000);
 
@@ -54,7 +56,7 @@ export default function SessionTimeout() {
      }, [isAuthenticated, startWarning]);
 
      useEffect(() => {
-          if (!isAuthenticated) return;
+          if (!isAuthenticated || location.pathname.startsWith('/backoffice')) return;
 
           resetTimer();
 

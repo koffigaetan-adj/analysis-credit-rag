@@ -86,9 +86,9 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
 
           <!-- HEADER -->
           <tr>
-            <td style="background:linear-gradient(135deg,#1e1b3a 0%,#2d2660 60%,#1a1535 100%);padding:32px 40px 24px 40px;text-align:center;">
+            <td style="background:linear-gradient(135deg, #18181b 0%, #3f3f46 60%, #27272a 100%);padding:32px 40px 24px 40px;text-align:center;">
               {logo_img_tag}
-              <div style="margin-top:14px;width:48px;height:3px;background:linear-gradient(90deg,#E73919,#a89fdb);margin-left:auto;margin-right:auto;border-radius:2px;"></div>
+              <div style="margin-top:14px;width:48px;height:3px;background:linear-gradient(90deg,#E73919,#c22d10);margin-left:auto;margin-right:auto;border-radius:2px;"></div>
             </td>
           </tr>
 
