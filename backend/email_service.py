@@ -67,9 +67,9 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
 
         # Choix du logo (Backoffice ou Classique)
         if is_backoffice:
-            logo_img_tag = f'<img src="{frontend_url}/logocomplet.svg" alt="Kaïs Analytics" style="max-height:44px; display:inline-block;">'
+            logo_img_tag = f'<a href="{frontend_url}" style="display:inline-block;"><img src="{frontend_url}/Logocomplet.svg" alt="Kaïs Analytics" style="max-height:44px; display:inline-block; border:none;"></a>'
         else:
-            logo_img_tag = '<img src="cid:logomail" alt="Kaïs Analytics" style="max-height:44px; display:inline-block;">'
+            logo_img_tag = f'<a href="{frontend_url}" style="display:inline-block;"><img src="cid:logomail" alt="Kaïs Analytics" style="max-height:44px; display:inline-block; border:none;"></a>'
 
         # Template HTML premium
         template_html = f"""<!DOCTYPE html>
@@ -86,7 +86,7 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
 
           <!-- HEADER -->
           <tr>
-            <td style="background: linear-gradient(135deg,#1e1b3a 0%,#2d2660 60%,#1a1535 100%);padding:32px 40px 24px 40px;text-align:center;">
+            <td style="background:linear-gradient(135deg,#1e1b3a 0%,#2d2660 60%,#1a1535 100%);padding:32px 40px 24px 40px;text-align:center;">
               {logo_img_tag}
               <div style="margin-top:14px;width:48px;height:3px;background:linear-gradient(90deg,#E73919,#a89fdb);margin-left:auto;margin-right:auto;border-radius:2px;"></div>
             </td>
@@ -103,12 +103,7 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
             </td>
           </tr>
 
-          <!-- CTA -->
-          <tr>
-            <td style="background:#ffffff;padding:0 40px 32px 40px;text-align:center;">
-              <a href="{frontend_url}" style="display:inline-block;background:linear-gradient(135deg,#E73919,#c22d10);color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;padding:13px 32px;border-radius:10px;letter-spacing:0.5px;">Accéder à Kaïs Analytics</a>
-            </td>
-          </tr>
+
 
           <!-- FOOTER -->
           <tr>
