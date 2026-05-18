@@ -67,7 +67,7 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
 
         # Choix du logo (Backoffice ou Classique)
         if is_backoffice:
-            logo_img_tag = f'<img src="{frontend_url}/logocompletoffice.svg" alt="Kaïs Backoffice" style="max-height:44px; display:inline-block;">'
+            logo_img_tag = f'<img src="{frontend_url}/logocomplet.svg" alt="Kaïs Analytics" style="max-height:44px; display:inline-block;">'
         else:
             logo_img_tag = '<img src="cid:logomail" alt="Kaïs Analytics" style="max-height:44px; display:inline-block;">'
 
@@ -86,7 +86,7 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
 
           <!-- HEADER -->
           <tr>
-            <td style="background:linear-gradient(135deg,#1e1b3a 0%,#2d2660 60%,#1a1535 100%);padding:32px 40px 24px 40px;text-align:center;">
+            <td style="background: linear-gradient(135deg,#1e1b3a 0%,#2d2660 60%,#1a1535 100%);padding:32px 40px 24px 40px;text-align:center;">
               {logo_img_tag}
               <div style="margin-top:14px;width:48px;height:3px;background:linear-gradient(90deg,#E73919,#a89fdb);margin-left:auto;margin-right:auto;border-radius:2px;"></div>
             </td>
@@ -95,7 +95,7 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
           <!-- BODY -->
           <tr>
             <td style="background:#ffffff;padding:36px 40px 28px 40px;">
-              <p style="margin:0 0 8px 0;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a89fdb;">Message de l&rsquo;&eacute;quipe Kaïs</p>
+              <p style="margin:0 0 8px 0;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#c22d10;">Message de l&rsquo;&eacute;quipe Kaïs Analytics</p>
               <div style="height:1px;background:#f0eeff;margin-bottom:24px;"></div>
               <div style="font-size:15px;color:#334155;line-height:1.75;">
                 {html_content}
