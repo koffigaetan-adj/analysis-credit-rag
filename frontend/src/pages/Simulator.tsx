@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { ArrowRight, Activity, Percent, Banknote, ShieldAlert, TrendingDown, TrendingUp, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Plot from 'react-plotly.js';
@@ -117,7 +117,7 @@ export default function Simulator() {
 
         {/* COLONNE GAUCHE: SLIDERS */}
         <div className="lg:col-span-5 space-y-8">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl p-7 border border-slate-200 dark:border-slate-800 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-8 uppercase tracking-wider">
               <Settings2 className="w-4 h-4 text-indigo-500" /> Données de l'Entreprise
             </h2>
@@ -126,7 +126,7 @@ export default function Simulator() {
             <RangeSlider label="Dette existante" value={detteBase} min={0} max={2000000} step={10000} unit="€" onChange={setDetteBase} icon={TrendingDown} />
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl p-7 border border-slate-200 dark:border-slate-800 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-8 uppercase tracking-wider">
               <TrendingUp className="w-4 h-4 text-emerald-500" /> Scénario de Financement
             </h2>
@@ -140,7 +140,7 @@ export default function Simulator() {
         <div className="lg:col-span-7 space-y-8">
 
           {/* ── Main KPI — Redesign Premium ── */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700/60 shadow-sm relative overflow-hidden transition-all duration-300">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-all duration-300">
             {/* Liseré latéral de statut */}
             <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: pdColor }} />
 
@@ -226,7 +226,7 @@ export default function Simulator() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             {/* DSCR */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+            <div className="bg-white dark:bg-slate-950/40 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ratio DSCR</p>
                 <div className={`p-2 rounded-lg ${dscr < 1.2 ? 'text-red-500 bg-red-50/50' : 'text-emerald-500 bg-emerald-50/50'}`}>
@@ -254,7 +254,7 @@ export default function Simulator() {
             </div>
 
             {/* LEVIER */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+            <div className="bg-white dark:bg-slate-950/40 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Levier de Dette</p>
                 <div className={`p-2 rounded-lg ${levier > 4 ? 'text-red-500 bg-red-50/50' : 'text-emerald-500 bg-emerald-50/50'}`}>
@@ -283,7 +283,7 @@ export default function Simulator() {
           </div>
 
           {/* ── Graphique Plotly — Tons Ardoise/Émeraude ── */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl p-7 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400">Capacité d'Autofinancement (Simulation 5 ans)</h3>
             </div>

@@ -1,4 +1,4 @@
-import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone, Globe, BellOff, BellRing, CheckCircle2, AlertTriangle } from 'lucide-react';
+﻿import { Bell, Lock, User, Building, ShieldCheck, Mail, Save, X, ChevronRight, UploadCloud, UserCircle, Camera, Phone, Globe, BellOff, BellRing, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -53,9 +53,9 @@ export default function Settings() {
       fetch(`${import.meta.env.VITE_API_URL}/auth/establishments`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => res.json())
-      .then(data => setEstablishments(data))
-      .catch(err => console.error(err));
+        .then(res => res.json())
+        .then(data => setEstablishments(data))
+        .catch(err => console.error(err));
     }
   }, [token]);
 
@@ -66,7 +66,7 @@ export default function Settings() {
       setEmail(user.email || '');
       setEstablishment(user.establishment || 'Kof Company');
       setAvatarPreview(user.avatar_url || null);
-      
+
       setNotifPreferences({
         notif_email_login: user.notif_email_login ?? true,
         notif_email_analysis: user.notif_email_analysis ?? true,
@@ -94,7 +94,7 @@ export default function Settings() {
       if (!response.ok) {
         throw new Error('Erreur de mise à jour des préférences');
       }
-      
+
       if (user && token) {
         login(token, { ...user, ...newPreferences }, false);
       }
@@ -203,7 +203,7 @@ export default function Settings() {
         <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
           Paramètre <span className="font-semibold text-slate-900 dark:text-white">du compte</span>
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
           Gérez votre compte, votre sécurité et vos préférences d'application.
         </p>
       </div>
@@ -230,7 +230,7 @@ export default function Settings() {
             </p>
           </div>
           <div className="md:col-span-2">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-all overflow-hidden">
+            <div className="bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-all overflow-hidden">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-6">
                 <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                   <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-500">
@@ -265,7 +265,7 @@ export default function Settings() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     disabled={user?.role === 'ANALYST'}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -275,7 +275,7 @@ export default function Settings() {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     disabled={user?.role === 'ANALYST'}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
@@ -285,7 +285,7 @@ export default function Settings() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={user?.role === 'ANALYST'}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
@@ -294,7 +294,7 @@ export default function Settings() {
                     value={establishment}
                     onChange={(e) => setEstablishment(e.target.value)}
                     disabled={user?.role !== 'SUPER_ADMIN'}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
                   >
                     {establishments.length === 0 ? (
                       <option value={establishment}>{establishment}</option>
@@ -308,7 +308,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="mt-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-all overflow-hidden p-6 gap-4 flex items-center">
+            <div className="mt-4 bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-all overflow-hidden p-6 gap-4 flex items-center">
               <ShieldCheck className="w-5 h-5 icon-primary" />
               <div>
                 <h3 className="text-sm font-bold text-slate-800 dark:text-white">Droits de votre compte</h3>
@@ -327,20 +327,20 @@ export default function Settings() {
             </p>
           </div>
           <div className="md:col-span-2">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
               <div className="p-4 flex items-center justify-between">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2"><Globe className="w-4 h-4 text-slate-400" /> Langue de l'interface</span>
                 <select
                   value={currentLang}
                   onChange={handleLanguageChange}
-                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-1.5 outline-none"
+                  className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-1.5 outline-none"
                 >
                   <option value="fr">Français</option>
                   <option value="en">English</option>
                   <option value="es">Español</option>
                 </select>
               </div>
-              
+
               {[
                 { key: 'notif_email_login', label: "Alerte email à chaque connexion", icon: Lock },
                 { key: 'notif_email_password', label: "Email de sécurité (Mise à jour du mot de passe)", icon: ShieldCheck },
@@ -377,7 +377,7 @@ export default function Settings() {
           </div>
           <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+            <div className="bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase mb-2 tracking-tighter">Mot de passe</h3>
               <p className="text-xs text-slate-500 mb-4">La sécurité de votre compte est primordiale.</p>
               <button
@@ -388,7 +388,7 @@ export default function Settings() {
               </button>
             </div>
 
-            <div className={`border rounded-xl p-5 shadow-sm flex flex-col justify-between transition-all duration-300 ${user?.two_factor_enabled ? 'bg-emerald-500/5 border-emerald-500/30 ring-1 ring-emerald-500/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
+            <div className={`border rounded-xl p-5 shadow-sm flex flex-col justify-between transition-all duration-300 ${user?.two_factor_enabled ? 'bg-emerald-500/5 border-emerald-500/30 ring-1 ring-emerald-500/20' : 'bg-white dark:bg-slate-950/40 border-slate-200 dark:border-slate-800'}`}>
               <div className="flex justify-between items-start mb-2">
                 <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">Double Authentification</h3>
                 {user?.two_factor_enabled && (
@@ -439,7 +439,7 @@ export default function Settings() {
       {/* MODAL : CONFIRMATION MOT DE PASSE */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Lock className="w-5 h-5 icon-primary" />
@@ -473,7 +473,7 @@ export default function Settings() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveProfile();
                 }}
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               />
             </div>
 
@@ -500,7 +500,7 @@ export default function Settings() {
       {/* MODAL : SUCCÈS */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-sm p-8 text-center animate-in zoom-in-90 duration-300">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-sm p-8 text-center animate-in zoom-in-90 duration-300">
             <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShieldCheck className="w-8 h-8 text-emerald-500" />
             </div>

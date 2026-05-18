@@ -21,7 +21,7 @@ export default function NotificationModal({ notification, onClose }: Notificatio
       .replace(/\*\*(.*?)\*\*/gs, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/gs, '<em>$1</em>')
       .replace(/\[(.*?)\]\((.*?)\)/gs, '<a href="$2" target="_blank" class="text-blue-500 hover:underline cursor-pointer font-medium">$1</a>');
-    
+
     return { __html: html };
   };
 
@@ -37,15 +37,15 @@ export default function NotificationModal({ notification, onClose }: Notificatio
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center md:items-start md:justify-end p-4 md:p-8 bg-slate-950/20 md:bg-transparent backdrop-blur-md md:backdrop-blur-0 animate-in fade-in duration-300 overflow-y-auto pointer-events-none">
-      <div 
+      <div
         className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300 my-auto md:my-0 md:mt-20 pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Decor */}
         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-br from-blue-600/10 to-transparent dark:from-blue-500/5 pointer-events-none"></div>
-        
+
         {/* Close Button */}
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all z-10"
         >
@@ -69,8 +69,8 @@ export default function NotificationModal({ notification, onClose }: Notificatio
           </div>
 
           <div className="space-y-6">
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50">
-              <div 
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6">
+              <div
                 className="text-slate-600 dark:text-slate-300 text-base leading-relaxed whitespace-pre-wrap"
                 dangerouslySetInnerHTML={renderMessage(notification.message)}
               />

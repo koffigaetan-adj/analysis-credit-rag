@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, ShieldAlert, Key } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -133,7 +133,7 @@ export default function TwoFactorSettingsModal({ isOpen, onClose, isBackoffice =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
           <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2 uppercase tracking-widest">
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -202,7 +202,7 @@ export default function TwoFactorSettingsModal({ isOpen, onClose, isBackoffice =
                   value={code}
                   onChange={e => setCode(e.target.value)}
                   placeholder="123456"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-center font-mono tracking-[0.5em] focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-center font-mono tracking-[0.5em] focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white"
                 />
                 <button
                   onClick={handleVerify}
@@ -233,7 +233,7 @@ export default function TwoFactorSettingsModal({ isOpen, onClose, isBackoffice =
                 value={code}
                 onChange={e => setCode(e.target.value)}
                 placeholder="123456"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-center font-mono tracking-[0.5em] focus:ring-2 focus:ring-red-500/20 outline-none transition-all dark:text-white"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-center font-mono tracking-[0.5em] focus:ring-2 focus:ring-red-500/20 outline-none transition-all dark:text-white"
               />
               <button
                 onClick={handleDisable}

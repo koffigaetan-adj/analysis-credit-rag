@@ -7,7 +7,7 @@ export default function ProtectedRoute() {
      // Pendant que l'on vérifie si une session existe dans le localStorage
      if (isLoading) {
           return (
-               <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+               <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950/50 transition-colors duration-500">
                     {/* Background Gradients (matching Layout) */}
                     <div className="absolute inset-0 opacity-[0.1] dark:opacity-[0.15] [background-image:linear-gradient(#cbd5e1_1px,transparent_1px),linear-gradient(90deg,#cbd5e1_1px,transparent_1px)] dark:[background-image:linear-gradient(#1e293b_1px,transparent_1px),linear-gradient(90deg,#1e293b_1px,transparent_1px)] [background-size:40px_40px]" />
 

@@ -234,9 +234,9 @@ export default function Chat() {
                               Assistant <span className="font-semibold text-slate-900 dark:text-white">IA</span>
                          </h1>
                          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
-                              <img 
-                                   src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"} 
-                                   alt="Kaïs Assistant" 
+                              <img
+                                   src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"}
+                                   alt="Kaïs Assistant"
                                    className="w-5 h-5 object-contain"
                               />
                               Discutez, analysez et explorez des concepts financiers.
@@ -253,14 +253,14 @@ export default function Chat() {
                     </div>
                </div>
 
-               <div className="w-full flex-1 flex bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden min-h-0">
+               <div className="w-full flex-1 flex bg-white dark:bg-slate-950/30 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden min-h-0">
 
                     {/* SIDEBAR HISTORY */}
-                    <div className="w-1/4 min-w-[260px] hidden lg:flex flex-col border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm">
+                    <div className="w-1/4 min-w-[260px] hidden lg:flex flex-col border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-sm">
                          <div className="p-4">
                               <button
                                    onClick={startNewChat}
-                                   className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all font-medium"
+                                   className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all font-medium"
                               >
                                    <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
                                         <Plus className="w-4 h-4 text-slate-600 dark:text-slate-300" />
@@ -335,15 +335,15 @@ export default function Chat() {
                     </div>
 
                     {/* MAIN CHAT AREA */}
-                    <div className="flex-1 flex flex-col h-full relative bg-slate-50/50 dark:bg-slate-900/50">
+                    <div className="flex-1 flex flex-col h-full relative bg-slate-50/50 dark:bg-slate-950/40">
                          <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6">
                               {messages.map((msg, idx) => (
                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
                                         {msg.role === 'assistant' && (
                                              <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shrink-0 mr-4 shadow-sm border border-slate-100 dark:border-slate-800">
-                                                  <img 
-                                                       src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"} 
-                                                       alt="Kaïs Assistant" 
+                                                  <img
+                                                       src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"}
+                                                       alt="Kaïs Assistant"
                                                        className="w-6 h-6 object-contain"
                                                   />
                                              </div>
@@ -365,9 +365,9 @@ export default function Chat() {
                               {isTyping && (
                                    <div className="flex justify-start animate-in slide-in-from-bottom-2">
                                         <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shrink-0 mr-4 shadow-sm border border-slate-100 dark:border-slate-800">
-                                             <img 
-                                                  src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"} 
-                                                  alt="Typing..." 
+                                             <img
+                                                  src={isDarkMode ? "/logo_kais.svg" : "/logo_kais01.svg"}
+                                                  alt="Typing..."
                                                   className="w-5 h-5 object-contain animate-pulse"
                                              />
                                         </div>
@@ -382,7 +382,7 @@ export default function Chat() {
                          </div>
 
                          {/* INPUT AREA */}
-                         <div className="p-4 md:p-6 border-t border-slate-100 dark:border-slate-800 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+                         <div className="p-4 md:p-6 border-t border-slate-100 dark:border-slate-800 z-10 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md">
                               {messages.length <= 1 && !isTyping && !currentSessionId && (
                                    <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
                                         {suggestedPrompts.map((prompt, i) => (
@@ -404,7 +404,7 @@ export default function Chat() {
                                         onChange={(e) => setInputMessage(e.target.value)}
                                         disabled={isTyping}
                                         placeholder="Message Kaïs IA..."
-                                        className="flex-1 w-full pl-6 pr-16 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[24px] text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
+                                        className="flex-1 w-full pl-6 pr-16 py-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-[24px] text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
                                    />
                                    <button
                                         type="submit"

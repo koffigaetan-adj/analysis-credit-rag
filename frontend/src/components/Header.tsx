@@ -171,7 +171,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <>
-      <header className="print:hidden sticky top-0 z-40 w-full  dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-8 py-3 transition-all duration-300">
+      <header className="print:hidden sticky top-0 z-40 w-full  dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-8 py-3 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
 
           {/* LEFT */}
@@ -216,7 +216,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-900 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-950/40 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-200">
                   <div className="px-4 py-2 mb-2 border-b border-slate-50 dark:border-slate-800">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compte</p>
                   </div>
@@ -325,7 +325,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   <div
                     key={notif.id}
                     className={`group rounded-2xl border transition-all duration-200 overflow-hidden ${isExpanded
-                      ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/5'
+                      ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:!bg-slate-50 dark:hover:!bg-slate-800/50'
                       : notif.is_read
                         ? 'border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                         : 'border-transparent bg-blue-50/40 dark:bg-blue-500/5 hover:bg-blue-50/70 dark:hover:bg-blue-500/10'
@@ -367,7 +367,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     {/* Expanded content */}
                     {isExpanded && (
                       <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
-                        <div className="ml-5 rounded-xl p-4 border border-slate-100 dark:border-slate-700/50">
+                        <div className="ml-5 rounded-xl p-4">
                           <div
                             className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
                             dangerouslySetInnerHTML={renderMessage(notif.message)}

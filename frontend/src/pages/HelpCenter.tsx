@@ -112,7 +112,7 @@ export default function HelpCenter() {
                     </p>
                </div>
 
-               <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden transition-colors">
+               <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden transition-colors">
                     <div className="p-6 md:p-10">
 
                          {submitStatus === 'success' && (
@@ -149,7 +149,7 @@ export default function HelpCenter() {
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         placeholder="votre@email.com"
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all"
                                    />
                               </div>
 
@@ -163,7 +163,7 @@ export default function HelpCenter() {
                                              id="subject"
                                              onChange={handleSubjectChange}
                                              value={isCustomSubject ? "Autre" : formData.subject || "--- Sélectionner un objet ---"}
-                                             className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all"
+                                             className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all"
                                         >
                                              {subjectOptions.map((opt, idx) => (
                                                   <option key={idx} value={opt} disabled={opt.startsWith("---")}>{opt}</option>
@@ -177,7 +177,7 @@ export default function HelpCenter() {
                                                   value={customSubjectText}
                                                   onChange={(e) => setCustomSubjectText(e.target.value)}
                                                   placeholder="Précisez votre objet"
-                                                  className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all animate-in slide-in-from-right-4"
+                                                  className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all animate-in slide-in-from-right-4"
                                              />
                                         )}
                                    </div>
@@ -195,7 +195,7 @@ export default function HelpCenter() {
                                         value={formData.message}
                                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                         placeholder="Décrivez votre problème ou votre demande..."
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all resize-none"
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all resize-none"
                                    />
                               </div>
 

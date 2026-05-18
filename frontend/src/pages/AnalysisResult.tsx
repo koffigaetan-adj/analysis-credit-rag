@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, AlertTriangle, Send, Download,
@@ -298,8 +298,8 @@ export default function AnalysisResult() {
 
   if (!state || !state.clientInfo || !state.resultData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors">
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-[32px] shadow-xl text-center border border-slate-100 dark:border-slate-800 font-sans">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950/50 transition-colors">
+        <div className="bg-white dark:bg-slate-950/40 p-8 rounded-[32px] shadow-xl text-center border border-slate-100 dark:border-slate-800 font-sans">
           <AlertOctagon className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Données manquantes</h2>
           <Link to="/new" className="text-blue-600 dark:text-blue-400 font-medium flex items-center justify-center gap-2 hover:underline mt-4">
@@ -583,12 +583,12 @@ export default function AnalysisResult() {
           <div className="flex items-center gap-3 print:hidden">
             <button
               onClick={() => setIsEmailModalOpen(true)}
-              className="px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all flex items-center gap-2"
+              className="px-5 py-2.5 bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all flex items-center gap-2"
             >
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline text-sm font-medium">Envoyer</span>
             </button>
-            <button onClick={handleExport} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
+            <button onClick={handleExport} className="p-2.5 bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
               <Download className="w-4 h-4" />
             </button>
             {isHistoryMode ? (
@@ -609,21 +609,21 @@ export default function AnalysisResult() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-300">Décision IA</p>
             <div className="flex items-center gap-3">{decisionStyle.icon}<h2 className={`text-2xl font-bold ${decisionStyle.text}`}>{decision}</h2></div>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Score Solvabilité</p>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all"><Sparkles className="w-6 h-6 text-blue-600 group-hover:text-white" /></div>
               <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{resultData.score}<span className="text-slate-300 dark:text-slate-600 text-sm ml-1">/100</span></h3>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Fiabilité</p>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all"><ShieldCheck className="w-6 h-6 text-emerald-600 group-hover:text-white" /></div>
               <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">{reliability}</h3>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[28px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1.5 transition-all duration-300">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Tendance</p>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all"><LineChart className="w-6 h-6 text-indigo-600 group-hover:text-white" /></div>
@@ -635,7 +635,7 @@ export default function AnalysisResult() {
         {/* GRAPHIQUES */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-1 print:gap-8 print:break-inside-avoid">
           {/* Jauge */}
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors">
             <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8 print:mb-6">Structure Financière</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[250px]">
               <Plot
@@ -668,7 +668,7 @@ export default function AnalysisResult() {
           </div>
 
           {/* Waterfall */}
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors print:break-inside-avoid">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-8 print:p-8 transition-colors print:break-inside-avoid">
             <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8 print:mb-6">Analyse des Flux</h3>
             <div className="h-[250px] print:h-[280px]">
               <Plot
@@ -702,7 +702,7 @@ export default function AnalysisResult() {
         </div>
 
         {/* RADAR / KPIs SOLVABILITÉ */}
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm p-8 transition-colors print:break-inside-avoid">
+        <div className="bg-white dark:bg-slate-950/40 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm p-8 transition-colors print:break-inside-avoid">
           {isCompany ? (
             <>
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Radar des Ratios Clés</h3>
@@ -822,7 +822,7 @@ export default function AnalysisResult() {
 
         {/* SYNTHÈSE ET RISQUES */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:grid-cols-1 print:gap-8">
-          <div className="lg:col-span-2 print:col-span-1 bg-white dark:bg-slate-900 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-10 print:p-8 transition-colors print:break-inside-avoid">
+          <div className="lg:col-span-2 print:col-span-1 bg-white dark:bg-slate-950/40 rounded-[32px] print:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm print:border-slate-200 p-10 print:p-8 transition-colors print:break-inside-avoid">
             <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 print:mb-6 flex items-center gap-2">
               <FileText className="w-5 h-5 icon-primary" /> Note d'Audit
             </h3>
@@ -831,13 +831,13 @@ export default function AnalysisResult() {
             </p>
           </div>
           <div className="space-y-6 print:space-y-6 print:grid print:grid-cols-2 print:gap-6 print:space-y-0 print:break-inside-avoid">
-            <div className="bg-white dark:bg-slate-900 rounded-[28px] print:rounded-3xl border border-red-50 dark:border-red-500/30 p-6 print:p-6 shadow-sm transition-colors print:h-full">
+            <div className="bg-white dark:bg-slate-950/40 rounded-[28px] print:rounded-3xl border border-red-50 dark:border-red-500/30 p-6 print:p-6 shadow-sm transition-colors print:h-full">
               <h3 className="text-xs font-bold text-red-500 dark:text-red-400 uppercase mb-4 flex items-center gap-2"><AlertOctagon className="w-4 h-4" /> Risques</h3>
               <ul className="space-y-2">
                 {(resultData.risks || []).map((r: any, i: number) => <li key={i} className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">• {r}</li>)}
               </ul>
             </div>
-            <div className="bg-white dark:bg-slate-900 rounded-[28px] print:rounded-3xl border border-emerald-50 dark:border-emerald-500/30 p-6 print:p-6 shadow-sm transition-colors print:h-full">
+            <div className="bg-white dark:bg-slate-950/40 rounded-[28px] print:rounded-3xl border border-emerald-50 dark:border-emerald-500/30 p-6 print:p-6 shadow-sm transition-colors print:h-full">
               <h3 className="text-xs font-bold text-emerald-500 dark:text-emerald-400 uppercase mb-4 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Atouts</h3>
               <ul className="space-y-2">
                 {(resultData.opportunities || []).map((o: any, i: number) => <li key={i} className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">✓ {o}</li>)}
@@ -854,12 +854,12 @@ export default function AnalysisResult() {
             <img src="/logo_kais.svg" alt="Chat Kaïs" className="w-8 h-8 object-contain filter brightness-0 invert" />
           </button>
         ) : (
-          <div className="w-[400px] h-[550px] bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden animate-scale-in origin-bottom-right">
-            <div className="px-6 py-4 bg-slate-900 dark:bg-slate-950 flex items-center justify-between text-white">
+          <div className="w-[400px] h-[550px] bg-white dark:bg-slate-950/40 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden animate-scale-in origin-bottom-right">
+            <div className="px-6 py-4 bg-slate-900 dark:bg-slate-950/50 flex items-center justify-between text-white">
               <div className="flex items-center gap-2 text-sm font-bold tracking-widest"><img src="/logo_kais.svg" alt="Kaïs" className="w-5 h-5 object-contain" />Kaïs</div>
               <button onClick={() => setIsChatOpen(false)}><X className="w-5 h-5 opacity-50 hover:opacity-100" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 dark:bg-slate-950">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 dark:bg-slate-950/50">
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
                   <div
@@ -879,7 +879,7 @@ export default function AnalysisResult() {
               )}
               <div ref={chatEndRef} />
             </div>
-            <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+            <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex gap-2">
               <input value={inputMessage} onChange={e => setInputMessage(e.target.value)} placeholder="Posez une question..." className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 dark:text-slate-100" />
               <button type="submit" disabled={isTyping} className="p-2 bg-blue-600 rounded-xl text-white hover:bg-blue-700 transition-all"><Send className="w-4 h-4" /></button>
             </form>

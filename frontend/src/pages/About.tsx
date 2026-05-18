@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { ArrowLeft, Users, Target, Zap, Shield, Brain, BarChart3, ChevronRight } from 'lucide-react';
 
 const team = [

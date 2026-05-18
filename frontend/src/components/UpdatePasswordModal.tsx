@@ -72,7 +72,7 @@ export default function UpdatePasswordModal({ isOpen = false, onClose }: UpdateP
 
      return (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-               <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 relative">
+               <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 relative">
                     {!isFirstLogin && onClose && (
                          <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10">
                               <X className="w-5 h-5" />
@@ -119,7 +119,7 @@ export default function UpdatePasswordModal({ isOpen = false, onClose }: UpdateP
                                              value={oldPassword}
                                              onChange={(e) => setOldPassword(e.target.value)}
                                              placeholder="••••••••"
-                                             className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm"
+                                             className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm"
                                              required
                                         />
                                         <button
@@ -141,7 +141,7 @@ export default function UpdatePasswordModal({ isOpen = false, onClose }: UpdateP
                                              value={newPassword}
                                              onChange={(e) => setNewPassword(e.target.value)}
                                              placeholder="Nouveau mot de passe"
-                                             className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm"
+                                             className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm"
                                              required
                                         />
                                         <button
@@ -163,7 +163,7 @@ export default function UpdatePasswordModal({ isOpen = false, onClose }: UpdateP
                                              value={confirmPassword}
                                              onChange={(e) => setConfirmPassword(e.target.value)}
                                              placeholder="Répétez le mot de passe"
-                                             className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm"
+                                             className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm"
                                              required
                                         />
                                         <button

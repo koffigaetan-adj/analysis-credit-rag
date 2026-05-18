@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Lock, Eye, Database, UserCheck, Bell, Mail } from 'lucide-react';
 
 const sections = [

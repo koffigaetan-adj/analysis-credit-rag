@@ -120,6 +120,22 @@ class AccountRequest(Base):
     rejection_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class CommunicationHistory(Base):
+    __tablename__ = "communication_history"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    target = Column(String) # "ALL" or specific email
+    delivery_method = Column(String) # "IN_APP", "EMAIL", "BOTH"
+    sender_name = Column(String, nullable=True)
+    # Stats
+    total_sent = Column(Integer, default=0)
+    email_delivered = Column(Integer, default=0)
+    email_failed = Column(Integer, default=0)
+    email_opened = Column(JSON, default=list) # Liste d'emails ayant ouvert
+    in_app_opened = Column(JSON, default=list) # Liste des user_ids ayant cliqué
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True)
@@ -130,6 +146,7 @@ class Notification(Base):
     type = Column(String) # ACCOUNT_REQUEST, WELCOME, INFO
     sender_name = Column(String, nullable=True) # Admin who sent it
     is_read = Column(Boolean, default=False)
+    communication_id = Column(Integer, nullable=True) # Link to CommunicationHistory
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class PasswordResetCode(Base):

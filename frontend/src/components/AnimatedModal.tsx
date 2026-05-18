@@ -85,7 +85,7 @@ export default function AnimatedModal({
                />
 
                {/* Modal Container */}
-               <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300">
+               <div className="relative w-full max-w-sm bg-white dark:bg-slate-950/40 rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300">
 
                     {/* Ligne de décoration supérieure */}
                     <div className={`h-1.5 w-full ${activeConfig.bgClass}`} />

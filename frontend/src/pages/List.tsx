@@ -118,12 +118,12 @@ export default function Applications() {
           <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 tracking-tight transition-colors">
             Historique des <span className="font-semibold text-slate-900 dark:text-white">Analyses</span>
           </h1>
-          <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Consultez et gérez l'ensemble de vos audits clients.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">Consultez et gérez l'ensemble de vos audits clients.</p>
         </div>
         <div className="flex flex-row items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
           <button
             onClick={fetchApplications}
-            className="p-3 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+            className="p-3 flex items-center justify-center bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
           >
             <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -138,12 +138,12 @@ export default function Applications() {
       </div>
 
       {/* FILTERS & SEARCH BAR */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-50 dark:border-slate-800 p-3 mb-8 flex flex-col lg:flex-row justify-between items-center gap-4 transition-colors">
-        <div className="flex bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl w-full lg:w-auto">
-          <button onClick={() => setActiveTab('particulier')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'particulier' ? 'bg-white dark:bg-slate-900 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+      <div className="bg-white dark:bg-slate-950/40 rounded-3xl shadow-sm border border-slate-50 dark:border-slate-800 p-3 mb-8 flex flex-col lg:flex-row justify-between items-center gap-4 transition-colors">
+        <div className="flex bg-slate-50 dark:bg-slate-950/50 p-1.5 rounded-2xl w-full lg:w-auto">
+          <button onClick={() => setActiveTab('particulier')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'particulier' ? 'bg-white dark:bg-slate-950/40 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
             <User className="w-4 h-4" /> Particuliers
           </button>
-          <button onClick={() => setActiveTab('entreprise')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'entreprise' ? 'bg-white dark:bg-slate-900 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+          <button onClick={() => setActiveTab('entreprise')} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === 'entreprise' ? 'bg-white dark:bg-slate-950/40 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
             <Building2 className="w-4 h-4" /> Entreprises
           </button>
         </div>
@@ -155,13 +155,13 @@ export default function Applications() {
             placeholder="Rechercher un client..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 focus:border-blue-100 dark:focus:border-blue-900 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+            className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600"
           />
         </div>
       </div>
 
       {/* TABLE SECTION */}
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>

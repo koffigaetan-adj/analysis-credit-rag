@@ -330,7 +330,7 @@ export default function Team() {
   <div className="flex items-center gap-2">
     <button
       onClick={fetchUsers}
-      className="p-3 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+      className="p-3 flex items-center justify-center bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
     >
       <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
     </button>
@@ -379,7 +379,7 @@ export default function Team() {
           ].map((stat, i) => (
             <div
               key={i}
-              className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1"
+              className="bg-white dark:bg-slate-950/40 rounded-[24px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-xl dark:hover:shadow-blue-900/10 hover:-translate-y-1"
             >
               <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center shadow-inner`}>
                 {stat.icon}
@@ -395,14 +395,14 @@ export default function Team() {
 
       {/* TABLEAU MEMBERS */}
       {activeTab === 'members' && (
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+        <div className="bg-white dark:bg-slate-950/40 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
           <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-950/30 transition-colors">
             <div className="relative w-64 group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-600 transition-colors group-focus-within:text-blue-500" />
               <input
                 type="text"
                 placeholder="Rechercher un membre..."
-                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm dark:text-slate-200 outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-sm dark:text-slate-200 outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
               />
             </div>
           </div>
@@ -517,7 +517,7 @@ export default function Team() {
 
       {/* TABLEAU REQUESTS */}
       {activeTab === 'requests' && (
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+        <div className="bg-white dark:bg-slate-950/40 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[700px]">
               <thead>
@@ -580,7 +580,7 @@ export default function Team() {
       {/* MODAL : ÉDITION MEMBRE */}
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Edit3 className="w-5 h-5 icon-primary" />
@@ -608,7 +608,7 @@ export default function Team() {
                     type="text"
                     value={editForm.prenom}
                     onChange={(e) => setEditForm({ ...editForm, prenom: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -617,7 +617,7 @@ export default function Team() {
                     type="text"
                     value={editForm.nom}
                     onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   />
                 </div>
               </div>
@@ -627,7 +627,7 @@ export default function Team() {
                 <select
                   value={editForm.sexe}
                   onChange={(e) => setEditForm({ ...editForm, sexe: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 >
                   <option value="M">Masculin</option>
                   <option value="F">Féminin</option>
@@ -641,7 +641,7 @@ export default function Team() {
                   type="email"
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 />
               </div>
 
@@ -651,7 +651,7 @@ export default function Team() {
                   <select
                     value={editForm.establishment}
                     onChange={(e) => setEditForm({ ...editForm, establishment: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   >
                     <option value="" disabled>Sélectionner un établissement</option>
                     {establishments.map(est => (
@@ -667,7 +667,7 @@ export default function Team() {
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                   disabled={editingUser.role === 'SUPER_ADMIN'}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <option value="ANALYST">Analyste</option>
                   {user?.role === 'SUPER_ADMIN' && (
@@ -706,7 +706,7 @@ export default function Team() {
       {/* MODAL : SUPPRESSION MEMBRE (REQUIERT MDP) */}
       {deletingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-rose-100 dark:border-rose-900/30 flex justify-between items-center bg-rose-50/50 dark:bg-rose-900/10">
               <h3 className="text-lg font-bold text-rose-600 dark:text-rose-500 flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />
@@ -741,7 +741,7 @@ export default function Team() {
                   onChange={(e) => setAdminPassword(e.target.value)}
                   autoFocus
                   onKeyDown={(e) => e.key === 'Enter' && handleConfirmDelete()}
-                  className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-rose-500/50 outline-none transition-all"
+                  className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-rose-500/50 outline-none transition-all"
                 />
               </div>
             </div>
@@ -769,7 +769,7 @@ export default function Team() {
       {/* MODAL : CRÉATION MEMBRE */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-blue-50/30 dark:bg-blue-900/10">
               <h3 className="text-lg font-bold text-blue-600 dark:text-blue-500 flex items-center gap-2">
                 <UserPlus className="w-5 h-5" />
@@ -801,7 +801,7 @@ export default function Team() {
                     type="text"
                     value={createForm.prenom}
                     onChange={(e) => setCreateForm({ ...createForm, prenom: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -810,7 +810,7 @@ export default function Team() {
                     type="text"
                     value={createForm.nom}
                     onChange={(e) => setCreateForm({ ...createForm, nom: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   />
                 </div>
               </div>
@@ -820,7 +820,7 @@ export default function Team() {
                 <select
                   value={createForm.sexe}
                   onChange={(e) => setCreateForm({ ...createForm, sexe: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 >
                   <option value="M">Masculin</option>
                   <option value="F">Féminin</option>
@@ -834,7 +834,7 @@ export default function Team() {
                   type="email"
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 />
               </div>
 
@@ -844,7 +844,7 @@ export default function Team() {
                   <select
                     value={createForm.establishment}
                     onChange={(e) => setCreateForm({ ...createForm, establishment: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   >
                     <option value="" disabled>Sélectionner un établissement</option>
                     {establishments.map(est => (
@@ -863,7 +863,7 @@ export default function Team() {
                     placeholder="Devra être modifié à la connexion"
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   />
                 </div>
               </div>
@@ -873,7 +873,7 @@ export default function Team() {
                 <select
                   value={createForm.role}
                   onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 >
                   <option value="ANALYST">Analyste</option>
                   {user?.role === 'SUPER_ADMIN' && (
@@ -909,7 +909,7 @@ export default function Team() {
       {/* MODAL : APPROBATION DEMANDE */}
       {approvingReq && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-blue-50/30 dark:bg-blue-900/10">
               <h3 className="text-lg font-bold text-blue-600 dark:text-blue-500 flex items-center gap-2">
                 <UserPlus className="w-5 h-5" />
@@ -939,7 +939,7 @@ export default function Team() {
                 <select
                   value={approveForm.establishment}
                   onChange={(e) => setApproveForm({ ...approveForm, establishment: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 >
                   <option value="" disabled>Sélectionner un établissement</option>
                   {establishments.map(est => (
@@ -953,7 +953,7 @@ export default function Team() {
                 <select
                   value={approveForm.role}
                   onChange={(e) => setApproveForm({ ...approveForm, role: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                 >
                   <option value="ANALYST">Analyste</option>
                   <option value="ADMIN">Administrateur</option>
@@ -970,7 +970,7 @@ export default function Team() {
                     placeholder="Sera modifié à la 1ère connexion"
                     value={approveForm.password}
                     onChange={(e) => setApproveForm({ ...approveForm, password: e.target.value })}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                   />
                 </div>
               </div>
@@ -999,7 +999,7 @@ export default function Team() {
       {/* MODAL : REFUS DEMANDE */}
       {rejectingReq && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-950/40 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-rose-100 dark:border-rose-900/30 flex justify-between items-center bg-rose-50/50 dark:bg-rose-900/10">
               <h3 className="text-lg font-bold text-rose-600 dark:text-rose-500 flex items-center gap-2">
                 <Shield className="w-5 h-5" />
@@ -1031,7 +1031,7 @@ export default function Team() {
                   rows={3}
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-rose-500/50 outline-none resize-none"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-rose-500/50 outline-none resize-none"
                 />
               </div>
             </div>

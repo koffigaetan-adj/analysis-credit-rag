@@ -30,7 +30,7 @@ def markdown_to_html(text: str) -> str:
     text = text.replace('\n', '<br>')
     return text
 
-def send_email_sync(to_email: str, subject: str, html_content: str, attachment_name: str = None, attachment_data: bytes = None, is_backoffice: bool = False):
+def send_email_sync(to_email: str, subject: str, html_content: str, attachment_name: str = None, attachment_data: bytes = None, is_backoffice: bool = False, tracking_pixel_url: str = None):
     """
     Fonction synchrone pour envoyer un email via SMTP.
     Retourne True si l'envoi a réussi, False sinon.
@@ -117,6 +117,7 @@ def send_email_sync(to_email: str, subject: str, html_content: str, attachment_n
       </td>
     </tr>
   </table>
+  {f'<img src="{tracking_pixel_url}" width="1" height="1" style="display:none;" />' if tracking_pixel_url else ''}
 </body>
 </html>"""
 

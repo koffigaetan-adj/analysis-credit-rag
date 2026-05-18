@@ -1,4 +1,4 @@
-import { ShieldCheck, Lock, FileText, Database, ArrowLeft, Mail } from 'lucide-react';
+﻿import { ShieldCheck, Lock, FileText, Database, ArrowLeft, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Privacy() {
@@ -24,7 +24,7 @@ export default function Privacy() {
 
                <div className="space-y-8 text-slate-600 dark:text-slate-300 leading-relaxed">
                     {/* Intro */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <section className="bg-white dark:bg-slate-950/40 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
                          <div className="flex items-center gap-4 mb-6">
                               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
                                    <ShieldCheck className="w-6 h-6" />
@@ -39,7 +39,7 @@ export default function Privacy() {
                     </section>
 
                     {/* Data Collection */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <section className="bg-white dark:bg-slate-950/40 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
                          <div className="flex items-center gap-4 mb-6">
                               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
                                    <Database className="w-6 h-6" />
@@ -55,7 +55,7 @@ export default function Privacy() {
                     </section>
 
                     {/* Security */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <section className="bg-white dark:bg-slate-950/40 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
                          <div className="flex items-center gap-4 mb-6">
                               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
                                    <Lock className="w-6 h-6" />
@@ -73,7 +73,7 @@ export default function Privacy() {
                     </section>
 
                     {/* User Rights */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <section className="bg-white dark:bg-slate-950/40 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
                          <div className="flex items-center gap-4 mb-6">
                               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
                                    <FileText className="w-6 h-6" />

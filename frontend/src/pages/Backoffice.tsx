@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import logoSvg from '../images/logocompletoffice.svg';
 import TwoFactorSettingsModal from '../components/TwoFactorSettingsModal';
 
-type TabType = 'dashboard' | 'establishments' | 'users' | 'logs' | 'communications';
+type TabType = 'dashboard' | 'establishments' | 'users' | 'admins' | 'logs' | 'communications';
 
 interface Est {
   id: string;
@@ -119,6 +119,7 @@ export default function Backoffice() {
   const [aiRefining, setAIRefining] = useState(false);
   const [establishments, setEstablishments] = useState<Est[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [admins, setAdmins] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -169,18 +170,26 @@ export default function Backoffice() {
   });
   const [usrError, setUsrError] = useState('');
 
+  // --- States Admin ---
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<any | null>(null);
+  const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '', role: 'SYSTEM_ADMIN' });
+  const [adminError, setAdminError] = useState('');
+
   const API = import.meta.env.VITE_API_URL;
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [estRes, usrRes] = await Promise.all([
+      const [estRes, usrRes, adminRes] = await Promise.all([
         fetch(`${API}/auth/establishments`, { headers }),
         fetch(`${API}/auth/backoffice/users`, { headers }),
+        fetch(`${API}/auth/backoffice/admins`, { headers })
       ]);
       if (estRes.ok) setEstablishments(await estRes.json());
       if (usrRes.ok) setMembers(await usrRes.json());
+      if (adminRes.ok) setAdmins(await adminRes.json());
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
   };
@@ -239,7 +248,7 @@ export default function Backoffice() {
       if (filter !== 'ALL') params.append('level', filter);
       if (start) params.append('start_date', start);
       if (end) params.append('end_date', end);
-      
+
       const paramStrLogs = `?limit=200${params.toString() ? '&' + params.toString() : ''}`;
       const paramStrStats = params.toString() ? `?${params.toString()}` : '';
 
@@ -570,6 +579,39 @@ export default function Backoffice() {
     finally { setIsSubmitting(false); }
   };
 
+  const handleSaveAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminError('');
+    setIsSubmitting(true);
+    try {
+      if (editingAdmin) {
+        const res = await fetch(`${API}/auth/backoffice/admins/${editingAdmin.id}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({
+            name: adminForm.name,
+            email: adminForm.email,
+            role: adminForm.role,
+          })
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Erreur lors de la mise à jour'); }
+      } else {
+        const res = await fetch(`${API}/auth/backoffice/admins`, {
+          method: 'POST', headers,
+          body: JSON.stringify({
+            name: adminForm.name,
+            email: adminForm.email,
+            password: adminForm.password || 'TempPass123!',
+            role: adminForm.role,
+          })
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Erreur lors de la création'); }
+      }
+      await fetchData();
+      setShowAdminModal(false);
+    } catch (err: any) { setAdminError(err.message); }
+    finally { setIsSubmitting(false); }
+  };
+
   const toggleUserStatus = async (usr: Member) => {
     try {
       await fetch(`${API}/auth/backoffice/users/${usr.id}/toggle-status`, { method: 'PUT', headers });
@@ -655,6 +697,7 @@ export default function Backoffice() {
             { id: 'dashboard', icon: LayoutDashboard, label: 'Vue Globale' },
             { id: 'establishments', icon: Building2, label: 'Établissements' },
             { id: 'users', icon: Users, label: 'Comptes & Accès' },
+            { id: 'admins', icon: ShieldCheck, label: 'Accès Backoffice' },
             { id: 'communications', icon: Megaphone, label: 'Communications' },
             { id: 'logs', icon: Terminal, label: 'Logs Système' },
           ] as const).map(({ id, icon: Icon, label }) => (
@@ -662,9 +705,8 @@ export default function Backoffice() {
               key={id}
               onClick={() => setActiveTab(id)}
               style={activeTab === id ? { background: 'rgba(100,92,165,0.12)', color: '#a89fdb', borderColor: 'rgba(100,92,165,0.3)' } : {}}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm border ${
-                activeTab === id ? 'font-semibold' : 'border-transparent hover:bg-slate-800/60 text-slate-200 hover:text-white'
-              }`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm border ${activeTab === id ? 'font-semibold' : 'border-transparent hover:bg-slate-800/60 text-slate-200 hover:text-white'
+                }`}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -708,6 +750,7 @@ export default function Backoffice() {
               {activeTab === 'dashboard' && 'Vue Globale'}
               {activeTab === 'establishments' && 'Gestion des Établissements'}
               {activeTab === 'users' && "Gestion des Utilisateurs"}
+              {activeTab === 'admins' && "Gestion des Administrateurs"}
               {activeTab === 'communications' && 'Communications'}
               {activeTab === 'logs' && 'Logs & Monitoring Système'}
             </h2>
@@ -726,6 +769,16 @@ export default function Backoffice() {
                 <Plus className="w-4 h-4" /> Créer un compte
               </button>
             )}
+            {activeTab === 'admins' && (
+              <button onClick={() => {
+                setEditingAdmin(null);
+                setAdminForm({ name: '', email: '', password: '', role: 'SYSTEM_ADMIN' });
+                setAdminError('');
+                setShowAdminModal(true);
+              }} className="text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
+                <Plus className="w-4 h-4" /> Nouvel Administrateur
+              </button>
+            )}
           </div>
         </header>
 
@@ -736,6 +789,72 @@ export default function Backoffice() {
             </div>
           ) : (
             <>
+              {/* ADMINISTRATEURS */}
+              {activeTab === 'admins' && (
+                <div className="bg-[#121927] border border-slate-800/60 rounded-xl overflow-hidden animate-fade-in">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-[#0F1523] text-slate-300 text-xs uppercase tracking-wider border-b border-slate-800">
+                        <th className="px-5 py-3 font-medium">Nom</th>
+                        <th className="px-5 py-3 font-medium">Email</th>
+                        <th className="px-5 py-3 font-medium">Rôle</th>
+                        <th className="px-5 py-3 font-medium">Statut</th>
+                        <th className="px-5 py-3 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {admins.map(a => (
+                        <tr key={a.id} className="hover:bg-slate-800/30 transition-colors group">
+                          <td className="px-5 py-4">
+                            <p className="text-white font-medium text-sm">{a.name}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2 text-slate-300 text-sm">
+                              <Mail className="w-3.5 h-3.5" /> {a.email}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="bg-[#645CA5]/20 text-[#a89fdb] px-2 py-1 rounded text-[10px] font-bold tracking-wider">{a.role}</span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${a.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                              {a.is_active ? 'Actif' : 'Désactivé'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => {
+                                setEditingAdmin(a);
+                                setAdminForm({ name: a.name, email: a.email, password: '', role: a.role });
+                                setShowAdminModal(true);
+                              }} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors" title="Modifier">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button onClick={async () => {
+                                if (backofficeUser?.id === a.id) { alert("Vous ne pouvez pas désactiver votre propre compte."); return; }
+                                await fetch(`${API}/auth/backoffice/admins/${a.id}/toggle-status`, { method: 'PUT', headers });
+                                fetchData();
+                              }} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors" title={a.is_active ? "Désactiver" : "Activer"}>
+                                {a.is_active ? <XCircle className="w-4 h-4 text-amber-500" /> : <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                              </button>
+                              <button onClick={async () => {
+                                if (backofficeUser?.id === a.id) { alert("Vous ne pouvez pas supprimer votre propre compte."); return; }
+                                if (confirm(`Supprimer l'administrateur ${a.name} ?`)) {
+                                  await fetch(`${API}/auth/backoffice/admins/${a.id}`, { method: 'DELETE', headers });
+                                  fetchData();
+                                }
+                              }} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Supprimer">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               {/* COMMUNICATIONS */}
               {activeTab === 'communications' && (
                 <div className="max-w-3xl mx-auto animate-fade-in">
@@ -766,168 +885,168 @@ export default function Backoffice() {
                       {commView === 'new' && (
                         <div className="animate-in fade-in slide-in-from-left-2">
 
-                      {commSuccess && (
-                        <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2">
-                          <CheckCircle2 className="w-5 h-5" /> {commSuccess}
-                        </div>
-                      )}
+                          {commSuccess && (
+                            <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2">
+                              <CheckCircle2 className="w-5 h-5" /> {commSuccess}
+                            </div>
+                          )}
 
-                      {commError && (
-                        <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2">
-                          <AlertTriangle className="w-5 h-5" /> {commError}
-                        </div>
-                      )}
+                          {commError && (
+                            <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2">
+                              <AlertTriangle className="w-5 h-5" /> {commError}
+                            </div>
+                          )}
 
-                      <form onSubmit={handleBroadcast} className="space-y-6">
-                        <div className="space-y-3">
-                          <label className="text-xs font-bold text-slate-300 uppercase tracking-widest">Cible du message</label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <button
-                              type="button"
-                              onClick={() => setCommForm(f => ({ ...f, target: 'ALL' }))}
-                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'ALL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-200 hover:border-slate-500'}`}
-                            >
-                              <Users className="w-5 h-5" />
-                              <div className="text-left">
-                                <p className="text-sm font-semibold">Tous les comptes</p>
-                                <p className="text-[10px] opacity-60">Diffusion générale</p>
+                          <form onSubmit={handleBroadcast} className="space-y-6">
+                            <div className="space-y-3">
+                              <label className="text-xs font-bold text-slate-300 uppercase tracking-widest">Cible du message</label>
+                              <div className="grid grid-cols-2 gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setCommForm(f => ({ ...f, target: 'ALL' }))}
+                                  className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'ALL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-200 hover:border-slate-500'}`}
+                                >
+                                  <Users className="w-5 h-5" />
+                                  <div className="text-left">
+                                    <p className="text-sm font-semibold">Tous les comptes</p>
+                                    <p className="text-[10px] opacity-60">Diffusion générale</p>
+                                  </div>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCommForm(f => ({ ...f, target: 'EMAIL' }))}
+                                  className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'EMAIL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-200 hover:border-slate-500'}`}
+                                >
+                                  <Mail className="w-5 h-5" />
+                                  <div className="text-left">
+                                    <p className="text-sm font-semibold">Cible spécifique</p>
+                                    <p className="text-[10px] opacity-60">Par adresse email</p>
+                                  </div>
+                                </button>
                               </div>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setCommForm(f => ({ ...f, target: 'EMAIL' }))}
-                              className={`flex items-center justify-center gap-3 p-4 rounded-xl border transition-all ${commForm.target === 'EMAIL' ? 'bg-[#645CA5]/10 border-[#645CA5] text-white shadow-lg shadow-[#645CA5]/5' : 'bg-[#0F1523] border-slate-700 text-slate-200 hover:border-slate-500'}`}
-                            >
-                              <Mail className="w-5 h-5" />
-                              <div className="text-left">
-                                <p className="text-sm font-semibold">Cible spécifique</p>
-                                <p className="text-[10px] opacity-60">Par adresse email</p>
+                            </div>
+
+                            {commForm.target === 'EMAIL' && (
+                              <div className="animate-in fade-in slide-in-from-top-2">
+                                <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Adresse Email du destinataire</label>
+                                <input
+                                  required
+                                  type="email"
+                                  value={commForm.targetEmail}
+                                  onChange={e => setCommForm(f => ({ ...f, targetEmail: e.target.value }))}
+                                  placeholder="ex: jean.dupont@mail.com"
+                                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all"
+                                />
                               </div>
-                            </button>
-                          </div>
-                        </div>
+                            )}
 
-                        {commForm.target === 'EMAIL' && (
-                          <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Adresse Email du destinataire</label>
-                            <input
-                              required
-                              type="email"
-                              value={commForm.targetEmail}
-                              onChange={e => setCommForm(f => ({ ...f, targetEmail: e.target.value }))}
-                              placeholder="ex: jean.dupont@mail.com"
-                              className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all"
-                            />
-                          </div>
-                        )}
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Sujet (Titre de la notification)</label>
+                                <input
+                                  required
+                                  type="text"
+                                  value={commForm.title}
+                                  onChange={e => setCommForm(f => ({ ...f, title: e.target.value }))}
+                                  placeholder="Ex: Mise à jour système v2.4"
+                                  className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all font-medium"
+                                />
+                              </div>
 
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Sujet (Titre de la notification)</label>
-                            <input
-                              required
-                              type="text"
-                              value={commForm.title}
-                              onChange={e => setCommForm(f => ({ ...f, title: e.target.value }))}
-                              placeholder="Ex: Mise à jour système v2.4"
-                              className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:border-[#645CA5] transition-all font-medium"
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <div className="flex items-center gap-3">
-                                <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest">Message détaillé</label>
-                                {/* Formatting toolbar */}
-                                <div className="flex items-center gap-0.5 bg-[#0B0F19] p-1 rounded-lg border border-slate-700/60">
+                              <div>
+                                <div className="flex justify-between items-center mb-2">
+                                  <div className="flex items-center gap-3">
+                                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-widest">Message détaillé</label>
+                                    {/* Formatting toolbar */}
+                                    <div className="flex items-center gap-0.5 bg-[#0B0F19] p-1 rounded-lg border border-slate-700/60">
+                                      <button
+                                        type="button"
+                                        onClick={() => applyRichFormat('bold')}
+                                        title="Gras"
+                                        className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs font-black"
+                                      >
+                                        <Bold className="w-3.5 h-3.5" />
+                                        <span className="text-[9px] hidden sm:inline">Gras</span>
+                                      </button>
+                                      <div className="w-px h-4 bg-slate-700" />
+                                      <button
+                                        type="button"
+                                        onClick={() => applyRichFormat('italic')}
+                                        title="Italique"
+                                        className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs italic"
+                                      >
+                                        <Italic className="w-3.5 h-3.5" />
+                                        <span className="text-[9px] hidden sm:inline">Italique</span>
+                                      </button>
+                                      <div className="w-px h-4 bg-slate-700" />
+                                      <button
+                                        type="button"
+                                        onClick={insertRichBullet}
+                                        title="Puce"
+                                        className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs"
+                                      >
+                                        <List className="w-3.5 h-3.5" />
+                                        <span className="text-[9px] hidden sm:inline">Puce</span>
+                                      </button>
+                                      <div className="w-px h-4 bg-slate-700" />
+                                      <button
+                                        type="button"
+                                        onClick={insertRichLink}
+                                        title="Insérer un lien"
+                                        className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs"
+                                      >
+                                        <Link className="w-3.5 h-3.5" />
+                                        <span className="text-[9px] hidden sm:inline">Lien</span>
+                                      </button>
+                                    </div>
+                                  </div>
                                   <button
                                     type="button"
-                                    onClick={() => applyRichFormat('bold')}
-                                    title="Gras"
-                                    className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs font-black"
+                                    onClick={handleAIRefine}
+                                    disabled={aiRefining || !commForm.message}
+                                    className="flex items-center gap-2 text-[10px] font-bold text-[#a89fdb] hover:text-white bg-[#645CA5]/10 hover:bg-[#645CA5] px-3 py-1.5 rounded-full transition-all border border-[#645CA5]/20 disabled:opacity-50"
                                   >
-                                    <Bold className="w-3.5 h-3.5" />
-                                    <span className="text-[9px] hidden sm:inline">Gras</span>
-                                  </button>
-                                  <div className="w-px h-4 bg-slate-700" />
-                                  <button
-                                    type="button"
-                                    onClick={() => applyRichFormat('italic')}
-                                    title="Italique"
-                                    className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs italic"
-                                  >
-                                    <Italic className="w-3.5 h-3.5" />
-                                    <span className="text-[9px] hidden sm:inline">Italique</span>
-                                  </button>
-                                  <div className="w-px h-4 bg-slate-700" />
-                                  <button
-                                    type="button"
-                                    onClick={insertRichBullet}
-                                    title="Puce"
-                                    className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs"
-                                  >
-                                    <List className="w-3.5 h-3.5" />
-                                    <span className="text-[9px] hidden sm:inline">Puce</span>
-                                  </button>
-                                  <div className="w-px h-4 bg-slate-700" />
-                                  <button
-                                    type="button"
-                                    onClick={insertRichLink}
-                                    title="Insérer un lien"
-                                    className="flex items-center gap-1 px-2 py-1 hover:bg-[#645CA5]/20 hover:text-white rounded-md text-slate-300 transition-all text-xs"
-                                  >
-                                    <Link className="w-3.5 h-3.5" />
-                                    <span className="text-[9px] hidden sm:inline">Lien</span>
+                                    {aiRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                    Améliorer le message
                                   </button>
                                 </div>
+                                {/* Éditeur WYSIWYG (contentEditable) */}
+                                <div
+                                  ref={commEditorRef}
+                                  contentEditable
+                                  suppressContentEditableWarning
+                                  onInput={() => setCommForm(f => ({ ...f, message: commEditorRef.current?.innerHTML || '' }))}
+                                  data-placeholder="Rédigez votre message... Sélectionnez du texte puis cliquez sur Gras ou Italique."
+                                  className="comm-editor w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl transition-all leading-relaxed text-sm"
+                                />
                               </div>
-                              <button
-                                type="button"
-                                onClick={handleAIRefine}
-                                disabled={aiRefining || !commForm.message}
-                                className="flex items-center gap-2 text-[10px] font-bold text-[#a89fdb] hover:text-white bg-[#645CA5]/10 hover:bg-[#645CA5] px-3 py-1.5 rounded-full transition-all border border-[#645CA5]/20 disabled:opacity-50"
-                              >
-                                {aiRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                Améliorer le message
-                              </button>
                             </div>
-                            {/* Éditeur WYSIWYG (contentEditable) */}
-                            <div
-                              ref={commEditorRef}
-                              contentEditable
-                              suppressContentEditableWarning
-                              onInput={() => setCommForm(f => ({ ...f, message: commEditorRef.current?.innerHTML || '' }))}
-                              data-placeholder="Rédigez votre message... Sélectionnez du texte puis cliquez sur Gras ou Italique."
-                              className="comm-editor w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-3 rounded-xl transition-all leading-relaxed text-sm"
-                            />
-                          </div>
-                        </div>
 
-                        <div className="flex items-center justify-between p-4 bg-[#0F1523] rounded-xl border border-slate-800">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              id="send-email"
-                              checked={commForm.sendEmail}
-                              onChange={e => setCommForm(f => ({ ...f, sendEmail: e.target.checked }))}
-                              className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[#645CA5] focus:ring-[#645CA5]"
-                            />
-                            <label htmlFor="send-email" className="text-sm font-medium text-slate-300 cursor-pointer">
-                              Doubler l'envoi par Email
-                            </label>
-                          </div>
-                          <p className="text-[10px] text-slate-300 italic">L'email inclura votre signature Kaïs.</p>
-                        </div>
+                            <div className="flex items-center justify-between p-4 bg-[#0F1523] rounded-xl border border-slate-800">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  id="send-email"
+                                  checked={commForm.sendEmail}
+                                  onChange={e => setCommForm(f => ({ ...f, sendEmail: e.target.checked }))}
+                                  className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[#645CA5] focus:ring-[#645CA5]"
+                                />
+                                <label htmlFor="send-email" className="text-sm font-medium text-slate-300 cursor-pointer">
+                                  Doubler l'envoi par Email
+                                </label>
+                              </div>
+                              <p className="text-[10px] text-slate-300 italic">L'email inclura votre signature Kaïs.</p>
+                            </div>
 
-                        <button
-                          type="submit"
-                          disabled={commLoading || !commForm.title || !commForm.message}
-                          className="w-full bg-[#645CA5] hover:bg-[#746dbb] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-[#645CA5]/20 transition-all disabled:opacity-50 group"
-                        >
-                          {commLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
-                          DIFFUSER LE MESSAGE MAINTENANT
-                        </button>
-                      </form>
+                            <button
+                              type="submit"
+                              disabled={commLoading || !commForm.title || !commForm.message}
+                              className="w-full bg-[#645CA5] hover:bg-[#746dbb] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-[#645CA5]/20 transition-all disabled:opacity-50 group"
+                            >
+                              {commLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+                              Diffuser le message
+                            </button>
+                          </form>
                         </div>
                       )}
 
@@ -941,7 +1060,7 @@ export default function Backoffice() {
                                 <h3 className="text-white font-semibold">Historique des diffusions envoyées</h3>
                               </div>
                             </div>
-                            
+
                             <div className="overflow-x-auto">
                               <table className="w-full text-left border-collapse">
                                 <thead>
@@ -950,13 +1069,14 @@ export default function Backoffice() {
                                     <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Expéditeur</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Destinataire</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Sujet</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-200 uppercase tracking-widest">Statistiques</th>
                                     <th className="px-6 py-4"></th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800/30">
                                   {commHistory.length === 0 ? (
                                     <tr>
-                                      <td colSpan={5} className="px-6 py-10 text-center text-slate-300 text-sm italic">
+                                      <td colSpan={6} className="px-6 py-10 text-center text-slate-300 text-sm italic">
                                         Aucun historique pour le moment.
                                       </td>
                                     </tr>
@@ -980,16 +1100,41 @@ export default function Backoffice() {
                                           </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${h.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                                            {h.target_email || 'Inconnu'}
-                                          </span>
+                                          <div className="flex items-center gap-2">
+                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${h.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                              {h.target_email || 'Inconnu'}
+                                            </span>
+                                            {h.send_email && (
+                                              <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-1 rounded-full text-[9px] font-bold" title="Envoyé aussi par Email">
+                                                EMAIL
+                                              </span>
+                                            )}
+                                          </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4 max-w-[200px]">
                                           <div className="text-slate-100 font-medium line-clamp-1">{h.title}</div>
                                           <div className="text-[10px] text-slate-300 line-clamp-1 mt-0.5">{h.message}</div>
                                         </td>
+                                        <td className="px-6 py-4">
+                                          <div className="flex flex-col gap-1.5">
+                                            <div className="flex items-center gap-2 text-[10px] text-slate-300">
+                                              <span className="w-16">Envoyés:</span>
+                                              <span className="font-bold text-slate-100">{h.total_sent || 0}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px] text-slate-300">
+                                              <span className="w-16">Lu (In-App):</span>
+                                              <span className="font-bold text-emerald-400">{h.in_app_opened?.length || 0}</span>
+                                            </div>
+                                            {h.send_email && (
+                                              <div className="flex items-center gap-2 text-[10px] text-slate-300">
+                                                <span className="w-16">Lu (Email):</span>
+                                                <span className="font-bold text-blue-400">{h.email_opened?.length || 0}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </td>
                                         <td className="px-6 py-4 text-right">
-                                          <button 
+                                          <button
                                             onClick={() => setSelectedComm(h)}
                                             className="text-xs font-bold bg-slate-800 hover:bg-[#645CA5] text-slate-100 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
                                           >
@@ -1014,23 +1159,23 @@ export default function Backoffice() {
               {activeTab === 'logs' && (() => {
                 const LEVEL_STYLES: Record<string, string> = {
                   CRITICAL: 'bg-red-500/20 text-red-300 border-red-500/40',
-                  ERROR:    'bg-rose-500/20 text-rose-300 border-rose-500/40',
-                  WARNING:  'bg-amber-500/20 text-amber-300 border-amber-500/40',
-                  INFO:     'bg-blue-500/20 text-blue-300 border-blue-500/40',
-                  DEBUG:    'bg-slate-500/20 text-slate-200 border-slate-600',
+                  ERROR: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                  WARNING: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                  INFO: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+                  DEBUG: 'bg-slate-500/20 text-slate-200 border-slate-600',
                 };
                 const LEVEL_DOT: Record<string, string> = {
                   CRITICAL: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]',
-                  ERROR:    'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]',
-                  WARNING:  'bg-amber-400',
-                  INFO:     'bg-blue-400',
-                  DEBUG:    'bg-slate-500',
+                  ERROR: 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]',
+                  WARNING: 'bg-amber-400',
+                  INFO: 'bg-blue-400',
+                  DEBUG: 'bg-slate-500',
                 };
                 return (
                   <div className="space-y-4">
                     {/* Stats rapides */}
                     <div className="grid grid-cols-5 gap-3">
-                      {['CRITICAL','ERROR','WARNING','INFO','DEBUG'].map(lvl => (
+                      {['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'].map(lvl => (
                         <button
                           key={lvl}
                           onClick={() => setLogsFilter(lvl)}
@@ -1168,17 +1313,16 @@ export default function Backoffice() {
                                 {/* Meta */}
                                 <div className="flex items-center gap-3 shrink-0 text-right">
                                   {log.method && log.status_code && (
-                                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                                      log.status_code >= 500 ? 'text-red-400 border-red-500/30 bg-red-500/10' :
-                                      log.status_code >= 400 ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' :
-                                      'text-slate-300 border-slate-700'
-                                    }`}>
+                                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${log.status_code >= 500 ? 'text-red-400 border-red-500/30 bg-red-500/10' :
+                                        log.status_code >= 400 ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' :
+                                          'text-slate-300 border-slate-700'
+                                      }`}>
                                       {log.method} {log.status_code}
                                     </span>
                                   )}
                                   <div className="flex items-center gap-1 text-slate-600 text-[9px]">
                                     <Clock className="w-2.5 h-2.5" />
-                                    {log.created_at ? new Date(log.created_at).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '—'}
+                                    {log.created_at ? new Date(log.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
                                   </div>
                                   {(log.traceback || log.path) && (
                                     expandedLog === log.id
@@ -1236,250 +1380,250 @@ export default function Backoffice() {
                       <Loader2 className="w-5 h-5 animate-spin" /> Chargement des statistiques...
                     </div>
                   ) : dashboardStats ? (
-                  <>
-                    {/* ── ROW 1 : KPIs principaux ── */}
-                    <div className="grid grid-cols-4 gap-4">
-                      {([
-                        {
-                          label: 'Analyses totales',
-                          value: dashboardStats.analyses.total,
-                          sub: `+${dashboardStats.analyses.last_7d} cette semaine`,
-                          Icon: BarChart2,
-                          color: '#a89fdb',
-                          glow: 'rgba(168,159,219,0.18)',
-                          border: 'rgba(168,159,219,0.15)',
-                          badge: dashboardStats.analyses.today > 0 ? `${dashboardStats.analyses.today} aujourd'hui` : null,
-                          badgeColor: 'bg-violet-500/20 text-violet-300 border border-violet-500/20'
-                        },
-                        {
-                          label: 'Connexions (7j)',
-                          value: dashboardStats.api.logins_7d,
-                          sub: `${dashboardStats.api.logins_today} aujourd'hui`,
-                          Icon: KeyRound,
-                          color: '#34d399',
-                          glow: 'rgba(52,211,153,0.14)',
-                          border: 'rgba(52,211,153,0.12)',
-                          badge: null,
-                          badgeColor: ''
-                        },
-                        {
-                          label: 'Utilisateurs actifs',
-                          value: dashboardStats.users.active,
-                          sub: `+${dashboardStats.users.new_7d} nouveaux (7j)`,
-                          Icon: Users,
-                          color: '#60a5fa',
-                          glow: 'rgba(96,165,250,0.14)',
-                          border: 'rgba(96,165,250,0.12)',
-                          badge: dashboardStats.users.inactive > 0 ? `${dashboardStats.users.inactive} suspendus` : null,
-                          badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/20'
-                        },
-                        {
-                          label: 'Requêtes API totales',
-                          value: dashboardStats.api.total_requests,
-                          sub: `${dashboardStats.api.total_errors} erreur(s) détectée(s)`,
-                          Icon: Zap,
-                          color: dashboardStats.api.errors_7d > 0 ? '#f87171' : '#34d399',
-                          glow: dashboardStats.api.errors_7d > 0 ? 'rgba(248,113,113,0.14)' : 'rgba(52,211,153,0.14)',
-                          border: dashboardStats.api.errors_7d > 0 ? 'rgba(248,113,113,0.12)' : 'rgba(52,211,153,0.12)',
-                          badge: dashboardStats.api.errors_7d > 0 ? `${dashboardStats.api.errors_7d} err. (7j)` : '✓ Stable',
-                          badgeColor: dashboardStats.api.errors_7d > 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/20' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
-                        },
-                      ] as const).map(({ label, value, sub, Icon, color, glow, border, badge, badgeColor }) => (
-                        <div
-                          key={label}
-                          className="group relative overflow-hidden rounded-xl p-5 border transition-all duration-300 hover:scale-[1.02] cursor-default"
-                          style={{
-                            background: `linear-gradient(135deg, #121927 0%, #0d1120 100%)`,
-                            borderColor: border,
-                            boxShadow: `0 0 24px ${glow}, 0 1px 0 rgba(255,255,255,0.03) inset`
-                          }}
-                        >
-                          {/* Glow bg */}
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at 70% 20%, ${glow} 0%, transparent 65%)` }} />
-                          <div className="relative">
-                            <div className="flex items-center justify-between mb-3">
-                              <p className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-semibold">{label}</p>
-                              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
-                                <Icon className="w-4 h-4" style={{ color }} />
+                    <>
+                      {/* ── ROW 1 : KPIs principaux ── */}
+                      <div className="grid grid-cols-4 gap-4">
+                        {([
+                          {
+                            label: 'Analyses totales',
+                            value: dashboardStats.analyses.total,
+                            sub: `+${dashboardStats.analyses.last_7d} cette semaine`,
+                            Icon: BarChart2,
+                            color: '#a89fdb',
+                            glow: 'rgba(168,159,219,0.18)',
+                            border: 'rgba(168,159,219,0.15)',
+                            badge: dashboardStats.analyses.today > 0 ? `${dashboardStats.analyses.today} aujourd'hui` : null,
+                            badgeColor: 'bg-violet-500/20 text-violet-300 border border-violet-500/20'
+                          },
+                          {
+                            label: 'Connexions (7j)',
+                            value: dashboardStats.api.logins_7d,
+                            sub: `${dashboardStats.api.logins_today} aujourd'hui`,
+                            Icon: KeyRound,
+                            color: '#34d399',
+                            glow: 'rgba(52,211,153,0.14)',
+                            border: 'rgba(52,211,153,0.12)',
+                            badge: null,
+                            badgeColor: ''
+                          },
+                          {
+                            label: 'Utilisateurs actifs',
+                            value: dashboardStats.users.active,
+                            sub: `+${dashboardStats.users.new_7d} nouveaux (7j)`,
+                            Icon: Users,
+                            color: '#60a5fa',
+                            glow: 'rgba(96,165,250,0.14)',
+                            border: 'rgba(96,165,250,0.12)',
+                            badge: dashboardStats.users.inactive > 0 ? `${dashboardStats.users.inactive} suspendus` : null,
+                            badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/20'
+                          },
+                          {
+                            label: 'Requêtes API totales',
+                            value: dashboardStats.api.total_requests,
+                            sub: `${dashboardStats.api.total_errors} erreur(s) détectée(s)`,
+                            Icon: Zap,
+                            color: dashboardStats.api.errors_7d > 0 ? '#f87171' : '#34d399',
+                            glow: dashboardStats.api.errors_7d > 0 ? 'rgba(248,113,113,0.14)' : 'rgba(52,211,153,0.14)',
+                            border: dashboardStats.api.errors_7d > 0 ? 'rgba(248,113,113,0.12)' : 'rgba(52,211,153,0.12)',
+                            badge: dashboardStats.api.errors_7d > 0 ? `${dashboardStats.api.errors_7d} err. (7j)` : '✓ Stable',
+                            badgeColor: dashboardStats.api.errors_7d > 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/20' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
+                          },
+                        ] as const).map(({ label, value, sub, Icon, color, glow, border, badge, badgeColor }) => (
+                          <div
+                            key={label}
+                            className="group relative overflow-hidden rounded-xl p-5 border transition-all duration-300 hover:scale-[1.02] cursor-default"
+                            style={{
+                              background: `linear-gradient(135deg, #121927 0%, #0d1120 100%)`,
+                              borderColor: border,
+                              boxShadow: `0 0 24px ${glow}, 0 1px 0 rgba(255,255,255,0.03) inset`
+                            }}
+                          >
+                            {/* Glow bg */}
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at 70% 20%, ${glow} 0%, transparent 65%)` }} />
+                            <div className="relative">
+                              <div className="flex items-center justify-between mb-3">
+                                <p className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-semibold">{label}</p>
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+                                  <Icon className="w-4 h-4" style={{ color }} />
+                                </div>
                               </div>
+                              <p className="text-[28px] font-light tracking-tight mb-0.5" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
+                              <p className="text-[11px] text-slate-500">{sub}</p>
+                              {badge && (
+                                <span className={`mt-2.5 inline-block text-[10px] font-semibold px-2.5 py-1 rounded-full ${badgeColor}`}>{badge}</span>
+                              )}
                             </div>
-                            <p className="text-[28px] font-light tracking-tight mb-0.5" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
-                            <p className="text-[11px] text-slate-500">{sub}</p>
-                            {badge && (
-                              <span className={`mt-2.5 inline-block text-[10px] font-semibold px-2.5 py-1 rounded-full ${badgeColor}`}>{badge}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* ── ROW 2 : Graphique d’activité + Répartition décisions ── */}
+                      <div className="grid grid-cols-3 gap-4">
+                        {/* Sparkline activité 7j */}
+                        <div className="col-span-2 bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                          <div className="flex items-center justify-between mb-5">
+                            <div>
+                              <h3 className="text-white font-medium text-sm">Activité — 7 derniers jours</h3>
+                              <p className="text-slate-300 text-xs mt-0.5">Analyses & Connexions par jour</p>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs">
+                              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block" />Analyses</span>
+                              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />Connexions</span>
+                            </div>
+                          </div>
+                          {(() => {
+                            const data = dashboardStats.activity_7d;
+                            const maxVal = Math.max(...data.flatMap((d: any) => [d.analyses, d.logins]), 1);
+                            const H = 100;
+                            const W = 100 / data.length;
+                            return (
+                              <div className="relative" style={{ height: 120 }}>
+                                <div className="absolute inset-0 flex items-end gap-1 px-1">
+                                  {data.map((d: any, i: number) => (
+                                    <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                                      <div className="w-full flex items-end justify-center gap-0.5" style={{ height: 90 }}>
+                                        <div
+                                          className="rounded-t transition-all duration-500 flex-1"
+                                          style={{ height: `${(d.analyses / maxVal) * 100}%`, background: 'rgba(168,159,219,0.7)', minHeight: d.analyses > 0 ? 4 : 0 }}
+                                          title={`Analyses: ${d.analyses}`}
+                                        />
+                                        <div
+                                          className="rounded-t transition-all duration-500 flex-1"
+                                          style={{ height: `${(d.logins / maxVal) * 100}%`, background: 'rgba(52,211,153,0.7)', minHeight: d.logins > 0 ? 4 : 0 }}
+                                          title={`Connexions: ${d.logins}`}
+                                        />
+                                      </div>
+                                      <p className="text-[9px] text-slate-600 text-center">{d.date}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Répartition décisions */}
+                        <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                          <h3 className="text-white font-medium text-sm mb-1">Décisions IA</h3>
+                          <p className="text-slate-300 text-xs mb-4">Score moyen : <span className="text-violet-300 font-medium">{dashboardStats.analyses.avg_score}/100</span></p>
+                          <div className="space-y-3">
+                            {Object.entries(dashboardStats.analyses.decision_breakdown).length === 0 ? (
+                              <p className="text-slate-600 text-xs italic">Aucune analyse enregistrée.</p>
+                            ) : (
+                              Object.entries(dashboardStats.analyses.decision_breakdown).map(([decision, count]: [string, any]) => {
+                                const total = dashboardStats.analyses.total || 1;
+                                const pct = Math.round((count / total) * 100);
+                                const DECISION_COLORS: Record<string, string> = {
+                                  'Favorable': '#34d399',
+                                  'Défavorable': '#f87171',
+                                  'Vigilance': '#fbbf24',
+                                  'Inconnu': '#64748b'
+                                };
+                                const color = DECISION_COLORS[decision] || '#a89fdb';
+                                return (
+                                  <div key={decision}>
+                                    <div className="flex justify-between text-xs mb-1">
+                                      <span style={{ color }}>{decision}</span>
+                                      <span className="text-slate-200">{count} ({pct}%)</span>
+                                    </div>
+                                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+                                    </div>
+                                  </div>
+                                );
+                              })
                             )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* ── ROW 2 : Graphique d’activité + Répartition décisions ── */}
-                    <div className="grid grid-cols-3 gap-4">
-                      {/* Sparkline activité 7j */}
-                      <div className="col-span-2 bg-[#121927] border border-slate-800/60 rounded-xl p-5">
-                        <div className="flex items-center justify-between mb-5">
-                          <div>
-                            <h3 className="text-white font-medium text-sm">Activité — 7 derniers jours</h3>
-                            <p className="text-slate-300 text-xs mt-0.5">Analyses & Connexions par jour</p>
-                          </div>
-                          <div className="flex items-center gap-4 text-xs">
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block"/>Analyses</span>
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"/>Connexions</span>
-                          </div>
-                        </div>
-                        {(() => {
-                          const data = dashboardStats.activity_7d;
-                          const maxVal = Math.max(...data.flatMap((d: any) => [d.analyses, d.logins]), 1);
-                          const H = 100;
-                          const W = 100 / data.length;
-                          return (
-                            <div className="relative" style={{ height: 120 }}>
-                              <div className="absolute inset-0 flex items-end gap-1 px-1">
-                                {data.map((d: any, i: number) => (
-                                  <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                                    <div className="w-full flex items-end justify-center gap-0.5" style={{ height: 90 }}>
-                                      <div
-                                        className="rounded-t transition-all duration-500 flex-1"
-                                        style={{ height: `${(d.analyses / maxVal) * 100}%`, background: 'rgba(168,159,219,0.7)', minHeight: d.analyses > 0 ? 4 : 0 }}
-                                        title={`Analyses: ${d.analyses}`}
-                                      />
-                                      <div
-                                        className="rounded-t transition-all duration-500 flex-1"
-                                        style={{ height: `${(d.logins / maxVal) * 100}%`, background: 'rgba(52,211,153,0.7)', minHeight: d.logins > 0 ? 4 : 0 }}
-                                        title={`Connexions: ${d.logins}`}
-                                      />
-                                    </div>
-                                    <p className="text-[9px] text-slate-600 text-center">{d.date}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })()}
                       </div>
 
-                      {/* Répartition décisions */}
-                      <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
-                        <h3 className="text-white font-medium text-sm mb-1">Décisions IA</h3>
-                        <p className="text-slate-300 text-xs mb-4">Score moyen : <span className="text-violet-300 font-medium">{dashboardStats.analyses.avg_score}/100</span></p>
-                        <div className="space-y-3">
-                          {Object.entries(dashboardStats.analyses.decision_breakdown).length === 0 ? (
-                            <p className="text-slate-600 text-xs italic">Aucune analyse enregistrée.</p>
+                      {/* ── ROW 3 : Stats secondaires ── */}
+                      <div className="grid grid-cols-4 gap-4">
+                        {([
+                          { label: 'Sessions IA Chat', value: dashboardStats.chats.total, sub: `+${dashboardStats.chats.last_7d} (7j)`, color: '#c084fc', Icon: MessageSquare },
+                          { label: 'Analyses (30j)', value: dashboardStats.analyses.last_30d, sub: `${dashboardStats.analyses.last_7d} cette semaine`, color: '#a89fdb', Icon: CalendarClock },
+                          { label: 'Demandes en attente', value: dashboardStats.requests.pending, sub: `${dashboardStats.requests.total} au total`, color: dashboardStats.requests.pending > 0 ? '#fbbf24' : '#34d399', Icon: dashboardStats.requests.pending > 0 ? Hourglass : CheckCircle2 },
+                          { label: 'Établissements actifs', value: dashboardStats.establishments.active, sub: `sur ${dashboardStats.establishments.total} au total`, color: '#60a5fa', Icon: Building },
+                        ] as const).map(({ label, value, sub, color, Icon }) => (
+                          <div key={label} className="bg-[#121927]/80 border border-slate-800/40 p-4 rounded-xl hover:border-slate-700/60 transition-all duration-200 group">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{label}</p>
+                              <div className="w-7 h-7 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform" style={{ background: `${color}15` }}>
+                                <Icon className="w-3.5 h-3.5" style={{ color }} />
+                              </div>
+                            </div>
+                            <p className="text-[22px] font-light" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
+                            <p className="text-[10px] text-slate-600 mt-1">{sub}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* ── ROW 4 : Top users + Établissements ── */}
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Top utilisateurs */}
+                        <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                          <h3 className="text-white font-medium text-sm mb-4">Top Analystes</h3>
+                          {dashboardStats.analyses.top_users.length === 0 ? (
+                            <p className="text-slate-200 text-xs italic">Aucune analyse effectuée.</p>
                           ) : (
-                            Object.entries(dashboardStats.analyses.decision_breakdown).map(([decision, count]: [string, any]) => {
-                              const total = dashboardStats.analyses.total || 1;
-                              const pct = Math.round((count / total) * 100);
-                              const DECISION_COLORS: Record<string, string> = {
-                                'Favorable': '#34d399',
-                                'Défavorable': '#f87171',
-                                'Vigilance': '#fbbf24',
-                                'Inconnu': '#64748b'
-                              };
-                              const color = DECISION_COLORS[decision] || '#a89fdb';
-                              return (
-                                <div key={decision}>
-                                  <div className="flex justify-between text-xs mb-1">
-                                    <span style={{ color }}>{decision}</span>
-                                    <span className="text-slate-200">{count} ({pct}%)</span>
+                            <div className="space-y-3">
+                              {dashboardStats.analyses.top_users.map((u: any, i: number) => {
+                                const max = dashboardStats.analyses.top_users[0].count || 1;
+                                const RankIcon = i === 0 ? Trophy : i === 1 ? Medal : i === 2 ? Award : Star;
+                                const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#c2824a' : '#4b5563';
+                                return (
+                                  <div key={u.email} className="flex items-center gap-3">
+                                    <RankIcon className="w-4 h-4 shrink-0" style={{ color: rankColor }} />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex justify-between text-xs mb-1">
+                                        <span className="text-slate-200 truncate font-medium">{u.name}</span>
+                                        <span className="text-slate-200 shrink-0 ml-2">{u.count} analyse{u.count > 1 ? 's' : ''}</span>
+                                      </div>
+                                      <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full bg-violet-400/60 transition-all duration-700" style={{ width: `${(u.count / max) * 100}%` }} />
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Établissements breakdown */}
+                        <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
+                          <h3 className="text-white font-medium text-sm mb-4">Établissements</h3>
+                          {dashboardStats.establishments.stats.length === 0 ? (
+                            <p className="text-slate-600 text-xs italic">Aucun établissement.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {dashboardStats.establishments.stats.map((est: any) => (
+                                <div key={est.name} className="flex items-center justify-between p-3 bg-[#0F1523] rounded-lg border border-slate-800/40 group">
+                                  <div className="flex flex-col">
+                                    <p className="text-slate-200 text-xs font-medium">{est.name}</p>
+                                    {est.status !== 'active' && <span className="text-[9px] text-rose-400">Suspendu</span>}
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs text-right">
+                                    <div>
+                                      <p className="text-slate-300 font-medium">{est.members}</p>
+                                      <p className="text-slate-200 text-[10px]">membres</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-violet-300 font-medium">{est.analyses}</p>
+                                      <p className="text-slate-200 text-[10px]">analyses</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-emerald-400 font-medium">{est.active_members}</p>
+                                      <p className="text-slate-200 text-[10px]">actifs</p>
+                                    </div>
                                   </div>
                                 </div>
-                              );
-                            })
+                              ))}
+                            </div>
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    {/* ── ROW 3 : Stats secondaires ── */}
-                    <div className="grid grid-cols-4 gap-4">
-                      {([
-                        { label: 'Sessions IA Chat', value: dashboardStats.chats.total, sub: `+${dashboardStats.chats.last_7d} (7j)`, color: '#c084fc', Icon: MessageSquare },
-                        { label: 'Analyses (30j)', value: dashboardStats.analyses.last_30d, sub: `${dashboardStats.analyses.last_7d} cette semaine`, color: '#a89fdb', Icon: CalendarClock },
-                        { label: 'Demandes en attente', value: dashboardStats.requests.pending, sub: `${dashboardStats.requests.total} au total`, color: dashboardStats.requests.pending > 0 ? '#fbbf24' : '#34d399', Icon: dashboardStats.requests.pending > 0 ? Hourglass : CheckCircle2 },
-                        { label: 'Établissements actifs', value: dashboardStats.establishments.active, sub: `sur ${dashboardStats.establishments.total} au total`, color: '#60a5fa', Icon: Building },
-                      ] as const).map(({ label, value, sub, color, Icon }) => (
-                        <div key={label} className="bg-[#121927]/80 border border-slate-800/40 p-4 rounded-xl hover:border-slate-700/60 transition-all duration-200 group">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{label}</p>
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform" style={{ background: `${color}15` }}>
-                              <Icon className="w-3.5 h-3.5" style={{ color }} />
-                            </div>
-                          </div>
-                          <p className="text-[22px] font-light" style={{ color }}>{value.toLocaleString('fr-FR')}</p>
-                          <p className="text-[10px] text-slate-600 mt-1">{sub}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* ── ROW 4 : Top users + Établissements ── */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Top utilisateurs */}
-                      <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
-                        <h3 className="text-white font-medium text-sm mb-4">Top Analystes</h3>
-                        {dashboardStats.analyses.top_users.length === 0 ? (
-                          <p className="text-slate-200 text-xs italic">Aucune analyse effectuée.</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {dashboardStats.analyses.top_users.map((u: any, i: number) => {
-                              const max = dashboardStats.analyses.top_users[0].count || 1;
-                              const RankIcon = i === 0 ? Trophy : i === 1 ? Medal : i === 2 ? Award : Star;
-                              const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#c2824a' : '#4b5563';
-                              return (
-                                <div key={u.email} className="flex items-center gap-3">
-                                  <RankIcon className="w-4 h-4 shrink-0" style={{ color: rankColor }} />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between text-xs mb-1">
-                                      <span className="text-slate-200 truncate font-medium">{u.name}</span>
-                                      <span className="text-slate-200 shrink-0 ml-2">{u.count} analyse{u.count > 1 ? 's' : ''}</span>
-                                    </div>
-                                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                                      <div className="h-full rounded-full bg-violet-400/60 transition-all duration-700" style={{ width: `${(u.count / max) * 100}%` }} />
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Établissements breakdown */}
-                      <div className="bg-[#121927] border border-slate-800/60 rounded-xl p-5">
-                        <h3 className="text-white font-medium text-sm mb-4">Établissements</h3>
-                        {dashboardStats.establishments.stats.length === 0 ? (
-                          <p className="text-slate-600 text-xs italic">Aucun établissement.</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {dashboardStats.establishments.stats.map((est: any) => (
-                              <div key={est.name} className="flex items-center justify-between p-3 bg-[#0F1523] rounded-lg border border-slate-800/40 group">
-                                <div className="flex flex-col">
-                                  <p className="text-slate-200 text-xs font-medium">{est.name}</p>
-                                  {est.status !== 'active' && <span className="text-[9px] text-rose-400">Suspendu</span>}
-                                </div>
-                                <div className="flex items-center gap-4 text-xs text-right">
-                                  <div>
-                                    <p className="text-slate-300 font-medium">{est.members}</p>
-                                    <p className="text-slate-200 text-[10px]">membres</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-violet-300 font-medium">{est.analyses}</p>
-                                    <p className="text-slate-200 text-[10px]">analyses</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-emerald-400 font-medium">{est.active_members}</p>
-                                    <p className="text-slate-200 text-[10px]">actifs</p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
+                    </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-24 text-slate-600 gap-3">
                       <LayoutDashboard className="w-10 h-10 opacity-20" />
@@ -1512,19 +1656,18 @@ export default function Backoffice() {
                         return (
                           <tr key={est.id} className="hover:bg-slate-800/20 transition-colors group">
                             <td className="px-5 py-4 text-slate-200 font-medium">
-                {est.name}
-            </td>
+                              {est.name}
+                            </td>
                             <td className="px-5 py-4 text-slate-200 text-sm">{est.address || <span className="text-slate-600 italic">Non renseignée</span>}</td>
                             <td className="px-5 py-4 text-slate-200 text-sm">{count} membre{count !== 1 ? 's' : ''}</td>
                             <td className="px-5 py-4 text-slate-300 text-xs font-mono">
                               {est.created_at ? new Date(est.created_at).toLocaleDateString('fr-FR') : '—'}
                             </td>
                             <td className="px-5 py-4 text-center">
-                              <button onClick={() => toggleEstStatus(est)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border transition-all ${
-                                est.status === 'active'
+                              <button onClick={() => toggleEstStatus(est)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border transition-all ${est.status === 'active'
                                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                                   : 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
-                              }`}>
+                                }`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${est.status === 'active' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                                 {est.status === 'active' ? 'Actif' : 'Suspendu'}
                               </button>
@@ -1654,11 +1797,10 @@ export default function Backoffice() {
                                 </button>
                                 <button
                                   onClick={() => toggleUserStatus(usr)}
-                                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                                    usr.is_active
+                                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${usr.is_active
                                       ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
                                       : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                                  }`}
+                                    }`}
                                 >
                                   {usr.is_active ? 'Suspendre' : 'Activer'}
                                 </button>
@@ -1777,6 +1919,65 @@ export default function Backoffice() {
           </div>
         </div>
       )}
+
+        {/* MODAL ADMIN */}
+        {showAdminModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#121927] border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl p-6 relative">
+              <button onClick={() => setShowAdminModal(false)} className="absolute top-4 right-4 text-slate-300 hover:text-white">
+                <XCircle className="w-5 h-5" />
+              </button>
+              <h3 className="text-lg font-semibold text-white mb-5">
+                {editingAdmin ? 'Modifier l\'administrateur' : 'Nouvel administrateur'}
+              </h3>
+              {adminError && (
+                <div className="mb-4 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" /> {adminError}
+                </div>
+              )}
+              <form onSubmit={handleSaveAdmin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Nom complet *</label>
+                  <input required type="text" value={adminForm.name} onChange={e => setAdminForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
+                    placeholder="Jean Dupont" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Email *</label>
+                  <input required type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all"
+                    placeholder="jean.dupont@email.com" />
+                </div>
+
+                {!editingAdmin && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-200 mb-1">Mot de passe provisoire</label>
+                    <input type="text" value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
+                      className="w-full bg-[#0F1523] border border-slate-700 text-white px-4 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all font-mono"
+                      placeholder="Laisser vide = TempPass123!" />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-200 mb-1">Rôle *</label>
+                  <select value={adminForm.role} onChange={e => setAdminForm(f => ({ ...f, role: e.target.value }))}
+                    className="w-full bg-[#0F1523] border border-slate-700 text-white px-3 py-2.5 rounded-lg outline-none focus:border-[#645CA5] transition-all">
+                    <option value="SYSTEM_ADMIN">System Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setShowAdminModal(false)} className="px-4 py-2 text-slate-200 hover:text-white transition-colors text-sm">Annuler</button>
+                  <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-white rounded-lg font-medium text-sm disabled:opacity-50 hover:opacity-90 transition-all" style={{ background: '#645CA5' }}>
+                    {isSubmitting ? 'Enregistrement...' : (editingAdmin ? 'Sauvegarder' : 'Créer')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
       {/* MODAL UTILISATEUR */}
       {showUsrModal && (
@@ -1960,7 +2161,7 @@ export default function Backoffice() {
               <div className="flex flex-wrap gap-4 text-sm bg-[#0B0F19] p-4 rounded-xl border border-slate-800">
                 <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Date</span> <span className="text-slate-200 font-medium">{new Date(selectedComm.created_at).toLocaleString('fr-FR')}</span></div>
                 <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Expéditeur</span> <span className="text-slate-200 font-medium">{selectedComm.sender_name || 'Admin'}</span></div>
-                <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Destinataire(s)</span> 
+                <div><span className="text-slate-500 block text-xs uppercase tracking-widest font-bold mb-1">Destinataire(s)</span>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${selectedComm.target_email === 'TOUS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
                     {selectedComm.target_email === 'TOUS' ? `${activeUsers} Personnes (Tous les utilisateurs)` : selectedComm.target_email}
                   </span>

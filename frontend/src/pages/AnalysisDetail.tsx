@@ -38,7 +38,7 @@ export default function AnalysisDetail() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950/50">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
       </div>
     );
@@ -66,7 +66,7 @@ export default function AnalysisDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* COLONNE GAUCHE : DOCUMENT */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-8">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
                 <FileText className="w-6 h-6 text-blue-600" />
@@ -94,7 +94,7 @@ export default function AnalysisDetail() {
 
         {/* COLONNE DROITE : SCORES & TABS */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-6">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-6">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Score IA</h2>
               <div className={`px-4 py-2 rounded-xl font-black text-xl shadow-sm ${application.score >= 70 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
@@ -167,7 +167,7 @@ export default function AnalysisDetail() {
             {activeTab === 'chat' && (
               <div className="space-y-4 animate-in slide-in-from-bottom-2">
                 <div className="h-64 overflow-y-auto space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
-                  <p className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 p-3 rounded-xl shadow-sm border border-blue-50 dark:border-slate-700">
+                  <p className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-950/40 p-3 rounded-xl shadow-sm border border-blue-50 dark:border-slate-700">
                     Posez vos questions sur la solvabilité de {application.full_name}.
                   </p>
                 </div>
@@ -186,7 +186,7 @@ export default function AnalysisDetail() {
           </div>
 
           {/* ACTIONS FINALES */}
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-6">
+          <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 p-6">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 text-center">Décision Finale</h3>
             <div className="flex flex-col gap-3">
               <button className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2">

@@ -32,20 +32,20 @@ const DOC_TYPES = {
 };
 
 const CREDIT_TYPES_PARTICULIER = {
-  'immobilier':      { label: 'Prêt Immobilier',       docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.amortissement, DOC_TYPES.compromis] },
-  'travaux':         { label: 'Prêt Travaux',          docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.devis_travaux] },
-  'affecte':         { label: 'Prêt Affecté (Auto...)', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
-  'personnel':       { label: 'Prêt Personnel',        docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
-  'rachat_credits':  { label: 'Rachat de Crédits',     docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.amortissement] },
-  'renouvelable':    { label: 'Crédit Renouvelable',   docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib] },
+  'immobilier': { label: 'Prêt Immobilier', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.amortissement, DOC_TYPES.compromis] },
+  'travaux': { label: 'Prêt Travaux', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.devis_travaux] },
+  'affecte': { label: 'Prêt Affecté (Auto...)', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
+  'personnel': { label: 'Prêt Personnel', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves] },
+  'rachat_credits': { label: 'Rachat de Crédits', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib, DOC_TYPES.releves, DOC_TYPES.amortissement] },
+  'renouvelable': { label: 'Crédit Renouvelable', docs: [DOC_TYPES.id, DOC_TYPES.domicile, DOC_TYPES.paie, DOC_TYPES.impot, DOC_TYPES.rib] },
 };
 
 const CREDIT_TYPES_ENTREPRISE = {
-  'investissement':    { label: 'Prêt Investissement',          docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
-  'immobilier_pro':   { label: 'Immobilier Professionnel',     docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib, DOC_TYPES.bail_commercial] },
-  'creation_reprise': { label: 'Création / Reprise',          docs: [DOC_TYPES.kbis, DOC_TYPES.statuts, DOC_TYPES.business_plan, DOC_TYPES.rib, DOC_TYPES.releves_pro] },
-  'bail':             { label: 'Crédit-Bail / Leasing',       docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
-  'tresorerie':       { label: 'Besoin de Trésorerie',        docs: [DOC_TYPES.kbis, DOC_TYPES.statuts, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
+  'investissement': { label: 'Prêt Investissement', docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
+  'immobilier_pro': { label: 'Immobilier Professionnel', docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib, DOC_TYPES.bail_commercial] },
+  'creation_reprise': { label: 'Création / Reprise', docs: [DOC_TYPES.kbis, DOC_TYPES.statuts, DOC_TYPES.business_plan, DOC_TYPES.rib, DOC_TYPES.releves_pro] },
+  'bail': { label: 'Crédit-Bail / Leasing', docs: [DOC_TYPES.kbis, DOC_TYPES.bilan1, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
+  'tresorerie': { label: 'Besoin de Trésorerie', docs: [DOC_TYPES.kbis, DOC_TYPES.statuts, DOC_TYPES.bilan1, DOC_TYPES.bilan2, DOC_TYPES.releves_pro, DOC_TYPES.rib] },
 };
 
 // Types de projet où l'apport est pertinent
@@ -196,7 +196,7 @@ export default function NewAnalysis() {
             <span className="text-sm font-medium">Anamnèse</span>
           </div>
           <div className="w-12 h-px bg-slate-200 dark:bg-slate-800"></div>
-          <div className={`flex items-center gap-3 transition-colors ${step >= 2 ? 'text-primary' : 'text-slate-300 dark:text-slate-700'}`}>
+          <div className={`flex items-center gap-3 transition-colors ${step >= 2 ? 'text-primary' : 'text-slate-300 dark:text-slate-500'}`}>
             <span className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm font-semibold transition-all ${step >= 2 ? 'border-primary bg-primary-light' : 'border-slate-200 dark:border-slate-800'}`}>2</span>
             <span className="text-sm font-medium">Documents</span>
           </div>
@@ -204,11 +204,11 @@ export default function NewAnalysis() {
       </div>
 
       {step === 1 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 p-6 md:p-10 animate-fade-in transition-colors">
+        <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 p-6 md:p-10 animate-fade-in transition-colors">
 
           {/* CATEGORY SWITCHER */}
           <div className="flex justify-center mb-10">
-            <div className="bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl flex flex-col sm:flex-row border border-slate-100 dark:border-slate-800 shadow-inner w-full sm:w-auto">
+            <div className="bg-slate-50 dark:bg-slate-950/40 p-1.5 rounded-2xl flex flex-col sm:flex-row border border-slate-100 dark:border-slate-800 shadow-inner w-full sm:w-auto">
               <button onClick={() => handleCategoryChange('particulier')} className={`px-8 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === 'particulier' ? 'bg-white dark:bg-slate-800 text-primary shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <User className="w-4 h-4 inline mr-2" /> Particulier
               </button>
@@ -227,24 +227,24 @@ export default function NewAnalysis() {
                 {activeCategory === 'entreprise' && (
                   <div className="group animate-in slide-in-from-top-2">
                     <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Dénomination Sociale<span className="text-red-400">*</span></label>
-                    <input type="text" name="companyName" value={clientInfo.companyName} onChange={handleInfoChange} placeholder="ex: SARL Techpro" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm font-semibold dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
+                    <input type="text" name="companyName" value={clientInfo.companyName} onChange={handleInfoChange} placeholder="ex: SARL Techpro" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm font-semibold dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
                   </div>
                 )}
                 <div className="group">
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">{activeCategory === 'entreprise' ? 'Représentant Légal' : 'Nom Complet'}<span className="text-red-400">*</span></label>
-                  <input type="text" name="fullName" value={clientInfo.fullName} onChange={handleInfoChange} placeholder="Jean Dupont" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
+                  <input type="text" name="fullName" value={clientInfo.fullName} onChange={handleInfoChange} placeholder="Jean Dupont" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
                 </div>
                 <div className="group">
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Email<span className="text-red-400">*</span></label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-300 dark:text-slate-600" />
-                    <input type="email" name="email" value={clientInfo.email} onChange={handleInfoChange} placeholder="contact@email.com" className="w-full pl-11 pr-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
+                    <input type="email" name="email" value={clientInfo.email} onChange={handleInfoChange} placeholder="contact@email.com" className="w-full pl-11 pr-5 py-3.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all outline-none text-sm dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600" />
                   </div>
                 </div>
                 <div className="group">
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Téléphone</label>
-                  <div className="dark:text-white">
-                    <PhoneInput international defaultCountry="FR" value={clientInfo.phone} onChange={(v: any) => setClientInfo({ ...clientInfo, phone: v || '' })} className="flex px-4 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus-within:bg-white dark:focus-within:bg-slate-900 transition-all" />
+                  <div className="dark:text-white ">
+                    <PhoneInput international defaultCountry="FR" value={clientInfo.phone} onChange={(v: any) => setClientInfo({ ...clientInfo, phone: v || '' })} className="flex px-4 py-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-2xl focus-within:bg-white dark:focus-within:bg-slate-900 transition-all " />
                   </div>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default function NewAnalysis() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 ml-1 uppercase transition-colors">Objet du financement<span className="text-red-400">*</span></label>
-                  <select name="creditType" value={clientInfo.creditType} onChange={handleInfoChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 transition-all outline-none text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  <select name="creditType" value={clientInfo.creditType} onChange={handleInfoChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 transition-all outline-none text-sm font-semibold text-slate-700 dark:text-slate-300">
                     {Object.entries(activeCategory === 'particulier' ? CREDIT_TYPES_PARTICULIER : CREDIT_TYPES_ENTREPRISE).map(([k, v]) => (
                       <option key={k} value={k}>{v.label}</option>
                     ))}
@@ -315,7 +315,7 @@ export default function NewAnalysis() {
         </div>
       ) : (
         /* STEP 2 : DOCUMENTS */
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden animate-fade-in transition-colors">
+        <div className="bg-white dark:bg-slate-950/40 rounded-[32px] shadow-sm border border-slate-50 dark:border-slate-800 overflow-hidden animate-fade-in transition-colors">
           <div className="p-6 md:px-10 md:py-8 bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
             <div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3 uppercase tracking-tight">
@@ -330,7 +330,7 @@ export default function NewAnalysis() {
             </div>
           </div>
 
-          <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-slate-900 transition-colors">
+          <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-slate-950/40 transition-colors">
             {currentDocs.map((doc) => {
               const docFiles = files[doc.id] || [];
               const isProvided = docFiles.length > 0;
@@ -351,7 +351,7 @@ export default function NewAnalysis() {
                       </div>
                     ))}
                     <div className="relative group">
-                      <input type="file" multiple accept="application/pdf,image/*" onChange={(e) => handleFileSelect(doc.id, e)} className="absolute inset-0 opacity-0 cursor-pointer" />     
+                      <input type="file" multiple accept="application/pdf,image/*" onChange={(e) => handleFileSelect(doc.id, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
                       <button className={`w-full py-2.5 border-2 border-dashed rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isProvided ? 'border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-950' : 'border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-white dark:bg-slate-950 group-hover:border-blue-300 dark:group-hover:border-blue-500 group-hover:text-blue-500'}`}>
                         {isProvided ? "+ Ajouter" : "Importer"}
                       </button>
@@ -363,11 +363,11 @@ export default function NewAnalysis() {
           </div>
 
           <div className="p-6 md:px-10 md:py-8 bg-slate-50/50 dark:bg-slate-950/50 border-t border-slate-50 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-4 transition-colors">
-            <button onClick={() => setStep(1)} className="justify-center sm:justify-start py-3 sm:py-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black  tracking-widest flex items-center gap-2 transition-colors">
+            <button onClick={() => setStep(1)} className="justify-center sm:justify-start py-3 sm:py-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Retour
             </button>
-            <button onClick={handleAnalyze} disabled={loading} className={`justify-center px-10 py-4 w-full sm:w-auto rounded-2xl text-xs font-black  tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'btn-primary hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-emerald-500/20'}`}>
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Analyser avec l'IA</>}
+            <button onClick={handleAnalyze} disabled={loading} className={`justify-center px-10 py-4 w-full sm:w-auto rounded-2xl text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all flex items-center gap-3 ${loading ? 'bg-slate-300 dark:bg-slate-800' : 'btn-primary hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:shadow-primary-500/20'}`}>
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Analyser</>}
             </button>
           </div>
         </div>

@@ -15,7 +15,7 @@ import pyotp
 import qrcode
 import base64
 from io import BytesIO
-from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment, UserBackoffice
+from database import get_db, User, AccountRequest, Notification, PasswordResetCode, Establishment, UserBackoffice, CommunicationHistory
 from email_service import send_email_sync, markdown_to_html
 import rag_engine
 from groq import Groq
@@ -1218,10 +1218,35 @@ def ai_refine_notification(
 def broadcast_notification(
     req: BroadcastNotificationRequest,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: Session = Depends(get_db),
     current_admin: UserBackoffice = Depends(get_current_backoffice_user)
 ):
-    # 1. Notification In-App
+    delivery_method = "BOTH" if req.send_email else "IN_APP"
+    
+    # Create Communication History
+    comm_hist = CommunicationHistory(
+        title=req.title,
+        message=req.message,
+        target=req.target_email if req.target_email else "ALL",
+        delivery_method=delivery_method,
+        sender_name=current_admin.name,
+        total_sent=0,
+        email_opened=[],
+        in_app_opened=[]
+    )
+    db.add(comm_hist)
+    db.commit()
+    db.refresh(comm_hist)
+    
+    frontend_url = os.getenv('FRONTEND_URL', str(request.base_url).rstrip('/'))
+    # On utilise l'URL de l'API pour le tracking
+    api_url = str(request.base_url).rstrip('/')
+    
+    def get_tracking_url(email: str):
+        return f"{api_url}/api/auth/track-email/{comm_hist.id}/{email}.gif"
+
+    total_sent = 0
     if req.target_email:
         # Vers un utilisateur spécifique
         target_user = db.query(User).filter(User.email == req.target_email).first()
@@ -1234,32 +1259,36 @@ def broadcast_notification(
             title=req.title,
             message=req.message,
             type="INFO",
-            sender_name=current_admin.name
+            sender_name=current_admin.name,
+            communication_id=comm_hist.id
         )
         db.add(new_notif)
+        total_sent = 1
         
         if req.send_email:
             email_html = markdown_to_html(req.message)
-            background_tasks.add_task(send_email_sync, target_user.email, req.title, email_html, is_backoffice=True)
+            background_tasks.add_task(send_email_sync, target_user.email, req.title, email_html, is_backoffice=True, tracking_pixel_url=get_tracking_url(target_user.email))
     else:
-        # Diffusion globale
-        new_notif = Notification(
-            user_id=None,
-            target_email="TOUS",
-            title=req.title,
-            message=req.message,
-            type="INFO",
-            sender_name=current_admin.name
-        )
-        db.add(new_notif)
-        
-        if req.send_email:
-            # Récupérer tous les emails actifs
-            all_users = db.query(User).filter(User.is_active == True).all()
-            email_html = markdown_to_html(req.message)
-            for user in all_users:
-                background_tasks.add_task(send_email_sync, user.email, req.title, email_html, is_backoffice=True)
+        # Diffusion globale : on crée une notification individuelle pour chaque utilisateur actif
+        all_users = db.query(User).filter(User.is_active == True).all()
+        for user in all_users:
+            new_notif = Notification(
+                user_id=user.id,
+                target_email=user.email,
+                title=req.title,
+                message=req.message,
+                type="INFO",
+                sender_name=current_admin.name,
+                communication_id=comm_hist.id
+            )
+            db.add(new_notif)
+            total_sent += 1
+            
+            if req.send_email:
+                email_html = markdown_to_html(req.message)
+                background_tasks.add_task(send_email_sync, user.email, req.title, email_html, is_backoffice=True, tracking_pixel_url=get_tracking_url(user.email))
     
+    comm_hist.total_sent = total_sent
     db.commit()
     return {"message": "Notification diffusée avec succès."}
 
@@ -1268,12 +1297,24 @@ def get_notifications_history(
     db: Session = Depends(get_db),
     current_admin: UserBackoffice = Depends(get_current_backoffice_user)
 ):
-    notifs = db.query(Notification).filter(
-        Notification.sender_name != None,
-        Notification.sender_name != 'Système',
-        Notification.type == "INFO"
-    ).order_by(Notification.created_at.desc()).limit(50).all()
+    notifs = db.query(CommunicationHistory).order_by(CommunicationHistory.created_at.desc()).limit(50).all()
     return notifs
+
+@router.get("/track-email/{comm_id}/{email}.gif")
+def track_email(comm_id: int, email: str, db: Session = Depends(get_db)):
+    from fastapi.responses import Response
+    # Pixel transparent 1x1
+    pixel = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x01D\x00;'
+    
+    hist = db.query(CommunicationHistory).filter(CommunicationHistory.id == comm_id).first()
+    if hist:
+        opened_list = hist.email_opened if hist.email_opened else []
+        if email not in opened_list:
+            opened_list.append(email)
+            hist.email_opened = opened_list
+            db.commit()
+            
+    return Response(content=pixel, media_type="image/gif")
 
 @router.get("/backoffice/notifications/check-smtp")
 def check_smtp_config(current_admin: UserBackoffice = Depends(get_current_backoffice_user)):
@@ -1322,6 +1363,15 @@ def mark_notification_read(
             raise HTTPException(status_code=403, detail="Non autorisé.")
             
     notif.is_read = True
+    
+    if getattr(notif, "communication_id", None):
+        comm_hist = db.query(CommunicationHistory).filter(CommunicationHistory.id == notif.communication_id).first()
+        if comm_hist:
+            in_app_list = comm_hist.in_app_opened if comm_hist.in_app_opened else []
+            if current_user.id not in in_app_list:
+                in_app_list.append(current_user.id)
+                comm_hist.in_app_opened = in_app_list
+
     db.commit()
     return {"message": "Notification lue."}
 
@@ -1490,6 +1540,113 @@ def delete_establishment_policy(
         raise HTTPException(status_code=500, detail=str(e))
 
     return {"message": f"Politique RAG réinitialisée pour {est.name}"}
+
+# --- ADMIN MANAGEMENT (UserBackoffice) ---
+class CreateAdminRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str = "SYSTEM_ADMIN"
+
+class UpdateAdminRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
+
+@router.get("/backoffice/admins")
+def get_admins(
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    admins = db.query(UserBackoffice).all()
+    return [{
+        "id": a.id,
+        "name": a.name,
+        "email": a.email,
+        "role": a.role,
+        "is_active": a.is_active,
+        "created_at": a.created_at
+    } for a in admins]
+
+@router.post("/backoffice/admins")
+def create_admin(
+    req: CreateAdminRequest,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    existing = db.query(UserBackoffice).filter(UserBackoffice.email == req.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
+        
+    new_admin = UserBackoffice(
+        id=str(uuid.uuid4()),
+        name=req.name,
+        email=req.email,
+        password_hash=get_password_hash(req.password),
+        role=req.role
+    )
+    db.add(new_admin)
+    db.commit()
+    return {"message": "Administrateur créé avec succès."}
+
+@router.put("/backoffice/admins/{admin_id}")
+def update_admin(
+    admin_id: str,
+    req: UpdateAdminRequest,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    admin = db.query(UserBackoffice).filter(UserBackoffice.id == admin_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Administrateur introuvable.")
+        
+    if req.email and req.email != admin.email:
+        existing = db.query(UserBackoffice).filter(UserBackoffice.email == req.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
+        admin.email = req.email
+        
+    if req.name:
+        admin.name = req.name
+    if req.role:
+        admin.role = req.role
+        
+    db.commit()
+    return {"message": "Administrateur mis à jour."}
+
+@router.delete("/backoffice/admins/{admin_id}")
+def delete_admin(
+    admin_id: str,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    if admin_id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas vous supprimer vous-même.")
+        
+    admin = db.query(UserBackoffice).filter(UserBackoffice.id == admin_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Administrateur introuvable.")
+        
+    db.delete(admin)
+    db.commit()
+    return {"message": "Administrateur supprimé."}
+
+@router.put("/backoffice/admins/{admin_id}/toggle-status")
+def toggle_admin_status(
+    admin_id: str,
+    db: Session = Depends(get_db),
+    current_admin: UserBackoffice = Depends(get_current_backoffice_user)
+):
+    if admin_id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas désactiver votre propre compte.")
+        
+    admin = db.query(UserBackoffice).filter(UserBackoffice.id == admin_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Administrateur introuvable.")
+        
+    admin.is_active = not admin.is_active
+    db.commit()
+    return {"message": "Statut modifié."}
 
 # --- BACKOFFICE USER MANAGEMENT ---
 @router.get("/backoffice/users")
